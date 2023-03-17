@@ -1,0 +1,71 @@
+
+# Build Pipeline using dockercompose
+
+trigger:
+  - none
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: Build
+    timeoutInMinutes: 120
+    steps:
+      # Checkout repositories
+      - checkout: self
+
+      # Build cdr-auth-server
+      - task: Docker@2
+        displayName: Build cdr-auth-server image
+        inputs:
+          command: build
+          Dockerfile: ./Source/Dockerfile
+          buildContext: ./Source
+          repository: cdr-auth-server
+          tags: latest
+
+      # List docker images
+      - task: Docker@2
+        displayName: List Docker images
+        condition: always()
+        inputs:
+          command: images
+
+      # Login to ACR
+      - task: Docker@2
+        displayName: Login to ACR
+        condition: always()
+        inputs:
+          command: login
+          containerRegistry: <<yourContainerRegistryName>>
+
+      # Save docker image to TAR so it can be published
+      - task: Docker@2
+        displayName: Save cdr-auth-server image to TAR
+        inputs:
+          repository: cdr-auth-server
+          command: save
+          arguments: --output $(build.artifactstagingdirectory)/cdr-auth-server.image.tar cdr-auth-server
+          addPipelineData: false
+
+      # Publish docker images
+      - task: PublishPipelineArtifact@1
+        displayName: Publish artifacts - Container images
+        inputs:
+          path: $(build.artifactstagingdirectory)
+          artifact: Container Images
+
+      - task: Docker@2
+        displayName: 'Re-Tag CDRAuthServer API image with :fapi-testing'
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+        inputs:
+          containerRegistry: <<yourContainerRegistryName>>
+          repository: 'cdr-auth-server'
+          command: tag
+          arguments: 'cdr-auth-server <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server:fapi-testing'
+
+      - task: CmdLine@2
+        displayName: 'Push CDRAuthServer container image with :fapi-testing tag to ACR (develop branch only)'
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+        inputs:
+          script: 'docker push <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server:fapi-testing' 

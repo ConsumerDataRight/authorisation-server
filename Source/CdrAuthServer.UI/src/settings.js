@@ -1,0 +1,22 @@
+// const settings = {
+//     DATA_FILE_NAME: process.env.REACT_APP_DATA_FILE_NAME,
+//     CLUSTER_DATA_FILE_NAME: process.env.REACT_APP_CLUSTER_DATA_FILE_NAME,
+//     PUBLIC_URL: process.env.PUBLIC_URL,
+//     CDR_POLICY_LINK: process.env.REACT_APP_CDR_POLICY_LINK,
+//     DEFAULT_USER_NAME_TEXT: process.env.REACT_APP_DEFAULT_USER_NAME_TEXT,
+//     JWKS_URI: process.env.REACT_APP_JWKS_URI
+// };
+
+import { env } from './env'
+
+const settings = {
+    DATA_FILE_NAME: env.REACT_APP_DATA_FILE_NAME,
+    CLUSTER_DATA_FILE_NAME: env.REACT_APP_CLUSTER_DATA_FILE_NAME,
+    PUBLIC_URL: process.env.PUBLIC_URL,
+    CDR_POLICY_LINK: env.REACT_APP_CDR_POLICY_LINK,
+    CDR_FAQ_LINK: env.REACT_APP_CDR_FAQ_LINK,
+    DEFAULT_USER_NAME_TEXT: env.REACT_APP_DEFAULT_USER_NAME_TEXT,
+    JWKS_URI: env.REACT_APP_JWKS_URI
+};
+
+export default settings;

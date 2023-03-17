@@ -1,0 +1,31 @@
+
+get https://localhost:8000/health
+
+###
+
+get https://localhost:8001/health
+
+###
+
+get https://localhost:8002/health
+
+###
+
+get https://localhost:8005/health
+
+###
+
+
+@func_host = http://localhost:7074
+
+## 
+
+GET {{func_host}}/INTEGRATIONTESTS_DATARECIPIENTS
+
+###
+
+GET https://mock-register:7000/cdr-register/v1/all/data-recipients
+
+###
+
+GET https://mock-register:7000/cdr-register/v1/banking/data-recipients

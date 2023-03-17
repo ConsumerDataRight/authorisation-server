@@ -1,0 +1,84 @@
+{
+  "name": "cdr-auth-server-ui",
+  "version": "1.0.0",
+  "homepage": "/ui",
+  "private": true,
+  "dependencies": {
+    "@hookform/resolvers": "^2.8.3",
+    "@mui/icons-material": "^5.0.4",
+    "@mui/lab": "latest",
+    "@mui/material": "latest",
+    "@mui/styled-engine-sc": "latest",
+    "@mui/x-data-grid": "^4.0.1",
+    "axios": "^0.24.0",
+    "caniuse-lite": "^1.0.30001334",
+    "jsonwebtoken": "^9.0.0",
+    "jwk-to-pem": "^2.0.5",
+    "jwt-decode": "^3.1.2",
+    "node-jose": "^2.2.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-hook-form": "^7.18.1",
+    "react-idle-timer": "^5.0.0",
+    "react-router-dom": "^5.3.0",
+    "react-scripts": "latest",
+    "recoil": "^0.5.2",
+    "styled-components": "latest",
+    "yup": "^0.32.11"
+  },
+  "scripts": {
+    "tsc": "./node_modules/.bin/tsc",
+    "start": "craco start",
+    "start-local": "craco --openssl-legacy-provider start",
+    "build": "craco build",
+    "build:dev": "(npm run copy-env-dev-to-local) && craco build && (npm run delete-env-local)",
+    "build:test": "(npm run copy-env-test-to-local) && craco build && (npm run delete-env-local)",
+    "build:prod": "(npm run copy-env-prod-to-local) && craco build && (npm run delete-env-local)",
+    "copy-env-dev-to-local": "copy .env.sandbox.dev .env.local",
+    "copy-env-test-to-local": "copy .env.sandbox.test .env.local",
+    "copy-env-prod-to-local": "copy .env.sandbox.prod .env.local",
+    "delete-env-local": "del -f .env.local",
+    "test": "craco test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@craco/craco": "latest",
+    "@types/jest": "^27.0.2",
+    "@types/jsonwebtoken": "^9.0.1",
+    "@types/jwk-to-pem": "^2.0.1",
+    "@types/node": "^16.11.6",
+    "@types/node-jose": "^1.1.10",
+    "@types/react": "^17.0.33",
+    "@types/react-dom": "^17.0.10",
+    "@types/react-router-dom": "^5.3.2",
+    "@types/recoil": "0.0.9",
+    "@types/styled-components": "latest",
+    "base64url": "^3.0.1",
+    "buffer": "^6.0.3",
+    "craco-alias": "^3.0.1",
+    "crypto-browserify": "^3.12.0",
+    "process": "^0.11.10",
+    "react-inject-env": "^2.1.0",
+    "stream-browserify": "^3.0.0",
+    "typescript": "^4.4.4",
+    "util": "^0.12.5"
+  }
+}

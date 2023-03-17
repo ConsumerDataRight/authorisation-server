@@ -1,0 +1,79 @@
+# The "non-standalone" CdrAuthServer has gateways. 
+# This image seems to only be needed for the "build-for-fapi-testing" pipeline
+
+###############################################################################
+# Build base layer
+###############################################################################
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+
+WORKDIR /app
+EXPOSE 8081
+EXPOSE 8082
+ENV ASPNETCORE_ENVIRONMENT=Release
+
+###############################################################################
+# Build CdrAuthServer API layer
+###############################################################################
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ./ .
+
+FROM build AS publish
+COPY ./CdrAuthServer.Domain/. /app/CdrAuthServer.Domain
+COPY ./CdrAuthServer.Repository/. /app/CdrAuthServer.Repository
+COPY ./CdrAuthServer/. /app/CdrAuthServer
+COPY ./CdrAuthServer.Infrastructure/. /app/CdrAuthServer.Infrastructure
+COPY ./CdrAuthServer.mTLS.Gateway/. /app/CdrAuthServer.mTLS.Gateway
+COPY ./CdrAuthServer.TLS.Gateway/. /app/CdrAuthServer.TLS.Gateway
+COPY ./CdrAuthServer.API.Logger/. /app/CdrAuthServer.API.Logger
+
+WORKDIR /app/CdrAuthServer
+RUN dotnet publish -c Release -o /app/publish/cdrauthserver
+WORKDIR /app/CdrAuthServer.mTLS.Gateway
+RUN dotnet publish -c Release -o /app/publish/gateway-mtls
+WORKDIR /app/CdrAuthServer.TLS.Gateway
+RUN dotnet publish -c Release -o /app/publish/gateway-tls
+
+COPY supervisord.conf /app/publish/supervisord.conf
+
+###############################################################################
+# Build final layer
+###############################################################################
+FROM base AS final
+WORKDIR /app
+
+# Auth API ####################################################################
+COPY --from=publish /app/publish/supervisord.conf .
+COPY --from=publish /app/publish/cdrauthserver ./cdrauthserver
+COPY --from=publish /app/publish/gateway-mtls ./gateway-mtls
+COPY --from=publish /app/publish/gateway-tls ./gateway-tls
+
+RUN apt-get update && apt-get install -y supervisor
+RUN apt-get update && apt-get install -y sudo
+
+# Install wget for use in health checks
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+RUN sudo cp ./gateway-mtls/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
+RUN sudo update-ca-certificates
+
+# Run as non-root user
+RUN addgroup --group appgroup --gid 2000
+RUN adduser --uid 1000 --gid 2000 "appuser"
+RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /usr/bin
+RUN chown -R appuser:appgroup /usr/local
+RUN chown -R appuser:appgroup /tmp
+USER appuser:appgroup
+
+ENV ASPNETCORE_URLS=https://+:8081;https://+:8082
+#ENV CdrAuthServer__BaseUri=https://localhost:8081
+#ENV CdrAuthServer__SecureBaseUri=https://localhost:8082
+#ENV CdrAuthServer__Issuer=https://localhost:8081
+#ENV CdrAuthServer__CdrRegister__SsaJwksUri=https://localhost:7000/cdr-register/v1/jwks
+ENV CdrAuthServer__HttpsPort=8001
+ENV CdrAuthServer__HttpPort=8080
+
+# Entry point #################################################################
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.conf", "-u", "1000"]
+# ENTRYPOINT ["tail", "-f", "/dev/null"]

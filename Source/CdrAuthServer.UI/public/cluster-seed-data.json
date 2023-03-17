@@ -1,0 +1,122 @@
+{
+    "Clusters": [
+        {
+            "ScopeMatch": "bank:accounts.basic:read",
+            "DataCluster": "Account name, type and balance",
+            "Permissions": "Name of account;\nType of account;\nAccount balance;"
+        },
+        {
+            "ScopeMatch": "bank:accounts.detail:read",
+            "IncludeWhenContains": "bank:accounts.basic:read",
+            "DataCluster": "Account numbers and features",
+            "Permissions": "Account number;\nInterest rates;\nFees;\nDiscounts;\nAccount terms;\nAccount mail address;"
+        },
+        {
+            "ScopeMatch": "bank:accounts.detail:read",
+            "IncludeWhenDoesNotContain": "bank:accounts.basic:read",
+            "DataCluster": "Account balance and details",
+            "Permissions": "Name of account;\nType of account;\nAccount balance;\nAccount number;\nInterest rates;\nFees;\nDiscounts;\nAccount terms;\nAccount mail address;"
+        },
+        {
+            "ScopeMatch": "bank:transactions:read",
+            "DataCluster": "Transaction details",
+            "Permissions": "Incoming and outgoing transactions;\nAmounts;\nDates;\nDescriptions of transactions;\nWho you have sent money to and received money from;\n (e.g. their name);"
+        },
+        {
+            "ScopeMatch": "bank:regular_payments:read",
+            "DataCluster": "Direct debits and scheduled payments",
+            "Permissions": "Direct debits;\nScheduled payments;"
+        },
+        {
+            "ScopeMatch": "bank:payees:read",
+            "DataCluster": "Saved payees",
+            "Permissions": "Names and details of accounts you have saved; (e.g. their BSB and Account Number, BPAY CRN and Biller code, or NPP PayID)"
+        },
+        {
+            "ScopeMatch": "energy:accounts.basic:read",
+            "DataCluster": "Accounts and plans",
+            "Permissions": "Account and plan information;"
+        },
+        {
+            "ScopeMatch": "energy:accounts.detail:read",
+            "IncludeWhenContains": "energy:accounts.basic:read",
+            "DataCluster": "Account and plan details",
+            "Permissions": "Account type;\nFees, features, rates, and discounts;\nAdditional account users;"
+        },
+        {
+            "ScopeMatch": "energy:accounts.detail:read",
+            "IncludeWhenDoesNotContain": "energy:accounts.basic:read",
+            "DataCluster": "Account and plan details",
+            "Permissions": "Account and plan information;\nAccount type;\nFees, features, rates, and discounts;\nAdditional account users;"
+        },
+        {
+            "ScopeMatch": "energy:accounts.concessions:read",
+            "DataCluster": "Concessions and assistance",
+            "Permissions": "Concession type;\nConcession information;"
+        },
+        {
+            "ScopeMatch": "energy:accounts.paymentschedule:read",
+            "DataCluster": "Payment preferences",
+            "Permissions": "Payment and billing frequency;\nAny scheduled payment details;"
+        },
+        {
+            "ScopeMatch": "energy:billing:read",
+            "DataCluster": "Billing payments and history",
+            "Permissions": "Account balance;\nPayment method;\nPayment status;\nCharges, discounts, credits;\nBilling date;\nUsage for billing period;\nPayment date;\nInvoice number;"
+        },
+        {
+            "ScopeMatch": "energy:electricity.servicepoints.basic:read",
+            "DataCluster": "Electricity connection",
+            "Permissions": "National Meter Identifier (NMI);\nCustomer type;\nConnection point details;"
+        },
+        {
+            "ScopeMatch": "energy:electricity.servicepoints.detail:read",
+            "IncludeWhenContains": "energy:electricity.servicepoints.basic:read",
+            "DataCluster": "Electricity meter",
+            "Permissions": "Supply address;\nMeter details;\nAssociated service providers;"
+        },
+        {
+            "ScopeMatch": "energy:electricity.servicepoints.detail:read",
+            "IncludeWhenDoesNotContain": "energy:electricity.servicepoints.basic:read",
+            "DataCluster": "Electricity connection and meter",
+            "Permissions": "National Meter Identifier (NMI);\nCustomer type;\nConnection point details;\nSupply address;\nMeter details;\nAssociated service providers;"
+        },
+        {
+            "ScopeMatch": "energy:electricity.der:read",
+            "DataCluster": "Energy generation and storage",
+            "Permissions": "Generation information;\nGeneration or storage device type;\nDevice characteristics;\nDevices that can operate without the grid;\nEnergy conversion information;"
+        },
+        {
+            "ScopeMatch": "energy:electricity.usage:read",
+            "DataCluster": "Electricity usage",
+            "Permissions": "Usage;\nMeter details;"
+        },
+        {
+            "ScopeMatch": "common:customer.basic:read",
+            "DataCluster": "Name and occupation",
+            "Permissions": "Name;\nOccupation;"
+        },
+        {
+            "ScopeMatch": "common:customer.detail:read",
+            "IncludeWhenContains": "common:customer.basic:read",
+            "DataCluster": "Contact Details",
+            "Permissions": "Phone;\nEmail address;\nMail address;\nResidential address;"
+        },
+        {
+            "ScopeMatch": "common:customer.detail:read",
+            "IncludeWhenDoesNotContain": "common:customer.basic:read",
+            "DataCluster": "Name, occupation, contact details",
+            "Permissions": "Name;\nOccupation;\nPhone;\nEmail address;\nMail address;\nResidential address;"
+        },
+        {
+            "ScopeMatch": "profile|name|given_name|family_name|updated_at",
+            "DataCluster": "Name",
+            "Permissions": "Full name and title(s)"
+        },
+        {
+            "ScopeMatch": "email|email_verified|phone_number|phone_number_verified|address",
+            "DataCluster": "Contact Details",
+            "Permissions": "Phone number;\nEmail address;\nMail address;"
+        }
+    ]
+}

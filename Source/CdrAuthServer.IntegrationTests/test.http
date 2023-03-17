@@ -1,0 +1,105 @@
+
+# Use this file with "REST Client" for VSCode
+# https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+# Configure client certificates below in .vscode\settings.json
+# 
+# "rest-client.certificates": {
+#     "mock-register:7001": {
+#            "pfx": "Source\\CdrAuthServer.IntegrationTests\\Certificates\\client.pfx",
+#            "passphrase": "#M0ckDataRecipient#"
+#     },
+#     "cdr-auth-server:8082": {
+#         "pfx": "Source\\CdrAuthServer.IntegrationTests\\Certificates\\client.pfx",
+#         "passphrase": "#M0ckDataRecipient#"
+#     }
+# }
+
+###############################################################################
+# Configuration
+###############################################################################
+
+# For Dockerfile
+@CAS_TLS_BASE_URI = https://cdr-auth-server:8081
+@CAS_MTLS_BASE_URI = https://cdr-auth-server:8082
+
+# For Dockerfile.standalone
+# @CAS_TLS_BASE_URI = https://cdr-auth-server:8001
+# @CAS_MTLS_BASE_URI = https://cdr-auth-server:8001
+
+@MR_TLS_BASE_URI = https://mock-register:7000
+@MR_MTLS_BASE_URI = https://mock-register:7001
+@MR_ADMIN_BASE_URI = https://mock-register:7006
+
+@INTEGRATIONTESTS_JWKS_URI = https://cdr-auth-server-integration-tests:9998
+
+# YoYo / MyBudgetHelper
+@MR_MDR_BRAND_ID = F3F0C40B-9DF8-491A-AF1D-81CB9AB5F021
+@MR_MDR_SOFTWAREPRODUCT_ID = 6F7A1B8E-8799-48A8-9011-E3920391F713
+
+# Mock Finance Tools / MyBudgetHelper
+# @MR_MDR_BRAND_ID = FFB1C8BA-279E-44D8-96F0-1BC34A6B436F
+# @MR_MDR_SOFTWAREPRODUCT_ID = C6327F87-687A-4369-99A4-EAACD3BB8210
+
+###############################################################################
+# CdrAuthServer
+###############################################################################
+
+# @name cas_head_health
+HEAD {{CAS_TLS_BASE_URI}}/health
+
+###
+
+# @name cas_get_health
+GET {{CAS_TLS_BASE_URI}}/health
+
+###
+
+# @name cas_get_oidc
+GET {{CAS_TLS_BASE_URI}}/.well-known/openid-configuration
+
+###
+
+# @name cas_get_oidc_jwks
+GET {{CAS_TLS_BASE_URI}}/.well-known/openid-configuration/jwks
+
+###
+
+# # @name cas_post_connect_par
+# POST {{CAS_MTLS_BASE_URI}}/connect/par
+
+
+###############################################################################
+# Mock Register
+###############################################################################
+
+# @name mr_get_dr
+GET {{MR_TLS_BASE_URI}}/cdr-register/v1/all/data-recipients
+x-v: 3
+
+###
+
+# @name mr_get_loopback_mdr_client_assertion
+GET {{MR_ADMIN_BASE_URI}}/loopback/MockDataRecipientClientAssertion?iss={{MR_MDR_SOFTWAREPRODUCT_ID}}
+
+###
+
+# @name mr_get_access_token
+POST {{MR_MTLS_BASE_URI}}/idp/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id={{MR_MDR_SOFTWAREPRODUCT_ID}}&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&scope=cdr-register:read&client_assertion={{mr_get_loopback_mdr_client_assertion.response.body.*}}
+
+###
+
+# @name mr_get_dh_brands
+GET {{MR_MTLS_BASE_URI}}/cdr-register/v1/all/data-holders/brands
+x-v: 2
+Authorization: Bearer {{mr_get_access_token.response.body.$.access_token}}
+
+###
+
+# @name mr_get_mdr_ssa
+GET {{MR_MTLS_BASE_URI}}/cdr-register/v1/all/data-recipients/brands/{{MR_MDR_BRAND_ID}}/software-products/{{MR_MDR_SOFTWAREPRODUCT_ID}}/ssa
+x-v: 3
+Authorization: Bearer {{mr_get_access_token.response.body.$.access_token}}

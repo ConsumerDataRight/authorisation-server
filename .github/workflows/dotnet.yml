@@ -1,0 +1,126 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+    # Any update here needs to be done for
+    # - `pull_request` see below
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/pull_request_template.md'
+      - '.github/stale.yml'
+      - 'LICENSE'
+      - 'Postman/**'
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+    # Any update here needs to be done for
+    # - `push`see before
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/pull_request_template.md'
+      - '.github/stale.yml'
+      - 'LICENSE'
+      - 'Postman/**'
+    
+env:
+  buildConfiguration: 'Release'
+  buildRuntime: 'win-x64'
+  runEnvironment: 'Release'
+  ASPNETCORE_ENVIRONMENT: 'Release'
+  
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    ## NOTE: This workflow needs to also checkout the Mock Register for testing.
+    ##  This workflow will checkout the ConsumerDataRight/mock-register project
+
+    steps:
+    - name: Checkout Authorisation Server
+      uses: actions/checkout@v2
+      with:
+        path: ./authorisation-server
+
+    - name: Pull Mock Register Image (main)
+      if: ${{ github.ref == 'refs/heads/main' }}
+      run: |
+        docker pull consumerdataright/mock-register:main
+        docker image tag consumerdataright/mock-register:main mock-register:latest
+        
+    - name: Pull Mock Register Image (develop)
+      if: ${{ github.ref != 'refs/heads/main' }}
+      run: |
+        docker pull consumerdataright/mock-register:develop
+        docker image tag consumerdataright/mock-register:develop mock-register:latest
+
+    - name: List contents
+      if: always()
+      run: |
+        ls
+        cd authorisation-server
+        ls
+        cd ..
+
+    # Build authorisation-server image
+    - name: Build the authorisation-server image
+      run: |
+        docker build ./authorisation-server/Source --file ./authorisation-server/Source/Dockerfile.standalone --tag cdr-auth-server-standalone:latest
+    # Build authorisation-server-unit-tests image
+    - name: Build the authorisation-server-unit-tests image
+      run: |
+        docker build ./authorisation-server/Source --file ./authorisation-server/Source/Dockerfile.unit-tests --tag cdr-auth-server-unit-tests:latest
+    # Build authorisation-server-integration-tests image
+    - name: Build the authorisation-server-integration-tests image
+      run: |
+        docker build ./authorisation-server/Source --file ./authorisation-server/Source/Dockerfile.integration-tests --tag cdr-auth-server-integration-tests:latest
+    # List docker images
+    - name: List Docker images
+      run: |
+        docker images
+
+    # Run unit tests
+    - name: Run unit tests
+      run: |
+        docker-compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
+
+    # Remove unit tests
+    - name: Remove unit tests
+      run: |
+        docker-compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' down
+
+    # Run integration tests
+    - name: Run integration tests
+      run: |
+        docker-compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+
+    # Remove integration tests
+    - name: Remove integration tests
+      run: |
+        docker-compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' down
+
+    # Archive unit test results
+    - name: Archive unit test results
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: unit-test-results
+        path: ${{ github.workspace }}/authorisation-server/Source/_temp/authorisation-server-unit-tests/testresults
+
+    # Archive integration test results
+    - name: Archive integration test results
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: integration-test-results
+        path: ${{ github.workspace }}/authorisation-server/Source/_temp/authorisation-server-integration-tests/testresults
+
+    # Archive authorisation server logs
+    - name: Archive authorisation server logs
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: integration-test-artifacts
+        path: ${{ github.workspace }}/authorisation-server/Source/_temp/authorisation-server/tmp

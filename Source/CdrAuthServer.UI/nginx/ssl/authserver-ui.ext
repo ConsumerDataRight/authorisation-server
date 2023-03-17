@@ -1,0 +1,11 @@
+authorityKeyIdentifier=keyid,issuer
+basicConstraints    = CA:FALSE
+keyUsage            = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage    = critical, serverAuth
+subjectAltName      = @alt_names
+[alt_names]
+DNS.1               = authserver-ui
+DNS.2               = localhost
+DNS.3               = mock-data-holder
+DNS.4               = mock-data-holder-energy
+DNS.5               = auth-server

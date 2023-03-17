@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  mssql:
+    container_name: sql1
+    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    ports: 
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Pa{}w0rd2019
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
+      timeout: 5s
+      interval: 5s
+      retries: 20     
+
+  mock-register:
+    container_name: mock-register
+    image: mock-register
+    hostname: mock-register
+    ports: 
+      - "7000:7000"
+      - "7001:7001"
+      - "7006:7006"    
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Release
+    # NOTE - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user
+    # volumes:
+    #   - "./_temp/mock-register/tmp:/tmp"      
+    healthcheck:
+      test: wget --no-check-certificate --no-verbose --spider https://localhost:7006/health || exit 1
+      timeout: 5s
+      interval: 5s
+      retries: 50      
+    depends_on:
+      mssql:
+        condition: service_healthy      
+
+  cdr-auth-server:
+    container_name: cdr-auth-server
+    image: cdr-auth-server
+    hostname: cdr-auth-server
+    ports: 
+      - "8081:8081"
+      - "8082:8082"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # NOTE - "production" environment using Azure storage? not working? try development in meantime
+        # target_environment: production
+        target_environment: development
+   
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Release   
+      # tests need expiry of 3600
+      - CdrAuthServer__AccessTokenExpirySeconds=3600
+      - CdrAuthServer__SupportJarmEncryption=false
+      - CdrAuthServer__HeadlessMode=true
+    # NOTE - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user
+    # volumes:
+    #   - "./_temp/mock-data-holder/tmp:/tmp"      
+    healthcheck:
+      # NOTE - MDH healthcheck (8005) should be updated to consider embedded CdrAuthServer health (8001). Meanwhile, just check both 8005, 8001 and 3000 (ui)
+      test: (wget --no-check-certificate --no-verbose --spider https://localhost:8081/health)  || exit 1
+      timeout: 5s
+      interval: 5s
+      retries: 50   
+   
+    depends_on:
+      mssql:
+        condition: service_healthy
+      mock-register:
+        condition: service_healthy        
+
+  azurite:
+    container_name: azurite
+    hostname: azurite
+    image: 'mcr.microsoft.com/azure-storage/azurite'
+    ports:
+      - '10000:10000'
+      - '10001:10001'
+      - '10002:10002'
+    # healthcheck: # NOTE
+
+  getdatarecipients:
+    container_name: getdatarecipients
+    image: getdatarecipients
+    hostname: getdatarecipients
+    build:
+      context: .
+      dockerfile: Dockerfile.get-data-recipients
+    ports:
+      - "7074:7074"
+    #volumes:
+      # use test specific local.settings.json
+      # CdrAuthServer.GetDataRecipients.IntegrationTests added
+      #- ./CdrAuthServer.GetDataRecipients.IntegrationTests/local.settings.json:/src/CdrAuthServer.GetDataRecipients/bin/Debug/net6.0/local.settings.json
+    #  healthcheck: # NOTE
+    depends_on:
+      azurite: 
+        condition: service_started # NOTE - service healthy
+      mock-register: 
+        condition: service_healthy
+      cdr-auth-server: 
+        condition: service_healthy      
+
+  getdatarecipients-integration-tests:
+    container_name: getdatarecipients-integration-tests
+    image: getdatarecipients-integration-tests
+    build:
+      context: .
+      dockerfile: Dockerfile.get-data-recipients.integration-tests      
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Release
+    volumes:
+      - "./_temp/getdatarecipients-integration-tests/testresults:/testresults"
+    depends_on:
+      getdatarecipients: 
+        condition: service_started # NOTE - service healthy

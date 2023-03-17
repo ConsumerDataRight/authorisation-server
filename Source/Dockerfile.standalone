@@ -1,0 +1,91 @@
+# The "standalone" CdrAuthServer has no gateways. 
+# This image is used by the Conformance Test Suite and "standalone" CdrAuthServer is also embedded into MDH/MDHE.
+
+###############################################################################
+# Build base layer
+###############################################################################
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+
+# Install nodejs, npm and live-server, which are needed by the auth UI
+RUN apt-get update
+RUN apt-get install -y nodejs
+RUN apt-get install -y npm
+RUN npm install -g live-server
+
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8001
+EXPOSE 3000
+ENV ASPNETCORE_ENVIRONMENT=Release
+
+###############################################################################
+# Build CdrAuthServer UI layer
+###############################################################################
+FROM node:14-alpine AS ui-build
+WORKDIR /app
+
+ARG target_environment=production
+ENV PATH /app/node_modules/.bin:$PATH
+
+RUN npm install react-scripts@latest -g 
+COPY CdrAuthServer.UI/package.json package.json
+COPY CdrAuthServer.UI/package-lock.json package-lock.json
+COPY CdrAuthServer.UI/craco.config.js craco.config.js
+COPY CdrAuthServer.UI/.env.${target_environment} .env.local
+RUN npm ci
+
+COPY CdrAuthServer.UI/. .
+RUN npm run build
+
+###############################################################################
+# Build CdrAuthServer API layer
+###############################################################################
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ./ .
+
+FROM build AS publish
+COPY ./CdrAuthServer.Domain/. /app/CdrAuthServer.Domain
+COPY ./CdrAuthServer.Repository/. /app/CdrAuthServer.Repository
+COPY ./CdrAuthServer/. /app/CdrAuthServer
+COPY ./CdrAuthServer.Infrastructure/. /app/CdrAuthServer.Infrastructure
+COPY ./CdrAuthServer.API.Logger/. /app/CdrAuthServer.API.Logger
+
+WORKDIR /app/CdrAuthServer
+RUN dotnet publish -c Release -o /app/publish/cdrauthserver
+
+COPY supervisord.standalone.conf /app/publish/supervisord.standalone.conf
+
+###############################################################################
+# Build final layer
+###############################################################################
+FROM base AS final
+WORKDIR /app
+
+# Auth UI #####################################################################
+COPY --from=ui-build /app/build ./cdrauthserver-ui/ui
+
+# Auth API ####################################################################
+COPY --from=publish /app/publish/supervisord.standalone.conf .
+COPY --from=publish /app/publish/cdrauthserver ./cdrauthserver
+
+RUN apt-get update && apt-get install -y supervisor
+RUN apt-get update && apt-get install -y sudo
+
+# Install wget for use in health checks
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+# Run as non-root user
+RUN addgroup --group appgroup --gid 2000
+RUN adduser --uid 1000 --gid 2000 "appuser"
+RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /usr/bin
+RUN chown -R appuser:appgroup /usr/local
+RUN chown -R appuser:appgroup /tmp
+USER appuser:appgroup
+
+ENV ASPNETCORE_URLS=https://+:8001;http://+:8080
+
+# Entry point #################################################################
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.standalone.conf", "-u", "1000"]
+# ENTRYPOINT ["tail", "-f", "/dev/null"]

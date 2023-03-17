@@ -1,0 +1,329 @@
+# Build pipeline v2 (Containerised)
+
+resources:
+  repositories:
+  - repository: MockRegister
+    type: git
+    name: sb-mock-register
+    ref: develop    
+
+trigger:
+  - develop  
+  - main
+  - releases/*  
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: Build
+    timeoutInMinutes: 120
+    steps:
+
+      ###################################################################################################
+      # Checkout repositories
+      ###################################################################################################
+
+      - checkout: MockRegister
+      - checkout: self
+
+      ###################################################################################################
+      # Build images
+      ###################################################################################################
+
+      # Build mock-register
+      - task: Docker@2
+        displayName: Build mock-register image
+        inputs:
+          command: build 
+          Dockerfile: $(Build.SourcesDirectory)/sb-mock-register/Source/Dockerfile
+          buildContext: $(Build.SourcesDirectory)/sb-mock-register/Source
+          repository: mock-register
+          tags: latest
+
+      # Build cdr-auth-server
+      - task: Docker@2
+        displayName: Build cdr-auth-server image
+        inputs:
+          command: build
+          Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile
+          buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
+          repository: cdr-auth-server
+          tags: latest
+
+      # Build cdr-auth-server (Standalone)
+      - task: Docker@2
+        displayName: Build cdr-auth-server-standalone image
+        inputs:
+          command: build
+          Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.standalone
+          buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
+          repository: cdr-auth-server-standalone
+          tags: latest
+
+      # Build cdr-auth-server-unit-tests
+      - task: Docker@2
+        displayName: Build cdr-auth-server-unit-tests image
+        inputs:
+          command: build 
+          Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.unit-tests
+          buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
+          repository: cdr-auth-server-unit-tests
+          tags: latest
+
+      # Build cdr-auth-server-integration-tests
+      - task: Docker@2
+        displayName: Build cdr-auth-server-integration-tests image
+        inputs:
+          command: build
+          Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.integration-tests
+          buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
+          repository: cdr-auth-server-integration-tests
+          tags: latest
+
+      # Build cdr-auth-server-e2e-tests
+      - task: Docker@2
+        displayName: Build cdr-auth-server-e2e-tests image
+        inputs:
+          command: build
+          Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.e2e-tests
+          buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
+          repository: cdr-auth-server-e2e-tests
+          tags: latest
+
+      # List docker images
+      - task: Docker@2
+        displayName: List Docker images
+        condition: always()
+        inputs:
+          command: images
+
+      ###################################################################################################
+      # Unit tests 
+      ###################################################################################################
+
+      # Run cdr-auth-server-unit-tests
+      - task: DockerCompose@0
+        displayName: Unit Tests - Up
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.UnitTests.yml     
+          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
+      
+      # Remove unit tests
+      - task: DockerCompose@0
+        displayName: Unit Tests - Down
+        condition: always()
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.UnitTests.yml     
+          dockerComposeCommand: down
+
+      # Publish cdr-auth-server unit tests results
+      - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-unit-tests/testresults
+        displayName: Publish cdr-auth-server unit tests
+        condition: always()
+        artifact:  Unit tests
+
+      ###################################################################################################
+      # Login to ACR
+      ###################################################################################################
+
+      - task: Docker@2
+        displayName: Login to ACR
+        condition: always()
+        inputs:
+          command: login
+          containerRegistry: <<yourContainerRegistryName>>
+
+      ###################################################################################################
+      # Integration tests
+      ###################################################################################################
+
+      # Run Integration tests (Standalone)
+      - task: DockerCompose@0
+        displayName: Integration Tests (Standalone) - Up
+        condition: always()
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.IntegrationTests.Standalone.yml
+          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+
+      # Remove Integration tests (Standalone)
+      - task: DockerCompose@0
+        displayName: Integration Tests (Standalone) - Down
+        condition: always()
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.IntegrationTests.Standalone.yml
+          dockerComposeCommand: down
+
+      # Run trx formatter to output .MD and .CSV
+      - script: |
+          docker run \
+            -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-integration-tests-standalone/testresults/results.trx:/app/results.trx:ro \
+            -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-integration-tests-standalone/testresults/formatted/:/app/out/:rw \
+            <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone" --outputprefix "CAS-Standalone" -o out/
+        displayName: "Run trx-formatter (Standalone)"
+        condition: always()
+
+      # Publish tests
+      - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-integration-tests-standalone/testresults
+        displayName: Publish cdr-auth-server-standalone Integration tests
+        condition: always()
+        artifact: Integration tests (Standalone)
+
+      # Surface trx
+      - task: PublishTestResults@2
+        displayName: "Surface Integration Test (Standalone) TRX results to devops"
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: "VSTest" # Options: JUnit, NUnit, VSTest, xUnit, cTest
+          testResultsFiles: "**/results.trx"
+          searchFolder: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-integration-tests-standalone/testresults # Optional
+          testRunTitle: "cdr-auth-server-integration-tests-standalone" # Optional
+          publishRunAttachments: true # Optional
+
+      ###################################################################################################
+      # E2E tests
+      ###################################################################################################
+
+      # Run E2E tests (Standalone)
+      - task: DockerCompose@0
+        displayName: E2E Tests (Standalone) - Up
+        condition: always()
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.E2ETests.Standalone.yml
+          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-e2e-tests
+
+      # Remove E2E tests (Standalone)
+      - task: DockerCompose@0
+        displayName: E2E Tests (Standalone) - Down
+        condition: always()
+        inputs:
+          action: Run a Docker Compose command
+          dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.E2ETests.Standalone.yml
+          dockerComposeCommand: down
+
+      # Run trx formatter to output .MD and .CSV
+      - script: |
+          docker run \
+            -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-e2e-tests-standalone/testresults/results.trx:/app/results.trx:ro \
+            -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-e2e-tests-standalone/testresults/formatted/:/app/out/:rw \
+            <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone-E2E" --outputprefix "CAS-Standalone-E2E" -o out/
+        displayName: "Run trx-formatter (Standalone)"
+        condition: always()
+
+      # Publish tests
+      - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-e2e-tests-standalone/testresults
+        displayName: Publish cdr-auth-server-standalone E2E tests
+        condition: always()
+        artifact: E2E tests (Standalone)
+
+      # Surface trx
+      - task: PublishTestResults@2
+        displayName: "Surface E2E Test (Standalone) TRX results to devops"
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: "VSTest" # Options: JUnit, NUnit, VSTest, xUnit, cTest
+          testResultsFiles: "**/results.trx"
+          searchFolder: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server-e2e-tests-standalone/testresults # Optional
+          mergeTestResults: true # Optional
+          testRunTitle: "cdr-auth-server-E2E-tests-standalone" # Optional
+          publishRunAttachments: true # Optional
+
+      ###################################################################################################
+      # Publish images
+      ###################################################################################################
+
+      # Save docker image to TAR so it can be published
+      - task: Docker@2
+        displayName: Save cdr-auth-server-standalone image to TAR
+        inputs:
+          repository: cdr-auth-server-standalone
+          command: save
+          arguments: --output $(build.artifactstagingdirectory)/cdr-auth-server-standalone.image.tar cdr-auth-server-standalone
+          addPipelineData: false
+
+      # Publish docker images
+      - task: PublishPipelineArtifact@1
+        displayName: Publish artifacts - Container images
+        inputs:
+          path: $(build.artifactstagingdirectory)
+          artifact: Container Images
+
+      # # NOTE - volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
+      # # # Publish cdr-auth-server logs
+      # # - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/cdr-auth-server/tmp
+      # #   displayName: Publish cdr-auth-server logs
+      # #   condition: always()
+      # #   artifact: cdr-auth-server - Logs
+
+      ###################################################################################################
+      # EF migrations
+      ###################################################################################################
+
+      - task: UseDotNet@2
+        displayName: "Use .NET 6 sdk"
+        condition: always()
+        inputs:
+          packageType: sdk
+          version: "6.0.x"
+          performMultiLevelLookup: true
+
+      - task: CmdLine@2
+        displayName: "Install dotnet-ef"
+        condition: always()
+        inputs:
+          script: "dotnet tool install --global dotnet-ef"
+
+      - task: CmdLine@2
+        displayName: "Check dotnet-ef version"
+        condition: always()
+        inputs:
+          script: "dotnet-ef"
+
+      - script: |
+          cd $(Build.SourcesDirectory)/cdr-auth-server/Source/CdrAuthServer.Repository
+          dotnet ef migrations bundle --context CdrAuthServervDatabaseContext --verbose --self-contained
+          ls
+        displayName: "Run EF Migrations bundle"
+        condition: always()
+
+      - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/CdrAuthServer.Repository/efbundle
+        displayName: Publish EF Migration bundle
+        condition: always()
+        artifact: Database Migration Scripts         
+
+      ###################################################################################################
+      # Tag images and push to ACR
+      ###################################################################################################
+
+      - task: Docker@2
+        displayName: 'Re-Tag CDRAuthServer (Standalone) container image with :branch-name'
+        inputs:
+          containerRegistry: <<yourContainerRegistryName>>
+          repository: 'cdr-auth-server-standalone'
+          command: tag
+          arguments: 'cdr-auth-server-standalone <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)'
+
+      - task: Docker@2
+        displayName: 'Re-Tag CDRAuthServer (Standalone) API image with :latest (for develop branch only)'
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+        inputs:
+          containerRegistry: <<yourContainerRegistryName>>
+          repository: 'cdr-auth-server-standalone'
+          command: tag
+          arguments: 'cdr-auth-server-standalone <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server-standalone:latest'
+
+      - task: CmdLine@2
+        displayName: 'Push CDRAuthServer (Standalone) container image with :branch-name tag to ACR'
+        inputs:
+          script: 'docker push <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)' 
+
+      - task: CmdLine@2
+        displayName: 'Push CDRAuthServer (Standalone) container image with :latest tag to ACR (develop branch only)'
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+        inputs:
+          script: 'docker push <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server-standalone:latest'

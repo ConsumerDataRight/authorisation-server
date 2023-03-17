@@ -1,0 +1,162 @@
+{
+  "profiles": {
+    "CdrAuthServer": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CdrAuthServer__HttpsPort": "8001",
+        "CdrAuthServer__HttpPort": "8080"
+      },
+      "dotnetRunMessages": true
+    },
+    "MDH-CdrAuthServer": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://localhost:8001",
+        "CdrAuthServer:SecureBaseUri": "https://localhost:8002",
+        "CdrAuthServer:Issuer": "https://localhost:8001",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data.json",
+        "CdrAuthServer__HttpsPort": "8001",
+        "CdrAuthServer__HttpPort": "8080",
+        "CdrAuthServer__HeadlessMode": "false",
+        "CdrAuthServer__ScopesProfile": "banking",
+        "AccessTokenIntrospectionEndpoint": "https://localhost:8001/connect/introspect-internal",
+        "CdrAuthServer__AuthUiBaseUri": "http://localhost:3000"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    },
+    "MDHE-CdrAuthServer": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://localhost:8101",
+        "CdrAuthServer:SecureBaseUri": "https://localhost:8102",
+        "CdrAuthServer:Issuer": "https://localhost:8101",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data-energy.json",
+        "CdrAuthServer__HttpsPort": "8101",
+        "CdrAuthServer__HttpPort": "8080",
+        "CdrAuthServer__HeadlessMode": "false",
+        "CdrAuthServer__ScopesProfile": "energy",
+        "AccessTokenIntrospectionEndpoint": "https://localhost:8101/connect/introspect-internal",
+        "CdrAuthServer__AuthUiBaseUri": "http://localhost:3100",
+        "CdrAuthServer__AutoFillCustomerId": "mmoss",
+        "CdrAuthServer__BrandName": "Mock Data Holder Energy"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "publishAllPorts": true,
+      "useSSL": true
+    },
+    "MDH-CdrAuthServerWorkingWithContainers": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Release",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://mock-data-holder:8001",
+        "CdrAuthServer:SecureBaseUri": "https://mock-data-holder:8002",
+        "CdrAuthServer:Issuer": "https://mock-data-holder:8001",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data.json",
+        "CdrAuthServer__HttpsPort": "8001",
+        "CdrAuthServer__HttpPort": "8080",
+        "CdrAuthServer__ScopesProfile": "banking",
+        "AccessTokenIntrospectionEndpoint": "https://mock-data-holder:8001/connect/introspect-internal",
+        "CdrAuthServer__AuthUiBaseUri": "http://mock-data-holder:3000",
+        "ConnectionStrings__CDR_Auth_Server_RW": "Server=mssql;Database=cdr-mdh-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_Migrations_DBO": "Server=mssql;Database=cdr-mdh-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_Logging_DBO": "Server=mssql;Database=cdr-mdh-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_RequestResponse_Logging_DBO": "Server=mssql;Database=cdr-mdh-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "CdrAuthServer__HeadlessMode": "false"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    },
+    "MDHE-CdrAuthServerWorkingWithContainers": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Release",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://mock-data-holder-energy:8101",
+        "CdrAuthServer:SecureBaseUri": "https://mock-data-holder-energy:8102",
+        "CdrAuthServer:Issuer": "https://mock-data-holder-energy:8101",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data-energy.json",
+        "CdrAuthServer__HttpsPort": "8101",
+        "CdrAuthServer__HttpPort": "8180",
+        "CdrAuthServer__ScopesProfile": "energy",
+        "AccessTokenIntrospectionEndpoint": "https://mock-data-holder-energy:8101/connect/introspect-internal",
+        "CdrAuthServer__AuthUiBaseUri": "http://mock-data-holder-energy:3100",
+        "ConnectionStrings__CDR_Auth_Server_RW": "Server=mssql;Database=cdr-mdhe-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_Migrations_DBO": "Server=mssql;Database=cdr-mdhe-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_Logging_DBO": "Server=mssql;Database=cdr-mdhe-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "ConnectionStrings__CDR_Auth_Server_RequestResponse_Logging_DBO": "Server=mssql;Database=cdr-mdhe-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
+        "CdrAuthServer__HeadlessMode": "false",
+        "CdrAuthServer__AutoFillCustomerId": "mmoss",
+        "CdrAuthServer__BrandName": "Mock Data Holder Energy"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    },
+    "MDH-CdrAuthServerHeadless": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://localhost:8001",
+        "CdrAuthServer:SecureBaseUri": "https://localhost:8002",
+        "CdrAuthServer:Issuer": "https://localhost:8001",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data.json",
+        "CdrAuthServer__HttpsPort": "8001",
+        "CdrAuthServer__HttpPort": "8080",
+        "CdrAuthServer__HeadlessMode": "true"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    },
+    "MDHE-CdrAuthServerHeadless": {
+      "commandName": "Project",
+      "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:BaseUri": "https://localhost:8101",
+        "CdrAuthServer:SecureBaseUri": "https://localhost:8102",
+        "CdrAuthServer:Issuer": "https://localhost:8101",
+        "CdrAuthServer:SeedData:FilePath": "Data/customer-seed-data-energy.json",
+        "CdrAuthServer__HttpsPort": "8101",
+        "CdrAuthServer__HttpPort": "8080",
+        "CdrAuthServer__HeadlessMode": "true"
+      },
+      "externalUrlConfiguration": true,
+      "dotnetRunMessages": true
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:8080",
+      "sslPort": 8001
+    }
+  }
+}

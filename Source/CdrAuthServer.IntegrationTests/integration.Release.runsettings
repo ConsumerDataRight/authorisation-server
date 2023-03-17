@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- File name extension must be .runsettings -->
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <!-- List of environment variables we want to set as element and its value-->
+            <!-- <ASPNETCORE_ENVIRONMENT>Release</ASPNETCORE_ENVIRONMENT> -->
+            <ASPNETCORE_ENVIRONMENT>Release.Standalone</ASPNETCORE_ENVIRONMENT>
+            <HeadlessMode>false</HeadlessMode>     
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>

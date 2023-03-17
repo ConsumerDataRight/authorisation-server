@@ -1,0 +1,114 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32210.238
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer", "CdrAuthServer\CdrAuthServer.csproj", "{78665DD1-DF8B-42BE-A4EF-E515081DD34D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Artefacts", "Artefacts", "{2BA365FC-FFCC-449A-96B5-BC73D9216FB1}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		..\.gitignore = ..\.gitignore
+		docker-compose.E2ETests.Standalone.yml = docker-compose.E2ETests.Standalone.yml
+		docker-compose.E2ETests.yml = docker-compose.E2ETests.yml
+		docker-compose.IntegrationTests.Standalone.yml = docker-compose.IntegrationTests.Standalone.yml
+		docker-compose.IntegrationTests.yml = docker-compose.IntegrationTests.yml
+		Dockerfile = Dockerfile
+		Dockerfile.e2e-tests = Dockerfile.e2e-tests
+		Dockerfile.integration-tests = Dockerfile.integration-tests
+		Dockerfile.standalone = Dockerfile.standalone
+		Dockerfile.unit-tests = Dockerfile.unit-tests
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.mTLS.Gateway", "CdrAuthServer.mTLS.Gateway\CdrAuthServer.mTLS.Gateway.csproj", "{61E25B6D-F15F-4B81-8F29-7A9BB85A9D0D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.TLS.Gateway", "CdrAuthServer.TLS.Gateway\CdrAuthServer.TLS.Gateway.csproj", "{46E37BFF-E5FD-4974-AA3D-753F7BDEFB57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.Infrastructure", "CdrAuthServer.Infrastructure\CdrAuthServer.Infrastructure.csproj", "{7610AD7D-D77C-453D-9CF2-31A445927CBD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.UnitTests", "CdrAuthServer.UnitTests\CdrAuthServer.UnitTests.csproj", "{86B921A4-D074-4EF1-993C-9D20CD977626}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.Repository", "CdrAuthServer.Repository\CdrAuthServer.Repository.csproj", "{0C879BF9-BD17-4345-A1C5-6155DAA77201}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{298CB3D0-DE65-4972-A45A-4E8BF0CE2EEC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.Domain", "CdrAuthServer.Domain\CdrAuthServer.Domain.csproj", "{6F969FE7-22B0-4934-BB78-E2DC851FD6B7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.IntegrationTests", "CdrAuthServer.IntegrationTests\CdrAuthServer.IntegrationTests.csproj", "{F1146EC8-2571-4A4C-A1E2-B4173F28BF72}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.E2ETests", "CdrAuthServer.E2ETests\CdrAuthServer.E2ETests.csproj", "{FB0EAE35-BFBC-444E-B575-9093340DB740}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E43B55CB-B68B-4733-81A4-B293FD01C4F1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.API.Logger", "CdrAuthServer.API.Logger\CdrAuthServer.API.Logger.csproj", "{4938DCAE-5403-4ABF-A383-5814F6174E86}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.GetDataRecipients", "CdrAuthServer.GetDataRecipients\CdrAuthServer.GetDataRecipients.csproj", "{15414FBE-A899-4670-833A-54C9496717F6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.GetDataRecipients.IntegrationTests", "CdrAuthServer.GetDataRecipients.IntegrationTests\CdrAuthServer.GetDataRecipients.IntegrationTests.csproj", "{56C795F0-376A-4938-9552-A037AD231EFD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{78665DD1-DF8B-42BE-A4EF-E515081DD34D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78665DD1-DF8B-42BE-A4EF-E515081DD34D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78665DD1-DF8B-42BE-A4EF-E515081DD34D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78665DD1-DF8B-42BE-A4EF-E515081DD34D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61E25B6D-F15F-4B81-8F29-7A9BB85A9D0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61E25B6D-F15F-4B81-8F29-7A9BB85A9D0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61E25B6D-F15F-4B81-8F29-7A9BB85A9D0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61E25B6D-F15F-4B81-8F29-7A9BB85A9D0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46E37BFF-E5FD-4974-AA3D-753F7BDEFB57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46E37BFF-E5FD-4974-AA3D-753F7BDEFB57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46E37BFF-E5FD-4974-AA3D-753F7BDEFB57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46E37BFF-E5FD-4974-AA3D-753F7BDEFB57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7610AD7D-D77C-453D-9CF2-31A445927CBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7610AD7D-D77C-453D-9CF2-31A445927CBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7610AD7D-D77C-453D-9CF2-31A445927CBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7610AD7D-D77C-453D-9CF2-31A445927CBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86B921A4-D074-4EF1-993C-9D20CD977626}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86B921A4-D074-4EF1-993C-9D20CD977626}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86B921A4-D074-4EF1-993C-9D20CD977626}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86B921A4-D074-4EF1-993C-9D20CD977626}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C879BF9-BD17-4345-A1C5-6155DAA77201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C879BF9-BD17-4345-A1C5-6155DAA77201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C879BF9-BD17-4345-A1C5-6155DAA77201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C879BF9-BD17-4345-A1C5-6155DAA77201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F969FE7-22B0-4934-BB78-E2DC851FD6B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F969FE7-22B0-4934-BB78-E2DC851FD6B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F969FE7-22B0-4934-BB78-E2DC851FD6B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F969FE7-22B0-4934-BB78-E2DC851FD6B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1146EC8-2571-4A4C-A1E2-B4173F28BF72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1146EC8-2571-4A4C-A1E2-B4173F28BF72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1146EC8-2571-4A4C-A1E2-B4173F28BF72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1146EC8-2571-4A4C-A1E2-B4173F28BF72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB0EAE35-BFBC-444E-B575-9093340DB740}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB0EAE35-BFBC-444E-B575-9093340DB740}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB0EAE35-BFBC-444E-B575-9093340DB740}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB0EAE35-BFBC-444E-B575-9093340DB740}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4938DCAE-5403-4ABF-A383-5814F6174E86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4938DCAE-5403-4ABF-A383-5814F6174E86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4938DCAE-5403-4ABF-A383-5814F6174E86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4938DCAE-5403-4ABF-A383-5814F6174E86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15414FBE-A899-4670-833A-54C9496717F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15414FBE-A899-4670-833A-54C9496717F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15414FBE-A899-4670-833A-54C9496717F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15414FBE-A899-4670-833A-54C9496717F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56C795F0-376A-4938-9552-A037AD231EFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56C795F0-376A-4938-9552-A037AD231EFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56C795F0-376A-4938-9552-A037AD231EFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56C795F0-376A-4938-9552-A037AD231EFD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6F969FE7-22B0-4934-BB78-E2DC851FD6B7} = {298CB3D0-DE65-4972-A45A-4E8BF0CE2EEC}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B504E2EB-E273-47C9-BAF7-6229989FA3AB}
+	EndGlobalSection
+EndGlobal
