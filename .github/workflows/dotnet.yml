@@ -107,7 +107,7 @@ jobs:
       if: always()
       with:
         name: unit-test-results
-        path: ${{ github.workspace }}/authorisation-server/Source/_temp/authorisation-server-unit-tests/testresults
+        path: ${{ github.workspace }}/authorisation-server/Source/_temp/cdr-auth-server-unit-tests/testresults
 
     # Archive integration test results
     - name: Archive integration test results
@@ -115,7 +115,7 @@ jobs:
       if: always()
       with:
         name: integration-test-results
-        path: ${{ github.workspace }}/authorisation-server/Source/_temp/authorisation-server-integration-tests/testresults
+        path: ${{ github.workspace }}/authorisation-server/Source/_temp/cdr-auth-server-integration-tests-standalone/testresults
 
     # Archive authorisation server logs
     - name: Archive authorisation server logs
