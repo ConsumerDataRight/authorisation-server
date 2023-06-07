@@ -612,8 +612,7 @@ namespace CdrAuthServer.Services
             var rsaEncryption = GetEncryptionKey(clientJwk);
 
             try
-            {
-                //var tokenSigned = await _jwtTokenCreationService.CreateTokenAsync(token);
+            {                
                 _logger.LogDebug("Encrypting Id Token with Alg {Alg}, Enc {Enc}", encryptedResponseAlg, encryptedResponseEnc);
 
                 // Encode the token and add the kid
