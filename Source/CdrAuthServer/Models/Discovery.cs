@@ -100,5 +100,8 @@ namespace CdrAuthServer.Models
         [JsonProperty("authorization_encryption_enc_values_supported")]
         public IList<string>? AuthorizationEncryptionEncValuesSupported { get; set; }
 
+        [JsonProperty("mtls_endpoint_aliases")]
+        public IDictionary<string, string>? MtlsEndpointAliases { get; set; }
+
     }
 }

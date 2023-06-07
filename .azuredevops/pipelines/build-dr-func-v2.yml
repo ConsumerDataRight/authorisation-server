@@ -78,14 +78,14 @@ steps:
       dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.GetDataRecipients.IntegrationTests.yml
       dockerComposeCommand: down
 
-  # NOTE - volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
+  # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
   # # Publish mock-register logs
   # - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/mock-register/tmp
   #   displayName: Publish MockRegister logs
   #   condition: always()
   #   artifact: Mock-Register - Logs
 
-  # NOTE - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
+  # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
   # Publish mock-data-holder logs
   # - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/mock-data-holder/tmp
   #   displayName: Publish CDR Auth Server logs

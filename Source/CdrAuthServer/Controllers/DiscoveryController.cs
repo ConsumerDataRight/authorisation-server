@@ -60,6 +60,28 @@ namespace CdrAuthServer.Controllers
                 model.AuthorizationEncryptionEncValuesSupported = configOptions.AuthorizationEncryptionEncValuesSupportedList;
             }
 
+            // Switch to out the "mtls_endpoint_aliases" property in the discovery document.
+            if (configOptions.UseMtlsEndpointAliases) 
+            {
+                model.MtlsEndpointAliases = new Dictionary<string, string>
+                {
+                    { "token_endpoint", model.TokenEndpoint },
+                    { "revocation_endpoint", model.RevocationEndpoint },
+                    { "introspection_endpoint", model.IntrospectionEndpoint },
+                    { "pushed_authorization_request_endpoint", model.PushedAuthorizationEndpoint },
+                    { "registration_endpoint", model.RegistrationEndpoint },
+                    { "userinfo_endpoint", model.UserinfoEndpoint }
+                };
+
+                // Set the mTLS endpoints back to their TLS equivalents.
+                model.TokenEndpoint = model.TokenEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+                model.RevocationEndpoint = model.RevocationEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+                model.IntrospectionEndpoint = model.IntrospectionEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+                model.PushedAuthorizationEndpoint = model.PushedAuthorizationEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+                model.RegistrationEndpoint = model.RegistrationEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+                model.UserinfoEndpoint = model.UserinfoEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
+            }
+
             return new JsonResult(model);
         }
     }

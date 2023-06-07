@@ -49,6 +49,22 @@
       ],
       "DangerousAcceptAnyServerCertificateValidator": true
     },
+    // Authorise
+    {
+      "DownstreamPathTemplate": "/connect/authorize-confirm",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 8001
+        }
+      ],
+      "UpstreamPathTemplate": "/connect/authorize-confirm",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "DangerousAcceptAnyServerCertificateValidator": true
+    },
     // JWKS
     {
       "DownstreamPathTemplate": "/.well-known/openid-configuration/jwks",

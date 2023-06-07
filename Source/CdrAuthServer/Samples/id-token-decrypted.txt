@@ -1,0 +1,60 @@
+﻿From Auth Response:
+
+eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00iLCJraWQiOiJlMmM2ZWFmZjdmYWQwODFjNzhiMjJkNjNiYmI1NjdlODYwNzBlNTFlYjE0NzZhYmNhNmEyMzNiY2U4Y2ExNGJhIn0.K5cfbeSCR9kIzv9FHKD_frvPYzMnbxgJKq-DK21bgBZtX1oz-mNo7bFnvsW7IroQseama8RBH0ZFMSizB2OKPu5-Y5OIipa7xXTrFFaC2mTSib8wgXjx8sJ8W1yh3zo2FNA7gyuCEBL6mZlHP3aI1E1etxLGj_bzWnmjWcjGK1tbTIrqaytVFKCYLgypLxqpJhOjMe1mK5hWVg6B3Zl6d-B_Px-LPSpwvdENYOeNYkWFFbWF8d1myavFVWtN0VPtjZQdz_DVOpwxgUExifKD5G98qzf7O_DtwcF1_pLnVa6EcbXRebFNhN_f4ShAvkIZupVEMU3ayxuz7IjjhKydzw.MQ86ytxDbSZ7YUJM.caC3qsqNC-6PXr1FYWhgg6CdCm2Og4lQny1AbEqgGw_YwMfMtINUlZg7qxDQ2tviwF2sZ9FmascJmIRwHI_3BumLZ-n-NO8v1PcDMprAKqROY5gpQjHCcSSUdNZjsGn2bHNJ2LsoKNpgmqWGsOnOQpeMtfl1q9agV0P6iXMWl3nGmN3r1jNoxzWddx0WFSixIO6nO16njOoN4x0lS7AUK9rBUiu0BBWhHV7Bf82qAu8MGM-rahNBKuiwtGEeORvQrHdk45Un1WH4go7cVmIQaqIlP0O7nwoKFUzz2emAgRtYFa9hlMv-v-Nwx0dStdkI6h86pSO-gzZqWrgnt201d8dYDflZrWwdkrfA3rcneK50Cq0WV3iQqCt4RBPrc3U0F5lrG4RTkWzshDNUpQtBQNP8pNDxZ3RWcl-c9sF75qPo5DACTKI9qR21_CFWLGPBsXKii6oClOqfcVEvhmWZOhviBhwPrhUNhzKR5MuMPeOaxtXv25JF4MGMOTSYIPlM6lH9AQY7L1xGA76VZALUYZ_UVkmSjyPsg-3V0kSI3y-gQA6YX8sweMWQQNZZq6-HzWDnyiSGlLYzhshT0DxB80NUJmhwRhMFkWc64sIDzpPyu5QNv9JVSpr0PQYnc4-O6EhrYTx7YF4vStcPTRYIa7Z9txZbf77uWTm3t0eCCXnZOENB7kn9HhYUYMk1H2ZpuX1ajQksTdUiVJgK_kq3ZDaxNNFuftXLqIvTBkQgb2cRcOUyv12bothE63TkpT5kyj2aNR89rzLs7KyCAkAJ4ovHZ4xdyg3ufJ-MRQtQB2HIyP5KxPVK-yL0BUKgsNtCDin48_04BMVYvWNBeTG5KP_-ZvTp5JPf3f7PmfkyR17BXpG7xw6_a_hqBjwJW1PVZbNv7jBrWYMtiAxcq7gMC7OcTyyj_o7MV0Nag7IfRFjgvm6C0bWCES7ElmGlYuGKHkTHs5Xp9WufolxMOi73aEk_gm-JCkdt3xkk0x8FbffUCUy432UoSeGFGQT8gZY6IAS_1ERT3cfTLJdaTIZvNmwh3Axo-enGvdTd94mSL59HNba4VMCiywZI9QjeMAHCKluIch56x5kGt7v04kUiWeoEvPFb5VoVsIQ9oUpFKhkBKnCA8VVOUiy1iAafs0sIuqtdWZse3IYhkyMrYrkvfa7ULMIE8dm9yly-eZRGouegKMfftA81mg9icSFgLoaFEdP6XcdTSzx8Nom5Yn6x_nJyaLHuUh56Pj7U1y3D1fT95SuaJ6wzW7QpFmify5t2YmDQswitqCsWNGzY5kP_Vn4JmCZQm6mPyj16fMfvR-W0rA9Yy_Z28Mv4uyNu1XexRtR3Doi4Pq5YeR5T7lRw8HaUWBxIlGXi3Va55u8SQ2RY1HgcJMCh5KKhXvo_YuCiyPZmT3IigFiZQSLJKStTlNUPwa-41X53QWpUfdD-yL9mvf4obfJkkp2PppTCAH6X3AM70VFLv8FeO49hd0iNLzzCFXkFCrz8fNS3IMtdOcz2OUTRrjzX-_E8_2pA2bJoXYtbHDgLkGfr2Y86GKo5jyb4CO8z31t64SWPyPx8-kACUKtN7NBOs4-zQdtDix4TlyygKdQcOw.SzgN44RtRr_hE0B-yymF9w
+
+{
+  "alg": "PS256",
+  "kid": "7C5716553E9B132EF325C49CA2079737196C03DB",
+  "x5t": "fFcWVT6bEy7zJcScogeXNxlsA9s",
+  "typ": "JWT"
+}.{
+  "nbf": 1664515650,
+  "exp": 1664515950,
+  "iss": "https://dh-bank.idp.cdrsandbox.gov.au",
+  "aud": "fd5dd6ea-aef0-470d-b176-ac6580782cb9",
+  "nonce": "95c3a4b4-e5e4-4f50-bc2b-1fd495919785",
+  "iat": 1664515650,
+  "c_hash": "8eFfjcehN5qNUG6nhHiyug",
+  "s_hash": "P4lOsp0afGriPj3EJkTeMQ",
+  "auth_time": 1664515650,
+  "idp": "local",
+  "sub": "mYnxnN7keNe/eiR2j9OZ+axM5WUUa5IdTUEBxyqQWUToZbS9MlaxYYPEhWOhJUQl",
+  "acr": "urn:cds.au:cdr:2",
+  "amr": [
+    "pwd"
+  ]
+}.[Signature]
+
+
+
+From Token Response:
+
+eyJhbGciOiJQUzI1NiIsImtpZCI6IjdDNTcxNjU1M0U5QjEzMkVGMzI1QzQ5Q0EyMDc5NzM3MTk2QzAzREIiLCJ4NXQiOiJmRmNXVlQ2YkV5N3pKY1Njb2dlWE54bHNBOXMiLCJ0eXAiOiJKV1QifQ.eyJuYmYiOjE2NjQ1MTU0OTgsImV4cCI6MTY2NDUxNTc5OCwiaXNzIjoiaHR0cHM6Ly9kaC1iYW5rLmlkcC5jZHJzYW5kYm94Lmdvdi5hdSIsImF1ZCI6ImZkNWRkNmVhLWFlZjAtNDcwZC1iMTc2LWFjNjU4MDc4MmNiOSIsIm5vbmNlIjoiMmI2NTFkNmItMTk4OC00OTAyLWFjZjUtMDE1M2Y2ZTRmMTVhIiwiaWF0IjoxNjY0NTE1NDk4LCJhdF9oYXNoIjoiN2p4aTNQQm1SZ3VuVFppT3o3aDlFQSIsInNfaGFzaCI6IjZXVDhtRkxiRk45YlhoODRELTFLdXciLCJhdXRoX3RpbWUiOjE2NjQ1MTU0OTcsImlkcCI6ImxvY2FsIiwiY2RyX2FycmFuZ2VtZW50X2lkIjoiM2MzZDhmNzMtNDY3MS00MDI1LWJhMjktM2RlMjhiMjVmNzNmIiwic3ViIjoibVlueG5ON2tlTmUvZWlSMmo5T1orYXhNNVdVVWE1SWRUVUVCeHlxUVdVVG9aYlM5TWxheFlZUEVoV09oSlVRbCIsIm5hbWUiOiJLYW1pbGxhIFNtaXRoIiwiZmFtaWx5X25hbWUiOiJTbWl0aCIsImdpdmVuX25hbWUiOiJLYW1pbGxhIiwidXBkYXRlZF9hdCI6MTYxNDYyMzQwMCwiYWNyIjoidXJuOmNkcy5hdTpjZHI6MiIsImFtciI6WyJwd2QiXX0.LL5Kho3XRedNNMwgf_GNGnj6LV9UxcTBIJ_ctpBD4an5znv5Ww-ciJMxxQs5w5dhPwmuiiaNK_7WTZwVa7YG5dI0KcFYbpXjl3GibaarzAt_3cyAQ7tmQDYvMPvFexrFo_ZZt-0LEUr8NnhK5ySWi6MPE5jRv3Hh1QKV9wafmFStfQZc8B3LppivOKGYGoIJzwyTCDTLhFlHejeQZXUi_w6sZ9ueqT7HKmMgUvuf7bv-wvrxg5b4L4LkKoJyipV28k31WU9ttp0t9STHBDrS10_KEJRrMtNQSuuwW6E61n1qH5ANhlZ4CwEYLYA-KLSRjkRupBeNvTDgN1Usi8aj4dgh61sshMMi-JWJFLBp4UCaknCjx3tYm-uXlT3fgMK-GAm3x3lR4PekmoOaxl2KtHj24UcrOIe8sTZB8OtZ6re6BYkKQYH4eFkPAGGx2Xd32n4qSwtp4AN19QLqTOdjE4I1PDMbyLyCPcr9MQFFyaBcy0qlQYYNb-k63PsLEkWI
+
+{
+  "alg": "PS256",
+  "kid": "7C5716553E9B132EF325C49CA2079737196C03DB",
+  "x5t": "fFcWVT6bEy7zJcScogeXNxlsA9s",
+  "typ": "JWT"
+}.{
+  "nbf": 1664515498,
+  "exp": 1664515798,
+  "iss": "https://dh-bank.idp.cdrsandbox.gov.au",
+  "aud": "fd5dd6ea-aef0-470d-b176-ac6580782cb9",
+  "nonce": "2b651d6b-1988-4902-acf5-0153f6e4f15a",
+  "iat": 1664515498,
+  "at_hash": "7jxi3PBmRgunTZiOz7h9EA",
+  "s_hash": "6WT8mFLbFN9bXh84D-1Kuw",
+  "auth_time": 1664515497,
+  "idp": "local",
+  "cdr_arrangement_id": "3c3d8f73-4671-4025-ba29-3de28b25f73f",
+  "sub": "mYnxnN7keNe/eiR2j9OZ+axM5WUUa5IdTUEBxyqQWUToZbS9MlaxYYPEhWOhJUQl",
+  "name": "Kamilla Smith",
+  "family_name": "Smith",
+  "given_name": "Kamilla",
+  "updated_at": 1614623400,
+  "acr": "urn:cds.au:cdr:2",
+  "amr": [
+    "pwd"
+  ]
+}.

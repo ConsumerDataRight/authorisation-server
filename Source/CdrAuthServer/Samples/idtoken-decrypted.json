@@ -1,0 +1,34 @@
+// eyJhbGciOiJQUzI1NiIsImtpZCI6IjdDNTcxNjU1M0U5QjEzMkVGMzI1QzQ5Q0EyMDc5NzM3MTk2QzAzREIiLCJ4NXQiOiJmRmNXVlQ2YkV5N3pKY1Njb2dlWE54bHNBOXMiLCJ0eXAiOiJKV1QifQ.eyJuYmYiOjE2NjIwOTU3OTIsImV4cCI6MTY2MjA5NjA5MiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6ODAwMSIsImF1ZCI6IjllMTg1M2E0LTYxYTYtNDZiZi1hMzk3LWJlNTIzYjg1NDE1YyIsIm5vbmNlIjoiZmQ1MGM2M2MtMThlOS00MTVkLTg0NDUtZmRhNjcwNjFkZjUyIiwiaWF0IjoxNjYyMDk1NzkxLCJhdF9oYXNoIjoiT0RleWo4d1FtLWJRZl9DYlhfX3RMZyIsInNfaGFzaCI6ImNqVzZURXU0b3VpTHZZSEZUWWVOOXciLCJhdXRoX3RpbWUiOjE2NjIwOTU3ODMsImlkcCI6ImxvY2FsIiwic2hhcmluZ19leHBpcmVzX2F0IjoxNjkzNjMxNzg0LCJjZHJfYXJyYW5nZW1lbnRfaWQiOiJjYWEwM2UzOC0zNDQ2LTQyZTAtYmZjYy03MDY2OGNjYTAyOWEiLCJzdWIiOiJtWW54bk43a2VOZS9laVIyajlPWitheE01V1VVYTVJZFRVRUJ4eXFRV1VUb1piUzlNbGF4WVlQRWhXT2hKVVFsIiwibmFtZSI6IkthbWlsbGEgU21pdGgiLCJmYW1pbHlfbmFtZSI6IlNtaXRoIiwiZ2l2ZW5fbmFtZSI6IkthbWlsbGEiLCJ1cGRhdGVkX2F0IjoxNjE0NjIzNDAwLCJhY3IiOiJ1cm46Y2RzLmF1OmNkcjoyIiwicmVmcmVzaF90b2tlbl9leHBpcmVzX2F0IjoxNjkzNjMxNzg0LCJhbXIiOlsicHdkIl19.KfvuS0LWrHB02hImq6doQU6LSAKb1KyZ-e2WmJxcC-lE0n4Q_Ru-Y81JjVSyOu7A8dy7mX1NvSpMKeuszEoLqmVmORQurWdDX9pctBgyW3eLltweo1wP25bYCh-M9Z1GfUYUSrMDomY59ZqxtaCcg5mOD9GppYopp5R8RVQMpWGjjNVUW3Iao9fsqAX8mHFDs8IZ-k02ZFNUhMvAlh5asZrjc3Ob5XsK2OsdYP8anoULgMRgoyQJ9oPmqPNNEmkfuJMPjVZzo4CsM--kwwkHEVWLlR5vH_EQ2KFXO2VAMYI3roYIFturZ6GJ8sC-LUWNuypPgtHVCSfjbi5yRGjZ-RjpOCEbMTLrVZe0m3PaXElVe3xKg1HDX8skCXXCUIJMPd8K059C-FNA-7DOcOU2SPGapVfr_oVD04h2B44YGwaJ3TvsyiroKKK6OJGeeoMFntdQMyfiVNO5VynbrrkUId47E8Ukww13EG2-2gSvc0HRosHZpzpDjvp6buu3K_gl
+
+{
+  "alg": "PS256",
+  "kid": "7C5716553E9B132EF325C49CA2079737196C03DB",
+  "x5t": "fFcWVT6bEy7zJcScogeXNxlsA9s",
+  "typ": "JWT"
+}.
+{
+  "nbf": 1662095792,
+  "exp": 1662096092,
+  "iss": "https://localhost:8001",
+  "aud": "9e1853a4-61a6-46bf-a397-be523b85415c",
+  "nonce": "fd50c63c-18e9-415d-8445-fda67061df52",
+  "iat": 1662095791,
+  "at_hash": "ODeyj8wQm-bQf_CbX__tLg",
+  "s_hash": "cjW6TEu4ouiLvYHFTYeN9w",
+  "auth_time": 1662095783,
+  "idp": "local",
+  "sharing_expires_at": 1693631784,
+  "cdr_arrangement_id": "caa03e38-3446-42e0-bfcc-70668cca029a",
+  "sub": "mYnxnN7keNe/eiR2j9OZ+axM5WUUa5IdTUEBxyqQWUToZbS9MlaxYYPEhWOhJUQl",
+  "name": "Kamilla Smith",
+  "family_name": "Smith",
+  "given_name": "Kamilla",
+  "updated_at": 1614623400,
+  "acr": "urn:cds.au:cdr:2",
+  "refresh_token_expires_at": 1693631784,
+  "amr": [
+    "pwd"
+  ]
+}
+
+

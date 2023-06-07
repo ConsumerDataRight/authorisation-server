@@ -73,10 +73,11 @@ namespace CdrAuthServer.Controllers
             };
 
             if (configOptions.HeadlessMode)
-            {                
-                userInfo.FamilyName = "Smith";
-                userInfo.GivenName = "Kamilla";
-                userInfo.Name = "Kamilla Smith";
+            {
+                var user = new HeadlessModeUser();
+                userInfo.FamilyName = user.FamilyName;
+                userInfo.GivenName = user.GivenName;
+                userInfo.Name = user.Name;
 
                 return new JsonResult(userInfo);
             }

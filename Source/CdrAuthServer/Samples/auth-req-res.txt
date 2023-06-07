@@ -1,0 +1,44 @@
+URL:
+https://dh-bank.idp.test.cdrsandbox.gov.au/connect/authorize?client_id=2a76a8dc-6949-45d0-9dfb-d0ae3759859b&scope=openid profile common:customer.basic:read bank:accounts.basic:read bank:transactions:read cdr:registration&response_type=code id_token&request_uri=urn:mdh:f255f8eb-cfb0-42c6-8ea4-f2368efbca04
+
+Form Post (HTML):
+<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge' /><base target='_self'/></head><body><form method='post' action='https://dr.test.cdrsandbox.gov.au/consent/callback'>
+<input type='hidden' name='code' value='9A83D704933E117BB7A17239B98F547E5F93E6BB8D5AD5CF53E327E0DD74C9C8' />
+<input type='hidden' name='id_token' value='eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00iLCJraWQiOiJlMmM2ZWFmZjdmYWQwODFjNzhiMjJkNjNiYmI1NjdlODYwNzBlNTFlYjE0NzZhYmNhNmEyMzNiY2U4Y2ExNGJhIn0.unQ15wrdCZY8TsYwpmLPL-FhZH8Vc66V0asNVb6djIYXG_bf26uXrKTangiTuD7xYbR2RzOUyHXnQXzu4WiH1CUAVlYKe7cNvla_AyKuUCMz8j3IxjvMfjbneOI8nFplkQEQak1_zXUAgvITGjDS9VLbpsiThMbDoh_rdFtVtstmU-fRE6ar4XDQw3euqZqKJ65Dh_1nZIJgsYJmGSZv2MyJ5MwNLNIPM2XPwttY62nFN_X0Kd7zxn8Ev2ggmrg2AGjL3gJCccwXgasNUtHXxkAg4-ROcPfcMbC-Wwe_sxoS_IHdEO_Pv1VZ2PuW4QfzPEwXx-jGPs024tcHS9Ukuw.5DKnj-ePTmooDw8_.tDzcmk5BQmUy10AWaFmOQ5Fh662ftvFmxqmWFhF3KJT_1N17u-_cgdyBakvFxA6IxeTUSSWTKT-KoJnoEEihOScZ8lgBy4fEfQVLdflc-OYEonZ80rsuuPFldceFXMMrTnOSe2IbaDzhCSJZh_1T6fspDLcwLtvV_iaCXtL_R9QmeUtP6OYTQzBWZ_Q6tQwdqHLeecw9yEPMDjR-GJW3-hYYNoU_lfsgXxrGw8Xxi5I4Ir3_uSbKYY6GA7hnPtGJVkzBfXu_gVbHCf-kaeG0T4-zuG9N52aei5k9CWwKt8tVxE9kPTXDquj7GWEw8oZupzU1tfprPod4UBkbjn694vIi4xhKw67tdjKGE3xdW9ot-WZQA4HzjgsPBsDoHuzy2CXb7gS4q9B0zNnpYQQpVutd0ldc2eZ1_WJPnbHftjsTcgYNgiJjxnhkQv7FFF7DZFKNEU7EAgpR9po11G4V2JDW_dsLWw1UQm9juFxcpOOHvPzXMP2dRdPVsSWOQ2nIt3Af0wUr1mYLct-ye6NWzPV17KEbpC5qMdUxs3SA4TVxpZNCLESi6XGeGfIKk9D5dTO62kYtM_soZMYHm8Iuzj3UYd7-wvbHHtZp-mtaBftpgGB5Q6utVt595a2tdFyOWO3xjXGZstOPJ1xq-BADzQq45HUfWSF3-bk_xX6QVG61Ruqh-xCpsUVx3m_RkipuI11HN5QGuOtF1SwOJTdWOPycdR4N3no_AltxlyzrNJXCbfArifpg-ZfdOr6jBo0DKfFL8PeFCxmWCzMQqI7zLXi47-q2kJi0kl5eHcQa7p62blDZGFxM22M1hh6nUQ32TBPAtpSmCDGTvhYJZpDk9eQoN3DEQtwdaFicm_ZpOxbqY9Yop5lS8H9n9odU_NVRXCC-V5LnhfNck9xJnZZBOHA-0FJwRCLo2QkTwfpMk9Rj-Q6ThvVpLIMihBzwgGzHR3oCKgAZNVESzxgonIFvc6gDUe7Y4_YebgiKC7lXnUyGOdkOSt0O0zsh49qMLEbPV6qKbwNfFuERd8Ld9uLoznNx-4M2afHBPPKpfHxs6T4-kN02qhM6fRFiB3pJhjTWlub2assRsh_q8Vb8MRltL6DyJCvNJDlB3NhnfcPL8UesWu8vv2hCdoOR94TtH6zlVNFYtAFY2m0_njtnx_SWgpjzf6Lf5qmHjp5poL9B0WG4nUaKkSK7hAuzJvk18GzQBEIBH-OvvYplB-Q9DzYZOtOHmrbPfrWrqgvtDyln1VmKniKH8iHVkGvGqH5BaC3lBKystrfT37Y0rYm3xj4j89EUXm-sG1lIbqQfIBiiQzORfWi2qSmm-6-L8JMNWobqbkHPild_h2MQIE34xch7Bl2vDvRQdUWNnssGTmbxXCwiIAkEl0FXsdcEKkiFwyltWOoNhS5wYumdFXp6dDBNHrs_BqZYe6ob3Szmr5kHJQV_qN11Xvnb-ceh2iTMFeOd27GkOwX4aGyEoop8fXOb5ReEU8Yo6eYZLVhmIp212TZJZZjWw98W5UR2kLyX90V_Ygf9hSemrUx0D5bxsF55cLMKgjscb5l1HkZmf3olNeVwbjlrsFxxWWUDQ1ysCRgiP4fFvScVskU_012_zCM.63hirWGCCuBCsLj7asTCFA' />
+<input type='hidden' name='scope' value='openid profile common:customer.basic:read bank:accounts.basic:read bank:transactions:read cdr:registration' />
+<input type='hidden' name='state' value='7f6e18b8-467f-4a71-bb99-1ee389a5bf0a' />
+<noscript><button>Click to continue</button></noscript></form><script>window.addEventListener('load', function(){document.forms[0].submit();});</script></body></html>
+
+HTTP/1.1 200 OK
+Content-Type: text/html;charset=UTF-8
+Cache-Control: no-cache, no-store
+Pragma: no-cache
+
+<html>
+ <head><title>Submit This Form</title></head>
+ <body onload="javascript:document.forms[0].submit()">
+  <form method="post" action="https://client.example.com/cb">
+    <input type="hidden" name="response"
+     value="eyJraWQiOiJsYWViIiwiYWxnIjoiRVMyNTYifQ.eyAgImlzcyI6ICJodHRw
+     czovL2FjY291bnRzLmV4YW1wbGUuY29tIiwgICJhdWQiOiAiczZCaGRSa3F0MyIsIC
+     AiZXhwIjogMTMxMTI4MTk3MCwgICJhY2Nlc3NfdG9rZW4iOiAiMllvdG5GWkZFanIx
+     ekNzaWNNV3BBQSIsICAic3RhdGUiOiAiUzhOSjd1cWs1Zlk0RWpOdlBfR19GdHlKdT
+     ZwVXN2SDlqc1luaTlkTUFKdyIsICAidG9rZW5fdHlwZSI6ICJiZWFyZXIiLCAgImV4
+     cGlyZXNfaW4iOiAzNjAwLCAgInNjb3BlIjogImV4YW1wbGUifQ.g_96IM2t_6Dazm1
+     Jpb2gbO2EXe5IKTw2bYS7l9Y1RI8HbNPYN5EdNjxcWeL5LTQaUAZ2PtJoHbTdjMvNa
+     3xbVg"/>
+    </form>
+   </body>
+  </html>  
+
+POST /cb HTTP/1.1
+Host: client.example.org
+Content-Type: application/x-www-form-urlencoded
+
+response=eyJraWQiOiJsYWViIiwiYWxnIjoiRVMyNTYifQ.eyAgImlzcyI6ICJodHRw
+czovL2FjY291bnRzLmV4YW1wbGUuY29tIiwgICJhdWQiOiAiczZCaGRSa3F0MyIsICAi
+ZXhwIjogMTMxMTI4MTk3MCwgICJhY2Nlc3NfdG9rZW4iOiAiMllvdG5GWkZFanIxekNz
+aWNNV3BBQSIsICAic3RhdGUiOiAiUzhOSjd1cWs1Zlk0RWpOdlBfR19GdHlKdTZwVXN2
+SDlqc1luaTlkTUFKdyIsICAidG9rZW5fdHlwZSI6ICJiZWFyZXIiLCAgImV4cGlyZXNf
+aW4iOiAzNjAwLCAgInNjb3BlIjogImV4YW1wbGUifQ.g_96IM2t_6Dazm1Jpb2gbO2EX
+e5IKTw2bYS7l9Y1RI8HbNPYN5EdNjxcWeL5LTQaUAZ2PtJoHbTdjMvNa3xbVg

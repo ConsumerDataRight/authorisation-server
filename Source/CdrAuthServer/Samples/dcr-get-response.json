@@ -1,0 +1,39 @@
+{
+  "client_id": "2a76a8dc-6949-45d0-9dfb-d0ae3759859b",
+  "client_id_issued_at": 1658464522,
+  "client_name": "Sandbox Data Recipient Software Product",
+  "client_description": "A product to interact with the ecosystem",
+  "client_uri": "https://dr.test.cdrsandbox.gov.au",
+  "legal_entity_id": "18b75a76-5821-4c9e-b465-4709291cf0f4",
+  "legal_entity_name": "Sandbox Data Recipient",
+  "org_id": "ffb1c8ba-279e-44d8-96f0-1bc34a6b436f",
+  "org_name": "SMDR",
+  "redirect_uris": [
+    "https://dr.test.cdrsandbox.gov.au/consent/callback"
+  ],
+  "logo_uri": "https://cdrsandbox.gov.au/logo192.png",
+  "tos_uri": "https://dr.test.cdrsandbox.gov.au/tos",
+  "policy_uri": "https://dr.test.cdrsandbox.gov.au/policy",
+  "jwks_uri": "https://dr.test.cdrsandbox.gov.au/jwks",
+  "revocation_uri": "https://dr.test.cdrsandbox.gov.au/revocation",
+  "recipient_base_uri": "https://dr.test.cdrsandbox.gov.au",
+  "token_endpoint_auth_method": "private_key_jwt",
+  "token_endpoint_auth_signing_alg": "PS256",
+  "grant_types": [
+    "authorization_code",
+    "client_credentials",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code id_token"
+  ],
+  "application_type": "web",
+  "id_token_signed_response_alg": "PS256",
+  "id_token_encrypted_response_alg": "RSA-OAEP",
+  "id_token_encrypted_response_enc": "A256GCM",
+  "request_object_signing_alg": "PS256",
+  "software_statement": "eyJhbGciOiJQUzI1NiIsImtpZCI6IkY0RUEyOTlDNjA3OTQ3RTQ1OUFDNDdFNjlGNzI4OUYxNzRCNUI0REYiLCJ0eXAiOiJKV1QifQ.ewogICJsZWdhbF9lbnRpdHlfaWQiOiAiMThiNzVhNzYtNTgyMS00YzllLWI0NjUtNDcwOTI5MWNmMGY0IiwKICAibGVnYWxfZW50aXR5X25hbWUiOiAiU2FuZGJveCBEYXRhIFJlY2lwaWVudCIsCiAgImlzcyI6ICJjZHItcmVnaXN0ZXIiLAogICJpYXQiOiAxNjU4NDY0NTIwLAogICJleHAiOiAxNjU4NDY1MTIwLAogICJqdGkiOiAiZTMwZmM4Mjc1N2NlNGNmYWFlODIyODYxNjAzNzFjNjIiLAogICJvcmdfaWQiOiAiZmZiMWM4YmEtMjc5ZS00NGQ4LTk2ZjAtMWJjMzRhNmI0MzZmIiwKICAib3JnX25hbWUiOiAiU01EUiIsCiAgImNsaWVudF9uYW1lIjogIlNhbmRib3ggRGF0YSBSZWNpcGllbnQgU29mdHdhcmUgUHJvZHVjdCIsCiAgImNsaWVudF9kZXNjcmlwdGlvbiI6ICJBIHByb2R1Y3QgdG8gaW50ZXJhY3Qgd2l0aCB0aGUgZWNvc3lzdGVtIiwKICAiY2xpZW50X3VyaSI6ICJodHRwczovL2RyLnRlc3QuY2Ryc2FuZGJveC5nb3YuYXUiLAogICJyZWRpcmVjdF91cmlzIjogWwogICAgImh0dHBzOi8vZHIudGVzdC5jZHJzYW5kYm94Lmdvdi5hdS9jb25zZW50L2NhbGxiYWNrIgogIF0sCiAgImxvZ29fdXJpIjogImh0dHBzOi8vY2Ryc2FuZGJveC5nb3YuYXUvbG9nbzE5Mi5wbmciLAogICJ0b3NfdXJpIjogImh0dHBzOi8vZHIudGVzdC5jZHJzYW5kYm94Lmdvdi5hdS90b3MiLAogICJwb2xpY3lfdXJpIjogImh0dHBzOi8vZHIudGVzdC5jZHJzYW5kYm94Lmdvdi5hdS9wb2xpY3kiLAogICJqd2tzX3VyaSI6ICJodHRwczovL2RyLnRlc3QuY2Ryc2FuZGJveC5nb3YuYXUvandrcyIsCiAgInJldm9jYXRpb25fdXJpIjogImh0dHBzOi8vZHIudGVzdC5jZHJzYW5kYm94Lmdvdi5hdS9yZXZvY2F0aW9uIiwKICAicmVjaXBpZW50X2Jhc2VfdXJpIjogImh0dHBzOi8vZHIudGVzdC5jZHJzYW5kYm94Lmdvdi5hdSIsCiAgInNvZnR3YXJlX2lkIjogImM2MzI3Zjg3LTY4N2EtNDM2OS05OWE0LWVhYWNkM2JiODIxMCIsCiAgInNvZnR3YXJlX3JvbGVzIjogImRhdGEtcmVjaXBpZW50LXNvZnR3YXJlLXByb2R1Y3QiLAogICJzY29wZSI6ICJvcGVuaWQgcHJvZmlsZSBjb21tb246Y3VzdG9tZXIuYmFzaWM6cmVhZCBjb21tb246Y3VzdG9tZXIuZGV0YWlsOnJlYWQgYmFuazphY2NvdW50cy5iYXNpYzpyZWFkIGJhbms6YWNjb3VudHMuZGV0YWlsOnJlYWQgYmFuazp0cmFuc2FjdGlvbnM6cmVhZCBiYW5rOnJlZ3VsYXJfcGF5bWVudHM6cmVhZCBiYW5rOnBheWVlczpyZWFkIGVuZXJneTphY2NvdW50cy5iYXNpYzpyZWFkIGVuZXJneTphY2NvdW50cy5kZXRhaWw6cmVhZCBlbmVyZ3k6YWNjb3VudHMuY29uY2Vzc2lvbnM6cmVhZCBlbmVyZ3k6YWNjb3VudHMucGF5bWVudHNjaGVkdWxlOnJlYWQgZW5lcmd5OmJpbGxpbmc6cmVhZCBlbmVyZ3k6ZWxlY3RyaWNpdHkuc2VydmljZXBvaW50cy5iYXNpYzpyZWFkIGVuZXJneTplbGVjdHJpY2l0eS5zZXJ2aWNlcG9pbnRzLmRldGFpbDpyZWFkIGVuZXJneTplbGVjdHJpY2l0eS5kZXI6cmVhZCBlbmVyZ3k6ZWxlY3RyaWNpdHkudXNhZ2U6cmVhZCBjZHI6cmVnaXN0cmF0aW9uIgp9.dnAL9dnTZ5I2cuxlnrGHFdbuF-r_vOBVJD8WSTwlc3l0RMCJGr-lZjOTaNfklGqeC2JO6wZ7iB32U64RIXMGTuYWPGFCEuV6mWATqxFpGBYXhXdqwnrRdA9oeRdqC1TkyIQ878lC7aYSOl6tTkisWF01c9s2ilSwr0gAP--X_60ZVdkwcwScZQ6jQQMTod_wM-3-OMXFq9gkIfuAUUiWDg-CPqN7az5M1jMCCuS0wEGtcw30aOF3ikYVngna642NP1oGfHSOb2zgF8B42nszt85xbozb1nRYK49nGnQGzGrGzjZKyrYkXCZyl_--OW57uWs5p0TRZfB3TlXo6ZO4tA",
+  "software_id": "c6327f87-687a-4369-99a4-eaacd3bb8210",
+  "scope": "openid profile common:customer.basic:read bank:accounts.basic:read bank:transactions:read cdr:registration",
+  "sector_identifier_uri": "dr.test.cdrsandbox.gov.au"
+}

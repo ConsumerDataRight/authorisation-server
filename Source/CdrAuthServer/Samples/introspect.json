@@ -1,0 +1,6 @@
+{
+  "cdr_arrangement_id": "94e7fb6b-9bbd-4c8f-bb05-61571fd7064c",
+  "scope": "openid profile cdr:registration bank:accounts.basic:read bank:transactions:read common:customer.basic:read",
+  "exp": 1693404641,
+  "active": true
+}

@@ -26,8 +26,7 @@ namespace CdrAuthServer.Infrastructure.Certificates
                 case CertificateSource.Raw:
                     return LoadCertificateFromBytes(Convert.FromBase64String(loadDetails.Content), loadDetails.Password);
 
-                case CertificateSource.KeyVault:
-                    // TODO: implement.
+                case CertificateSource.KeyVault:                    
                     throw new NotImplementedException();
 
                 default:

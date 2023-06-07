@@ -55,6 +55,7 @@ RUN apt-get update && apt-get install -y sudo
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 RUN sudo cp ./gateway-mtls/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
+
 RUN sudo update-ca-certificates
 
 # Run as non-root user

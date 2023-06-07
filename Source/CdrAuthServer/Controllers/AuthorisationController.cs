@@ -65,9 +65,13 @@ namespace CdrAuthServer.Controllers
 
             if (configOptions.HeadlessMode)
             {
-                var subjectId = "ksmith";
-                var accountIds = new List<string>() { "123456", "987654" };
-                return await ProcessAuthResponse(validationResult.ValidatedAuthorizationRequestObject, subjectId, accountIds, configOptions);
+                if (configOptions.HeadlessModeRequiresConfirmation)
+                {
+                    return OutputAuthConfirmation($"{configOptions.BaseUri}{configOptions.BasePath}/connect/authorize-confirm", authRequest.request_uri, authRequest.client_id);
+                }
+
+                var user = new HeadlessModeUser();
+                return await ProcessAuthResponse(validationResult.ValidatedAuthorizationRequestObject, user.Subject, user.Accounts, configOptions);
             }
 
             // Create params to redirect to the auth UI
@@ -125,6 +129,65 @@ namespace CdrAuthServer.Controllers
                 validationResult.ValidatedAuthorizationRequestObject,
                 authCallbackRequest.subject_id,
                 authCallbackRequest.account_ids.Split(','),
+                configOptions);
+        }
+
+        [HttpPost]
+        [Route("/connect/authorize-confirm")]
+        public async Task<IActionResult> AuthoriseConfirm(
+           [FromForm] string clientId,
+           [FromForm] string requestUri,
+           [FromForm] string proceed,
+           [FromForm] string cancel)
+        {
+            var configOptions = _config.GetConfigurationOptions(this.HttpContext);
+
+            // This endpoint should only be called in HeadlessMode.
+            if (!configOptions.HeadlessMode)
+            {
+                throw new InvalidOperationException("This endpoint is only available in Headless mode");
+            }
+
+            var authRequest = new AuthorizeRequest()
+            {
+                client_id = clientId,
+                request_uri = requestUri,
+            };
+            var validationResult = await _authorizeRequestValidator.Validate(authRequest, configOptions, false);
+            if (!validationResult.IsValid)
+            {
+                _logger.LogInformation("Authorization failed {@validationResult}", validationResult);
+                return await CallbackErrorResponse(validationResult, authRequest.client_id, configOptions);
+            }
+
+            // Retrieve the request uri grant, this has already been validated in the validator.
+            var grant = await _grantService.Get(GrantTypes.RequestUri, requestUri, clientId) as RequestUriGrant;
+            if (grant == null)
+            {
+                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", requestUri, clientId);
+                throw new InvalidOperationException($"requestUriGrant is null or not found");
+            }
+
+            // If cancelling the process.
+            if (!string.IsNullOrEmpty(cancel))
+            {
+                var error = ErrorCatalogue.Catalogue().GetErrorDefinition(ErrorCatalogue.ACCESS_DENIED);
+                var result = new AuthorizeRequestValidationResult(false)
+                {
+                    Error = error.Error,
+                    ErrorDescription = error.ErrorDescription,
+                    ValidatedAuthorizationRequestObject = validationResult.ValidatedAuthorizationRequestObject,
+                    StatusCode = error.StatusCode,
+                };
+                return await CallbackErrorResponse(result, clientId, configOptions);
+            }
+
+            // Complete the auth process.
+            var user = new HeadlessModeUser();
+            return await ProcessAuthResponse(
+                validationResult.ValidatedAuthorizationRequestObject,
+                user.Subject,
+                user.Accounts,
                 configOptions);
         }
 
@@ -436,6 +499,34 @@ namespace CdrAuthServer.Controllers
             html.AppendLine("<dt>Error description:</dt>");
             html.AppendLine($"<dd>{result.ErrorDescription}</dd>");
             html.AppendLine("</dl>");
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
+            return Content(html.ToString(), "text/html");
+        }
+
+        /// <summary>
+        /// This is used to generate html that can be used to Confirm/Cancel an authorisation
+        /// request when in HeadlessMode.
+        /// </summary>
+        /// <returns>IActionResult</returns>
+        private IActionResult OutputAuthConfirmation(
+            string confirmationUri,
+            string requestUri,
+            string clientId)
+        {
+            var html = new StringBuilder();
+            html.AppendLine("<!doctype html>");
+            html.AppendLine("<html>");
+            html.AppendLine("<body>");
+            html.AppendLine("<h1>Proceed with authorisation?</h1>");
+            html.AppendLine("<div>");
+            html.AppendLine($@"<form name=""form"" method=""post"" action=""{confirmationUri}"">");
+            html.AppendLine($@"<input type=""hidden"" name=""requestUri"" value=""{requestUri}"" />");
+            html.AppendLine($@"<input type=""hidden"" name=""clientId"" value=""{clientId}"" />");
+            html.AppendLine($@"<input type=""submit"" name=""proceed"" value=""Proceed"" />");
+            html.AppendLine($@"<input type=""submit"" name=""cancel"" value=""Cancel"" />");
+            html.AppendLine("</form>");
+            html.AppendLine("</div>");
             html.AppendLine("</body>");
             html.AppendLine("</html>");
             return Content(html.ToString(), "text/html");

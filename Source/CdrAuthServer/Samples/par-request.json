@@ -1,0 +1,33 @@
+// PAR Request:
+// 
+// request=eyJraWQiOiJCNTQ4QzkxNEEwMjc4N0EzQjVGMTU1ODNDOEVCMDMwRDk0QkMyNDI0IiwiYWxnIjoiUFMyNTYifQ.eyJpc3MiOiIzZTZjNWYzZC1iZDU4LTRhYWEtOGMyMy1hY2ZlYzgzN2I1MDYiLCJyZXNwb25zZV90eXBlIjoiY29kZSBpZF90b2tlbiIsImNvZGVfY2hhbGxlbmdlX21ldGhvZCI6IlMyNTYiLCJub25jZSI6IjFqVjM5YVIzZEoiLCJjbGllbnRfaWQiOiIzZTZjNWYzZC1iZDU4LTRhYWEtOGMyMy1hY2ZlYzgzN2I1MDYiLCJhdWQiOiJodHRwczpcL1wvZGgtdGVzdC5pZHAuZGV2LmNkcnNhbmRib3guZ292LmF1XC9kaC1lbmVyZ3ktNSIsIm5iZiI6MTY1MjM0MDQ3OCwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBjb21tb246Y3VzdG9tZXIuYmFzaWM6cmVhZCBlbmVyZ3k6YWNjb3VudHMuYmFzaWM6cmVhZCBlbmVyZ3k6YWNjb3VudHMuY29uY2Vzc2lvbnM6cmVhZCBjZHI6cmVnaXN0cmF0aW9uIiwiY2xhaW1zIjp7InNoYXJpbmdfZHVyYXRpb24iOjc3NzYwMDAsImlkX3Rva2VuIjp7ImFjciI6eyJ2YWx1ZSI6InVybjpjZHMuYXU6Y2RyOjIiLCJlc3NlbnRpYWwiOnRydWV9fX0sInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC93d3cuY2VydGlmaWNhdGlvbi5vcGVuaWQubmV0XC90ZXN0XC9hXC9jZHItbWRoXC9jYWxsYmFjayIsInN0YXRlIjoiWU1RZEkyVFlpZiIsImV4cCI6MTY1MjM0MDc3OCwiY29kZV9jaGFsbGVuZ2UiOiJpcjlPSlpkUmJTNEFOdUdXTWo2WU1sUEFDd2haUW55N3BYTlUyOVV2N0ZnIn0.QabAHKE_dtOR85IHx8YtuJGckwyeRR1RsSRpSQ4VKqLgNy16jBiQ0mvbRQkZJqhufEx3MjzADrGOVix53VpnuglU3AhO6Ra4LOP_XOekvVkP0EGD6tzjUbkQmbeuFv4QOar6Rh2yig0gW8cbpskw2sy-7OMCTvq-xuL3NEnM7Su0ycrKFlppqzzHZ-zgwjVEZCHWcXhUrN0N2cebwH5EDvTZvQuDW2VEWJJQdO3Vc-a9SioEWFChqX0W5taAPiauSCLBYh5HXW51k3LXD9MZqSGUl0X3Oe40AclaovgeKtMFKP_96gHNDMy_3hzQwGFm8QG1FYS80YoDMgEZImbHww
+// &client_assertion=eyJraWQiOiJCNTQ4QzkxNEEwMjc4N0EzQjVGMTU1ODNDOEVCMDMwRDk0QkMyNDI0IiwiYWxnIjoiUFMyNTYifQ.eyJzdWIiOiIzZTZjNWYzZC1iZDU4LTRhYWEtOGMyMy1hY2ZlYzgzN2I1MDYiLCJhdWQiOiJodHRwczpcL1wvZGgtdGVzdC5pZHAuZGV2LmNkcnNhbmRib3guZ292LmF1XC9kaC1lbmVyZ3ktNSIsImlzcyI6IjNlNmM1ZjNkLWJkNTgtNGFhYS04YzIzLWFjZmVjODM3YjUwNiIsImV4cCI6MTY1MjM0MDUzOCwiaWF0IjoxNjUyMzQwNDc4LCJqdGkiOiJMd3J0YTJLU2RhNGpPWVYwSDVwUiJ9.SjGr9X5vxnYywoVU1GAcG6N4taPniDJPYuEme1wPD2tvNjK4D-huQsb4BuaLJZem1MBbIDZprmvMk8_YkL50qOdvdaFYflqIif6SfFlaAIzN5B-9pzSM3iOC7Q0bt26xjr-C8MZaprc3O7LhsdpSynWIWiqle9I248-quikMsqyTDXhiVm_PtKnDs-DwzdfXvcp4JJcgN4Gk_fb431n2UGeQzFHAT-SCasvDVO7i9Zhw72bS8orWo7-ybiAUFjK8-B38lCih6LZg7mjDQdJWnXmkO4tqTYCIJgVEQteiaxUJRmsPlPX6Uvh0jC22pj3VTqGRIW4yukzeKgtB4q2HyQ
+// &client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+
+{
+  "kid": "B548C914A02787A3B5F15583C8EB030D94BC2424",
+  "alg": "PS256"
+}. 
+{
+  "iss": "3e6c5f3d-bd58-4aaa-8c23-acfec837b506",
+  "response_type": "code id_token",
+  "code_challenge_method": "S256",
+  "nonce": "1jV39aR3dJ",
+  "client_id": "3e6c5f3d-bd58-4aaa-8c23-acfec837b506",
+  "aud": "https://dh-test.idp.dev.cdrsandbox.gov.au/dh-energy-5",
+  "nbf": 1652340478,
+  "scope": "openid profile common:customer.basic:read energy:accounts.basic:read energy:accounts.concessions:read cdr:registration",
+  "claims": {
+    "sharing_duration": 7776000,
+    "id_token": {
+      "acr": {
+        "value": "urn:cds.au:cdr:2",
+        "essential": true
+      }
+    }
+  },
+  "redirect_uri": "https://www.certification.openid.net/test/a/cdr-mdh/callback",
+  "state": "YMQdI2TYif",
+  "exp": 1652340778,
+  "code_challenge": "ir9OJZdRbS4ANuGWMj6YMlPACwhZQny7pXNU29Uv7Fg"
+  }

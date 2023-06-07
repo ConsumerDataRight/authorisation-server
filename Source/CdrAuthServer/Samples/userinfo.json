@@ -1,0 +1,8 @@
+{
+  "given_name": "Kamilla",
+  "family_name": "Smith",
+  "name": "Kamilla Smith",
+  "aud": "4933a670-2e85-4f36-9982-8faa083f9a57",
+  "iss": "https://localhost:8001",
+  "sub": "mYnxnN7keNe/eiR2j9OZ+axM5WUUa5IdTUEBxyqQWUToZbS9MlaxYYPEhWOhJUQl"
+}

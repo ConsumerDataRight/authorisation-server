@@ -36,8 +36,7 @@ namespace CdrAuthServer.API.Logger
         private string? _requestPathBase;
         private string? _clientId;
         private string? _softwareId;
-        private string? _fapiInteractionId;
-        private readonly string? _currentProcessName;
+        private string? _fapiInteractionId;        
 
 
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
@@ -50,8 +49,7 @@ namespace CdrAuthServer.API.Logger
         {
             _requestResponseLogger = requestResponseLogger.Log.ForContext<RequestResponseLoggingMiddleware>();
             _next = next ?? throw new ArgumentNullException(nameof(next));
-            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-            _currentProcessName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();            
             _configuration = configuration;
         }
 
@@ -320,7 +318,7 @@ namespace CdrAuthServer.API.Logger
             // 1. check if the X-Forwarded-Host header has been provided -> use that
             // 2. If not, use the request.Host
             string hostHeaderKey = _configuration.GetValue<string>("SerilogRequestResponseLogger:HostNameHeaderKey") ?? "X-Forwarded-Host";
-
+            
             if (!request.Headers.TryGetValue(hostHeaderKey, out var keys))
             {
                 return request.Host.ToString();
@@ -348,15 +346,25 @@ namespace CdrAuthServer.API.Logger
 
         private string GetSourceContext()
         {
-            switch(_currentProcessName)
+            // local containers have ports with requesthost e.g. mock-data-holder:8001
+            // test environment has mock-data-holder
+            
+            if (string.IsNullOrEmpty(_requestHost))
             {
-                case "CdrAuthServer.Resource.API":
-                    return "SB-DHB-RES";
-                case "CdrAuthServer.IdentityServer":
-                    return "SB-DHB-ID";
+                return string.Empty;
             }
+            
+            if (_requestHost.Contains("mock-data-holder-energy"))
+            {
+                return "SB-DHE-ID";
+            }
+
+            if (_requestHost.Contains("mock-data-holder"))
+            {                             
+                return "SB-DHB-ID";
+            }
+
             return string.Empty;
         }
-
     }
 }

@@ -115,16 +115,14 @@ namespace CdrAuthServer.E2ETests
                             callbackRequest.Should().NotBeNull();
                             callbackRequest?.received.Should().BeTrue();
                             callbackRequest?.method.Should().Be(HttpMethod.Get);
-                            throw new NotImplementedException("FIXME - MJS - check request URL fragment for authcode & idtoken");
-                            break;
+                            throw new NotImplementedException("FIXME - MJS - check request URL fragment for authcode & idtoken");                            
                         }
                     case "query":
                         {
                             callbackRequest.Should().NotBeNull();
                             callbackRequest?.received.Should().BeTrue();
                             callbackRequest?.method.Should().Be(HttpMethod.Get);
-                            throw new NotImplementedException("FIXME - MJS - check request URL query string for authcode & idtoken");
-                            break;
+                            throw new NotImplementedException("FIXME - MJS - check request URL query string for authcode & idtoken");                            
                         }
                     default:
                         throw new NotSupportedException(nameof(responseMode));

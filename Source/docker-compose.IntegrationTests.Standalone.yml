@@ -42,10 +42,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Release.Standalone
       # tests need expiry of 3600
       - CdrAuthServer__AccessTokenExpirySeconds=3600
-
-      # NOTE - 2023/01/12 standup - not initially supporting encryption
-      # - CdrAuthServer__SupportJarmEncryption=true
-      - CdrAuthServer__SupportJarmEncryption=false
+      # use environment variable to turn on JARM. Default to false.
+      - CdrAuthServer__SupportJarmEncryption=${USE_JARM_ENCRYPTION:-false}
 
       - CdrAuthServer__HeadlessMode=true
     # NOTE - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user
@@ -105,6 +103,8 @@ services:
       dockerfile: Dockerfile.integration-tests
     environment:
       - ASPNETCORE_ENVIRONMENT=Release.Standalone
+      # use environment variable to turn on JARM. Default to false.
+      - USE_JARM_ENCRYPTION=${USE_JARM_ENCRYPTION:-false}
     volumes:
       - "./_temp/cdr-auth-server-integration-tests-standalone/testresults:/testresults"
     depends_on:
