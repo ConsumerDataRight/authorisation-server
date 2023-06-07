@@ -56,9 +56,9 @@ namespace CdrAuthServer.Infrastructure
         public string Generate(
             string issuer,
             string audience,
-            string jti = null,
+            string? jti = null,
             int expiryMinutes = 10,
-            string kid = null)
+            string? kid = null)
         {
             if (string.IsNullOrEmpty(issuer))
             {

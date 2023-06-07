@@ -11,8 +11,8 @@
 <p>2. Run the Authorisation Server container</p>
 
 <span style="display:inline-block;margin-left:1em;">
-	docker run -d -h authorisation-server -p 8001:8001 -p 3000:3000 --add-host=host.docker.internal:host-gateway --name authorisation-server consumerdataright/authorisation-server<br \>
-	docker run -d -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Pa{}w0rd2019" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+	docker run -d -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Pa{}w0rd2019" -p 1433:1433 --name mssql -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+	docker run -d -h authorisation-server -p 8001:8001 -p 3000:3000 --add-host=mssql:host-gateway --name authorisation-server consumerdataright/authorisation-server<br \>
 	<br \><br \>
 	Please note - This docker compose file utilises the Microsoft SQL Server Image from Docker Hub.<br \>
 	The Microsoft EULA for the Microsoft SQL Server Image must be accepted to continue.<br \>
@@ -26,10 +26,10 @@
 	How to build your own image instead of downloading it from docker hub.<br \>
 	navigate to .\authorisation-server\Source<br \>
 	open a command prompt and execute the following;<br \>
-	docker build -f Dockerfile.standalone -t authorisation-server .<br \>	
-	docker run -d -h authorisation-server -p 8001:8001 -p 3000:3000 --add-host=host.docker.internal:host-gateway --name authorisation-server authorisation-server<br \><br \>	
+	docker build -f Dockerfile.standalone -t authorisation-server .<br \>
 	Please note - By default, the container above will be using a MS SQL database container, using this command from a MS Windows command prompt will run the database,<br \> 
-	docker run -d -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Pa{}w0rd2019" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+	docker run -d -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Pa{}w0rd2019" -p 1433:1433 --name mssql -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+	docker run -d -h authorisation-server -p 8001:8001 -p 3000:3000 --add-host=mssql:host-gateway --name authorisation-server authorisation-server<br \><br \>	
 </span>
 
 <span style="display:inline-block;margin-left:1em;margin-top:10px;margin-bottom:10px;">

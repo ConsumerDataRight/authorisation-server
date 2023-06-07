@@ -19,14 +19,14 @@ namespace CdrAuthServer.Infrastructure.Models
 
         public HttpStatusCode StatusCode { get; set; }
 
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         public ErrorList Errors { get; set; }
     }
 
     public class Response<T> : Response
     {
-        public T Data { get; set; }
+        public T? Data { get; set; }
     }
 
     public class Error
@@ -46,17 +46,17 @@ namespace CdrAuthServer.Infrastructure.Models
         /// <summary>
         /// Error code
         /// </summary>
-        public string Code { get; set; }
+        public string? Code { get; set; }
 
         /// <summary>
         /// Error title
         /// </summary>
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         /// <summary>
         /// Error detail
         /// </summary>
-        public string Detail { get; set; }
+        public string? Detail { get; set; }
 
         /// <summary>
         /// Optional additional data for specific error types

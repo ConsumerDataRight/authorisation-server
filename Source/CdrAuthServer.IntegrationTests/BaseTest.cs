@@ -71,7 +71,7 @@ namespace CdrAuthServer.IntegrationTests
         static public bool HEADLESSMODE => Configuration["HeadlessMode"]?.ToUpper() == "TRUE";
 
         // Running CdrAuthServer with JARM encryption turned on?
-        static public bool JARM_ENCRYPTION_ON => Configuration["JarmEncryptionOn"]?.ToUpper() == "TRUE";
+        static public bool JARM_ENCRYPTION_ON => Environment.GetEnvironmentVariable("USE_JARM_ENCRYPTION")?.ToUpper() == "TRUE" ;       
 
         // When running standalone CdrAuthServer (ie no MtlsGateway) we need to attach the X-TlsClientCertThumbprint required by ValidateMTLSAttribute
         static public void AttachHeadersForStandAlone(string url, HttpHeaders headers, string? XTlsClientCertThumbprint = null)

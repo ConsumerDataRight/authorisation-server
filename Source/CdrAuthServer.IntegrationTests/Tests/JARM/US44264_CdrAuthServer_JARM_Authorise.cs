@@ -85,9 +85,12 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 var encodedJwt = queryValueResponse;
                 queryValueResponse.Should().NotBeNullOrEmpty();
 
-                // Check for encrypted JARM JWT.
-                if (queryValueResponse.Split('.').Length > 3)
+                if (JARM_ENCRYPTION_ON)
                 {
+                    Console.WriteLine("JARM ENC IS ON");
+                    var encryptedJwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
+                    encryptedJwt.Header["alg"].Should().Be("RSA-OAEP", because: "JARM Encryption is turned on.");
+                    encryptedJwt.Header["enc"].Should().Be("A128CBC-HS256", because: "JARM Encryption is turned on.");
                     // Decrypt the JARM JWT.
                     var privateKeyCertificate = new X509Certificate2(JWT_CERTIFICATE_FILENAME, JWT_CERTIFICATE_PASSWORD, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();

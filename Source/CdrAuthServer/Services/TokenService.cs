@@ -166,10 +166,10 @@ namespace CdrAuthServer.Services
             {
                 if (configOptions.HeadlessMode)
                 {
-                    // TODO: fix these user claims.
-                    claims.Add(new Claim(ClaimNames.Name, "ksmith"));
-                    claims.Add(new Claim(ClaimNames.FamilyName, "Smith"));
-                    claims.Add(new Claim(ClaimNames.GivenName, "Kamilla"));
+                    var user = new HeadlessModeUser();
+                    claims.Add(new Claim(ClaimNames.Name, user.Subject));
+                    claims.Add(new Claim(ClaimNames.FamilyName, user.FamilyName));
+                    claims.Add(new Claim(ClaimNames.GivenName, user.GivenName));
                 }
                 else
                 {
@@ -312,7 +312,7 @@ namespace CdrAuthServer.Services
                 refreshTokenGrant.ClientId,
                 refreshTokenGrant.SubjectId,
                 configOptions,
-                refreshTokenGrant.ResponseType.IsHybridFlow(),
+                configOptions.AlwaysEncryptIdTokens || refreshTokenGrant.ResponseType.IsHybridFlow(),
                 accessToken: accessToken,
                 authTime: refreshTokenGrant.CreatedAt.ToEpoch().ToString());
 
@@ -477,7 +477,7 @@ namespace CdrAuthServer.Services
                 authCodeGrant.ClientId,
                 authCodeGrant.SubjectId,
                 configOptions,
-                encrypt: authRequestObject.IsHybridFlow(),
+                encrypt: configOptions.AlwaysEncryptIdTokens || authRequestObject.IsHybridFlow(),
                 authCode: authCodeGrant.Key,
                 nonce: authRequestObject.Nonce,
                 accessToken: accessToken,
@@ -612,7 +612,7 @@ namespace CdrAuthServer.Services
             var rsaEncryption = GetEncryptionKey(clientJwk);
 
             try
-            {
+            {                
                 _logger.LogDebug("Encrypting Id Token with Alg {Alg}, Enc {Enc}", encryptedResponseAlg, encryptedResponseEnc);
 
                 // Encode the token and add the kid

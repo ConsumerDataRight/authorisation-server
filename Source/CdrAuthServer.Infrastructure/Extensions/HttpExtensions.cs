@@ -27,13 +27,13 @@ namespace CdrAuthServer.Infrastructure.Extensions
             string url,
             X509Certificate2 signingCertificate,
             string issuer,
-            string clientId = null,
-            string scope = null,
-            string redirectUri = null,
-            string code = null,
-            string grantType = null,
-            IDictionary<string, string> additionalFormFields = null,
-            Pkce pkce = null,
+            string? clientId = null,
+            string? scope = null,
+            string? redirectUri = null,
+            string? code = null,
+            string? grantType = null,
+            IDictionary<string, string>? additionalFormFields = null,
+            Pkce? pkce = null,
             bool enforceHttpsEndpoint = true)
         {
             var privateKeyJwt = new PrivateKeyJwt(signingCertificate);
