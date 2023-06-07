@@ -164,7 +164,9 @@ namespace CdrAuthServer.Controllers
             var grant = await _grantService.Get(GrantTypes.RequestUri, requestUri, clientId) as RequestUriGrant;
             if (grant == null)
             {
-                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", requestUri, clientId);
+                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", 
+                    requestUri.Replace(Environment.NewLine, ""), 
+                    clientId.Replace(Environment.NewLine, ""));
                 throw new InvalidOperationException($"requestUriGrant is null or not found");
             }
 
