@@ -19,8 +19,6 @@ jobs:
         displayName: Build cdr-auth-server image
         inputs:
           command: build
-          # Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile
-          # buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
           Dockerfile: ./Source/Dockerfile
           buildContext: ./Source
           repository: cdr-auth-server
