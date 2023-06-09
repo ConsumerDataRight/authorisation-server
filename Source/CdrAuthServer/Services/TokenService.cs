@@ -357,7 +357,7 @@ namespace CdrAuthServer.Services
                 throw new InvalidOperationException($"Value is null or empty {nameof(authCodeGrant)}");
             }
 
-            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);
+            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);            
             var sharingDuration = authRequestObject?.Claims.SharingDuration ?? 0;
             var existingCdrArrangementId = authRequestObject?.Claims.CdrArrangementId;
             string? cdrArrangementId = null;
@@ -404,7 +404,7 @@ namespace CdrAuthServer.Services
                     Scope = authCodeGrant.Scope, // Filtered scopes.
                     SubjectId = authCodeGrant.SubjectId,
                     CdrArrangementId = cdrArrangementId,
-                    ResponseType = authRequestObject.ResponseType,
+                    ResponseType = authRequestObject?.ResponseType,
                     AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                 };
                 await _grantService.Create(refreshTokenGrant);
@@ -433,7 +433,7 @@ namespace CdrAuthServer.Services
                         Scope = authCodeGrant.Scope, // Filtered scopes.
                         SubjectId = authCodeGrant.SubjectId,
                         CdrArrangementId = cdrArrangementId,
-                        ResponseType = authRequestObject.ResponseType,
+                        ResponseType = authRequestObject?.ResponseType,
                         AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                     };
                     await _grantService.Create(refreshTokenGrant);
@@ -461,6 +461,11 @@ namespace CdrAuthServer.Services
 
             var accessTokenScopes = GetTokenResponseScopes(tokenRequest.scope, authCodeGrant.Scope);
 
+            if (authRequestObject == null)
+            {
+                throw new InvalidOperationException($"Value is null or empty {nameof(authRequestObject)}");
+            }
+
             // Issue the id_token and access_token.
             var accessToken = await IssueAccessToken(
                 authCodeGrant.ClientId,
@@ -479,7 +484,7 @@ namespace CdrAuthServer.Services
                 configOptions,
                 encrypt: configOptions.AlwaysEncryptIdTokens || authRequestObject.IsHybridFlow(),
                 authCode: authCodeGrant.Key,
-                nonce: authRequestObject.Nonce,
+                nonce: authRequestObject?.Nonce,
                 accessToken: accessToken,
                 authTime: authTime.ToEpoch().ToString());
 
