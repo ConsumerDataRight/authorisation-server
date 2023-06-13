@@ -154,9 +154,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddSingleton<IAuthorizationHandler, ScopeHandler>();
-builder.Services.AddSingleton<IAuthorizationHandler, HolderOfKeyHandler>();
-builder.Services.AddSingleton<IAuthorizationHandler, AccessTokenHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, ScopeHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, HolderOfKeyHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, AccessTokenHandler>();
 builder.Services.AddTransient<IClientAssertionValidator, ClientAssertionValidator>();
 builder.Services.AddTransient<IJwtValidator, JwtValidator>();
 builder.Services.AddTransient<IParValidator, ParValidator>();

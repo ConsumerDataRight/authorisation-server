@@ -166,10 +166,10 @@ namespace CdrAuthServer.Services
             {
                 if (configOptions.HeadlessMode)
                 {
-                    // TODO: fix these user claims.
-                    claims.Add(new Claim(ClaimNames.Name, "ksmith"));
-                    claims.Add(new Claim(ClaimNames.FamilyName, "Smith"));
-                    claims.Add(new Claim(ClaimNames.GivenName, "Kamilla"));
+                    var user = new HeadlessModeUser();
+                    claims.Add(new Claim(ClaimNames.Name, user.Subject));
+                    claims.Add(new Claim(ClaimNames.FamilyName, user.FamilyName));
+                    claims.Add(new Claim(ClaimNames.GivenName, user.GivenName));
                 }
                 else
                 {
@@ -312,7 +312,7 @@ namespace CdrAuthServer.Services
                 refreshTokenGrant.ClientId,
                 refreshTokenGrant.SubjectId,
                 configOptions,
-                refreshTokenGrant.ResponseType.IsHybridFlow(),
+                configOptions.AlwaysEncryptIdTokens || refreshTokenGrant.ResponseType.IsHybridFlow(),
                 accessToken: accessToken,
                 authTime: refreshTokenGrant.CreatedAt.ToEpoch().ToString());
 
@@ -357,7 +357,7 @@ namespace CdrAuthServer.Services
                 throw new InvalidOperationException($"Value is null or empty {nameof(authCodeGrant)}");
             }
 
-            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);
+            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);            
             var sharingDuration = authRequestObject?.Claims.SharingDuration ?? 0;
             var existingCdrArrangementId = authRequestObject?.Claims.CdrArrangementId;
             string? cdrArrangementId = null;
@@ -404,7 +404,7 @@ namespace CdrAuthServer.Services
                     Scope = authCodeGrant.Scope, // Filtered scopes.
                     SubjectId = authCodeGrant.SubjectId,
                     CdrArrangementId = cdrArrangementId,
-                    ResponseType = authRequestObject.ResponseType,
+                    ResponseType = authRequestObject?.ResponseType,
                     AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                 };
                 await _grantService.Create(refreshTokenGrant);
@@ -433,7 +433,7 @@ namespace CdrAuthServer.Services
                         Scope = authCodeGrant.Scope, // Filtered scopes.
                         SubjectId = authCodeGrant.SubjectId,
                         CdrArrangementId = cdrArrangementId,
-                        ResponseType = authRequestObject.ResponseType,
+                        ResponseType = authRequestObject?.ResponseType,
                         AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                     };
                     await _grantService.Create(refreshTokenGrant);
@@ -461,6 +461,11 @@ namespace CdrAuthServer.Services
 
             var accessTokenScopes = GetTokenResponseScopes(tokenRequest.scope, authCodeGrant.Scope);
 
+            if (authRequestObject == null)
+            {
+                throw new InvalidOperationException($"Value is null or empty {nameof(authRequestObject)}");
+            }
+
             // Issue the id_token and access_token.
             var accessToken = await IssueAccessToken(
                 authCodeGrant.ClientId,
@@ -477,9 +482,9 @@ namespace CdrAuthServer.Services
                 authCodeGrant.ClientId,
                 authCodeGrant.SubjectId,
                 configOptions,
-                encrypt: authRequestObject.IsHybridFlow(),
+                encrypt: configOptions.AlwaysEncryptIdTokens || authRequestObject.IsHybridFlow(),
                 authCode: authCodeGrant.Key,
-                nonce: authRequestObject.Nonce,
+                nonce: authRequestObject?.Nonce,
                 accessToken: accessToken,
                 authTime: authTime.ToEpoch().ToString());
 
@@ -612,7 +617,7 @@ namespace CdrAuthServer.Services
             var rsaEncryption = GetEncryptionKey(clientJwk);
 
             try
-            {
+            {                
                 _logger.LogDebug("Encrypting Id Token with Alg {Alg}, Enc {Enc}", encryptedResponseAlg, encryptedResponseEnc);
 
                 // Encode the token and add the kid

@@ -40,8 +40,10 @@ namespace CdrAuthServer.Configuration
         public IList<string>? IdTokenSigningAlgValuesSupported { get; set; }
         public IList<string>? IdTokenEncryptionAlgValuesSupported { get; set; }
         public IList<string>? IdTokenEncryptionEncValuesSupported { get; set; }
+        public bool AlwaysEncryptIdTokens { get; set; }
+        public bool UseMtlsEndpointAliases { get; set; }
         public IList<string>? AuthorizationSigningAlgValuesSupported { get; set; }
-        
+
         public string AuthorizationEncryptionAlgValuesSupported { get; set; } = string.Empty;
         public IList<string>? AuthorizationEncryptionAlgValuesSupportedList
         {
@@ -51,7 +53,7 @@ namespace CdrAuthServer.Configuration
                     : AuthorizationEncryptionAlgValuesSupported.Split(',', StringSplitOptions.TrimEntries);
             }
         }
-        
+
         public string AuthorizationEncryptionEncValuesSupported { get; set; } = string.Empty;
         public IList<string>? AuthorizationEncryptionEncValuesSupportedList
         {
@@ -70,6 +72,7 @@ namespace CdrAuthServer.Configuration
         public int ClockSkewSeconds { get; set; } = 0;
         public CdrRegisterConfiguration? CdrRegister { get; set; }
         public bool HeadlessMode { get; set; }
+        public bool HeadlessModeRequiresConfirmation { get; set; }
         public bool ValidateResourceEndpoint { get; set; } = true;
         public bool AllowDuplicateRegistrations { get; set; } = false;
         public bool SupportJarmEncryption { get; set; } = false;

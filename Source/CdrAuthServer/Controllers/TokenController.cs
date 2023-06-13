@@ -43,11 +43,19 @@ namespace CdrAuthServer.Controllers
         public async Task<IActionResult> IssueTokens([FromForm] TokenRequest tokenRequest)
         {
             var configOptions = _config.GetConfigurationOptions(this.HttpContext);
-            var validationResult = await _tokenRequestValidator.Validate(User.GetClientId(), tokenRequest, configOptions);
+            var clientId = User.GetClientId();
+            var validationResult = await _tokenRequestValidator.Validate(clientId, tokenRequest, configOptions);
             if (!validationResult.IsValid)
             {
                 _logger.LogInformation("Validation failed - {@validationResult}", validationResult);
                 return new JsonResult(new Error(validationResult.Error, validationResult.ErrorDescription)) { StatusCode = validationResult.StatusCode ?? 400 };
+            }
+
+            // Client Id is optional in the token request from the client but is required in the token repsonse.
+            // If client Id is not provided in the request then use the client Id that was extracted from the client assertion.
+            if (string.IsNullOrEmpty(tokenRequest.client_id) && !string.IsNullOrEmpty(clientId))
+            {
+                tokenRequest.client_id = clientId;
             }
 
             var cnf = GetClientCertificateThumbprint();

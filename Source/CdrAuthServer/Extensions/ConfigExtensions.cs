@@ -152,12 +152,15 @@ namespace CdrAuthServer.Extensions
                 "A128CBC-HS256,A256GCM");
             _configurationOptions.BrandId = SetDefault(_configurationOptions.BrandId, "00000000-0000-0000-0000-000000000000");
             _configurationOptions.HeadlessMode = SetDefault(_configurationOptions.HeadlessMode, false);
+            _configurationOptions.HeadlessModeRequiresConfirmation = SetDefault(_configurationOptions.HeadlessModeRequiresConfirmation, false);
             _configurationOptions.ValidateResourceEndpoint = SetDefault(_configurationOptions.ValidateResourceEndpoint, true);
             _configurationOptions.AllowDuplicateRegistrations = SetDefault(_configurationOptions.AllowDuplicateRegistrations, false);
             _configurationOptions.SupportJarmEncryption = SetDefault(_configurationOptions.SupportJarmEncryption, false);
             _configurationOptions.RequestUriExpirySeconds = SetDefault(_configurationOptions.RequestUriExpirySeconds, 90);
             _configurationOptions.AccessTokenExpirySeconds = SetDefault(_configurationOptions.AccessTokenExpirySeconds, 300);
             _configurationOptions.IdTokenExpirySeconds = SetDefault(_configurationOptions.IdTokenExpirySeconds, 300);
+            _configurationOptions.AlwaysEncryptIdTokens = SetDefault(_configurationOptions.AlwaysEncryptIdTokens, false);
+            _configurationOptions.UseMtlsEndpointAliases = SetDefault(_configurationOptions.UseMtlsEndpointAliases, false);
             _configurationOptions.ClockSkewSeconds = SetDefault(_configurationOptions.ClockSkewSeconds, 0);
             _configurationOptions.ClientCertificateThumbprintHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateThumbprintHttpHeaderName, HttpHeaders.ClientCertificateThumbprint);
             _configurationOptions.ClientCertificateCommonNameHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateCommonNameHttpHeaderName, HttpHeaders.ClientCertificateCommonName);

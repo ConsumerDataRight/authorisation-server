@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2023-06-07
+
 ### Changed
 - GitHub actions to publish test report and use v2 version of CodeQL commands.
+
+### Fixed 
+- Added Client Id to access token response when no Client Id was provided in the request
 
 ## [1.0.0] - 2023-02-16
 

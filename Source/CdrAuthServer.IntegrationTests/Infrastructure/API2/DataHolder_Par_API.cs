@@ -77,20 +77,6 @@ namespace CdrAuthServer.IntegrationTests.Infrastructure.API2
                 formFields.Add(new KeyValuePair<string?, string?>("request_uri", requestUri));
             }
 
-
-            if (responseType != null) 
-            {
-                new KeyValuePair<string?, string?>("responseType", responseType);
-            }            
-            if (grant_type != null) 
-            {
-                new KeyValuePair<string?, string?>("grant_type", grant_type);
-            }            
-            if (authorization_signed_response_alg != null) 
-            {
-                new KeyValuePair<string?, string?>("authorization_signed_response_alg", authorization_signed_response_alg);
-            }            
-
             formFields.Add(new KeyValuePair<string?, string?>("client_assertion", clientAssertion ??
                 new PrivateKeyJwt2()
                 {
