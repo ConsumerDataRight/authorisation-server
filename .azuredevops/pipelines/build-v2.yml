@@ -1,17 +1,18 @@
 # Build pipeline v2 (Containerised)
 
-variables:  
-  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: 
-    containerTag: main
-  ${{ else }}:
-    containerTag: develop
-    
-  baseSourceDirectory: $(Build.SourcesDirectory)/Source
-
 trigger:
   - develop  
-  - main
-  - releases/*  
+  - main  
+
+variables:  
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: 
+    mockRegisterContainerTag: main
+  ${{ elseif contains(variables['Build.SourceBranch'], 'releases/') }}:
+    mockRegisterContainerTag: $(MockRegisterReleaseContainerTag)
+  ${{ else }}:
+    mockRegisterContainerTag: develop
+    
+  baseSourceDirectory: $(Build.SourcesDirectory)/Source
 
 pool:
   vmImage: ubuntu-latest
@@ -133,8 +134,8 @@ jobs:
         inputs:
           targetType: inline
           script: |
-            docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag)
-            docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag) mock-register:latest
+            docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag)
+            docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag) mock-register:latest
 
       # List docker images
       - task: Docker@2

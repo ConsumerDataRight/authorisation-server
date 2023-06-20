@@ -19,6 +19,8 @@ jobs:
         displayName: Build cdr-auth-server image
         inputs:
           command: build
+          # Dockerfile: $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile
+          # buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
           Dockerfile: ./Source/Dockerfile
           buildContext: ./Source
           repository: cdr-auth-server
@@ -37,7 +39,7 @@ jobs:
         condition: always()
         inputs:
           command: login
-          containerRegistry: <<yourContainerRegistryName>>
+          containerRegistry: acrcdrsandboxdev
 
       # Save docker image to TAR so it can be published
       - task: Docker@2
@@ -59,13 +61,13 @@ jobs:
         displayName: 'Re-Tag CDRAuthServer API image with :fapi-testing'
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
         inputs:
-          containerRegistry: <<yourContainerRegistryName>>
+          containerRegistry: acrcdrsandboxdev
           repository: 'cdr-auth-server'
           command: tag
-          arguments: 'cdr-auth-server <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server:fapi-testing'
+          arguments: 'cdr-auth-server acrcdrsandboxdev.azurecr.io/cdr-auth-server:fapi-testing'
 
       - task: CmdLine@2
         displayName: 'Push CDRAuthServer container image with :fapi-testing tag to ACR (develop branch only)'
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
         inputs:
-          script: 'docker push <<yourContainerRegistryName>>.azurecr.io/cdr-auth-server:fapi-testing' 
+          script: 'docker push acrcdrsandboxdev.azurecr.io/cdr-auth-server:fapi-testing' 
