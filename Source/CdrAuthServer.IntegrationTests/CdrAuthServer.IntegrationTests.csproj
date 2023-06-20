@@ -3,9 +3,9 @@
         <TargetFramework>net6.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
-		<Version>1.0.1</Version>
-		<AssemblyVersion>1.0.1</AssemblyVersion>
-		<FileVersion>1.0.1</FileVersion>
+		<Version>1.0.2</Version>
+		<AssemblyVersion>1.0.2</AssemblyVersion>
+		<FileVersion>1.0.2</FileVersion>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="appsettings.json">
@@ -55,9 +55,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="Certificates\ca.pfx">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         <None Update="Certificates\client-additional.pfx">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
@@ -65,9 +62,6 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Certificates\client.pfx">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Certificates\mock-data-holder.pfx">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Certificates\server.pfx">

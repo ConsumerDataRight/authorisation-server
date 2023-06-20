@@ -167,9 +167,6 @@ namespace CdrAuthServer.IntegrationTests
         protected const string INVALID_CERTIFICATE_FILENAME = "Certificates/client-invalid.pfx";
         protected const string INVALID_CERTIFICATE_PASSWORD = "#M0ckDataRecipient#";
 
-        public const string DATAHOLDER_CERTIFICATE_FILENAME = "Certificates/mock-data-holder.pfx";
-        public const string DATAHOLDER_CERTIFICATE_PASSWORD = "#M0ckDataHolder#";
-
         public static string DH_MTLS_GATEWAY_URL => Configuration["URL:DH_MTLS_Gateway"]
             ?? throw new ConfigurationErrorsException($"{nameof(DH_MTLS_GATEWAY_URL)} - configuration setting not found");
 
