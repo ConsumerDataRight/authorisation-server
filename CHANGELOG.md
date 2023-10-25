@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2023-10-26
+
+### Changed
+- Updated npm packages used for Authorisation Server User Interface.
+
 ## [1.0.2] - 2023-06-20
 
 ### Changed
