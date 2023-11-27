@@ -1,24 +1,45 @@
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.CdsExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Serilog;
+using System.Net;
 using Xunit;
-using CdrAuthServer.IntegrationTests.Fixtures;
-
-#nullable enable
+using Xunit.DependencyInjection;
+using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace CdrAuthServer.IntegrationTests
 {
     public class US12965_CdrAuthServer_UserInfo : BaseTest, IClassFixture<RegisterSoftwareProductFixture>
     {
-        private RegisterSoftwareProductFixture Fixture { get; init; }
+        private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
+        private readonly ISqlQueryService _sqlQueryService;
+        private readonly IDataHolderAccessTokenCache _dataHolderAccessTokenCache;
+        private readonly IApiServiceDirector _apiServiceDirector;
 
-        public US12965_CdrAuthServer_UserInfo(RegisterSoftwareProductFixture fixture)
+        public US12965_CdrAuthServer_UserInfo(IOptions<TestAutomationOptions> options, IOptions<TestAutomationAuthServerOptions> authServerOptions, ISqlQueryService sqlQueryService, IDataHolderAccessTokenCache dataHolderAccessTokenCache, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config, IApiServiceDirector apiServiceDirector)
+            : base(testOutputHelperAccessor, config)
         {
-            Fixture = fixture;
+            if (testOutputHelperAccessor is null)
+            {
+                throw new ArgumentNullException(nameof(testOutputHelperAccessor));
+            }
+
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
+            _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
+            _dataHolderAccessTokenCache = dataHolderAccessTokenCache ?? throw new ArgumentNullException(nameof(dataHolderAccessTokenCache));
+            _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
         class AC01_AC02_Expected
@@ -36,23 +57,15 @@ namespace CdrAuthServer.IntegrationTests
         private async Task Test_AC01_AC02(HttpMethod httpMethod, TokenType tokenType, string expectedName, string expectedGivenName, string expectedFamilyName)
         {
             // Arrange
-            var accessToken = await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(tokenType);
+            var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(tokenType);
+            var expectedClientId = _options.LastRegisteredClientId;
 
             // Act
-            var api = new Infrastructure.API
-            {
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = httpMethod,
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                XV = "1",
-                XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                AccessToken = accessToken
-            };
+            var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, httpMethod);
             var response = await api.SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -64,22 +77,26 @@ namespace CdrAuthServer.IntegrationTests
                 actual?.name.Should().Be(expectedName);
                 actual?.given_name.Should().Be(expectedGivenName);
                 actual?.family_name.Should().Be(expectedFamilyName);
-                actual?.iss.Should().Be(BaseTest.DH_TLS_IDENTITYSERVER_BASE_URL);
-                actual?.aud.Should().Be(GetClientId(SOFTWAREPRODUCT_ID).ToLower());                
+                actual?.iss.Should().Be(_options.DH_TLS_AUTHSERVER_BASE_URL);
+                actual?.aud.Should().Be(expectedClientId);
             }
         }
 
         [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH, "Kamilla Smith", "Kamilla", "Smith")]
+        [InlineData(TokenType.KamillaSmith, "Kamilla Smith", "Kamilla", "Smith")]
         public async Task AC01_Get_ShouldRespondWith_200OK_UserInfo(TokenType tokenType, string expectedName, string expectedGivenName, string expectedFamilyName)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(tokenType), tokenType, nameof(expectedName), expectedName, nameof(expectedGivenName), expectedGivenName, nameof(expectedFamilyName), expectedFamilyName);
+
             await Test_AC01_AC02(HttpMethod.Get, tokenType, expectedName, expectedGivenName, expectedFamilyName);
         }
 
         [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH, "Kamilla Smith", "Kamilla", "Smith")]
+        [InlineData(TokenType.KamillaSmith, "Kamilla Smith", "Kamilla", "Smith")]
         public async Task AC02_Post_ShouldRespondWith_200OK_UserInfo(TokenType tokenType, string expectedName, string expectedGivenName, string expectedFamilyName)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(tokenType), tokenType, nameof(expectedName), expectedName, nameof(expectedGivenName), expectedGivenName, nameof(expectedFamilyName), expectedFamilyName);
+
             await Test_AC01_AC02(HttpMethod.Post, tokenType, expectedName, expectedGivenName, expectedFamilyName);
         }
 
@@ -92,28 +109,28 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData("INACTIVE", "Inactive", HttpStatusCode.Forbidden)]
         public async Task AC03_Get_WithADRParticipationNotActive_ShouldRespondWith_403Forbidden_ErrorResponse(string status, string statusDescription, HttpStatusCode expectedStatusCode)
         {
-            var saveStatus = GetStatus(Table.LEGALENTITY, LEGALENTITYID);
-            SetStatus(Table.LEGALENTITY, LEGALENTITYID, status);
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(status), status, nameof(statusDescription), statusDescription, nameof(expectedStatusCode), expectedStatusCode);
+
+            // Arrange          
+            var saveStatus = _sqlQueryService.GetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId);
+            _sqlQueryService.SetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId, "ACTIVE");
+
+            var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(TokenType.KamillaSmith);
+
+            _sqlQueryService.SetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId, status);
+
             try
             {
-                // Arrange          
-                var accessToken = await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(TokenType.KAMILLA_SMITH);                
-
                 // Act
-                var api = new Infrastructure.API
-                {
-                    CertificateFilename = CERTIFICATE_FILENAME,
-                    CertificatePassword = CERTIFICATE_PASSWORD,
-                    HttpMethod = HttpMethod.Get,
-                    URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                    XV = "1",
-                    XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                    AccessToken = accessToken
-                };
+                var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, System.Net.Http.HttpMethod.Get);
                 var response = await api.SendAsync();
 
+                var error = new AdrStatusNotActiveException($"ERR-GEN-002: Software product status is {statusDescription.ToUpper()}");
+                var errorList = new ResponseErrorListV2(error.Code, error.Title, error.Detail, null);
+                var expectedContent = JsonConvert.SerializeObject(errorList);
+
                 // Assert
-                using (new AssertionScope())
+                using (new AssertionScope(BaseTestAssertionStrategy))
                 {
                     // Assert - Check status code
                     response.StatusCode.Should().Be(expectedStatusCode);
@@ -121,24 +138,13 @@ namespace CdrAuthServer.IntegrationTests
                     // Assert - Check error response
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        var expectedContent = $@"
-                        {{
-                            ""errors"": [
-                                {{
-                                ""code"": ""urn:au-cds:error:cds-all:Authorisation/AdrStatusNotActive"",
-                                ""title"": ""ADR Status Is Not Active"",
-                                ""detail"": ""ERR-GEN-002: Software product status is {statusDescription.ToUpper()}"",
-                                ""meta"": {{}}
-                                }}
-                            ]
-                        }}";
-                        await Assert_HasContent_Json(expectedContent, response.Content);
+                        await Assertions.AssertHasContentJson<ResponseErrorListV2>(expectedContent, response.Content);
                     }
                 }
             }
             finally
             {
-                SetStatus(Table.LEGALENTITY, LEGALENTITYID, saveStatus);
+                _sqlQueryService.SetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId, saveStatus);
             }
         }
 
@@ -148,31 +154,23 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData("REMOVED", "Removed", HttpStatusCode.Forbidden)]
         public async Task AC05_Get_WithADRSoftwareProductNotActive_ShouldRespondWith_403Forbidden_ErrorResponse(string status, string statusDescription, HttpStatusCode expectedStatusCode)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(status), status, nameof(statusDescription), statusDescription, nameof(expectedStatusCode), expectedStatusCode);
 
-            await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(TokenType.KAMILLA_SMITH); // Ensure token cache is populated before changing status in case InlineData scenarios above are run/debugged out of order
+            await _dataHolderAccessTokenCache.GetAccessToken(TokenType.KamillaSmith); // Ensure token cache is populated before changing status in case InlineData scenarios above are run/debugged out of order
 
-            var saveStatus = GetStatus(Table.SOFTWAREPRODUCT, SOFTWAREPRODUCT_ID);
-            SetStatus(Table.SOFTWAREPRODUCT, SOFTWAREPRODUCT_ID, status);
+            var saveStatus = _sqlQueryService.GetStatus(EntityType.SOFTWAREPRODUCT, Constants.SoftwareProducts.SoftwareProductId);
+            _sqlQueryService.SetStatus(EntityType.SOFTWAREPRODUCT, Constants.SoftwareProducts.SoftwareProductId, status);
             try
             {
                 // Arrange
-                var accessToken = await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(TokenType.KAMILLA_SMITH);
+                var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(TokenType.KamillaSmith);
 
                 // Act
-                var api = new Infrastructure.API
-                {
-                    CertificateFilename = CERTIFICATE_FILENAME,
-                    CertificatePassword = CERTIFICATE_PASSWORD,
-                    HttpMethod = HttpMethod.Get,
-                    URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                    XV = "1",
-                    XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                    AccessToken = accessToken
-                };
+                var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, System.Net.Http.HttpMethod.Get);
                 var response = await api.SendAsync();
 
                 // Assert
-                using (new AssertionScope())
+                using (new AssertionScope(BaseTestAssertionStrategy))
                 {
                     // Assert - Check status code
                     response.StatusCode.Should().Be(expectedStatusCode);
@@ -180,47 +178,32 @@ namespace CdrAuthServer.IntegrationTests
                     // Assert - Check error response
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        var expectedContent = $@"
-                        {{
-                            ""errors"": [
-                                {{
-                                ""code"": ""urn:au-cds:error:cds-all:Authorisation/AdrStatusNotActive"",
-                                ""title"": ""ADR Status Is Not Active"",
-                                ""detail"": ""ERR-GEN-002: Software product status is {statusDescription.ToUpper()}"",
-                                ""meta"": {{}}
-                                }}
-                            ]
-                        }}";
-                        await Assert_HasContent_Json(expectedContent, response.Content);
+                        var error = new AdrStatusNotActiveException($"ERR-GEN-002: Software product status is {statusDescription.ToUpper()}", "");
+                        var errorList = new ResponseErrorListV2(error.Code, error.Title, error.Detail, null);
+
+                        var expectedContent = JsonConvert.SerializeObject(errorList);
+
+                        await Assertions.AssertHasContentJson(expectedContent, response.Content);
                     }
                 }
             }
             finally
             {
-                SetStatus(Table.SOFTWAREPRODUCT, SOFTWAREPRODUCT_ID, saveStatus);
+                _sqlQueryService.SetStatus(EntityType.SOFTWAREPRODUCT, Constants.SoftwareProducts.SoftwareProductId, saveStatus);
             }
         }
 
         private async Task Test_AC06_AC07(TokenType tokenType, HttpStatusCode expectedStatusCode, string expectedWWWAuthenticateResponse)
         {
             // Arrange
-            var accessToken = await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(tokenType);
+            var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(tokenType);
 
             // Act
-            var api = new Infrastructure.API
-            {
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Get,
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                XV = "1",
-                XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                AccessToken = accessToken
-            };
+            var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, System.Net.Http.HttpMethod.Get);
             var response = await api.SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -228,25 +211,29 @@ namespace CdrAuthServer.IntegrationTests
                 // Assert - Check error response
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    await Assert_HasNoContent2(response.Content);
+                    await Assertions.AssertHasNoContent2(response.Content);
                 }
             }
         }
 
         [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH, HttpStatusCode.OK)]
-        [InlineData(TokenType.INVALID_EMPTY, HttpStatusCode.Unauthorized)]
-        [InlineData(TokenType.INVALID_OMIT, HttpStatusCode.Unauthorized)]
+        [InlineData(TokenType.KamillaSmith, HttpStatusCode.OK)]
+        [InlineData(TokenType.InvalidEmpty, HttpStatusCode.Unauthorized)]
+        [InlineData(TokenType.InvalidOmit, HttpStatusCode.Unauthorized)]
         public async Task AC06_Get_WithNoAccessToken_ShouldRespondWith_401Unauthorised_WWWAuthenticateHeader(TokenType tokenType, HttpStatusCode expectedStatusCode)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(tokenType), tokenType, nameof(expectedStatusCode), expectedStatusCode);
+
             await Test_AC06_AC07(tokenType, expectedStatusCode, "Bearer");
         }
 
         [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH, HttpStatusCode.OK)]
-        [InlineData(TokenType.INVALID_FOO, HttpStatusCode.Unauthorized)]
+        [InlineData(TokenType.KamillaSmith, HttpStatusCode.OK)]
+        [InlineData(TokenType.InvalidFoo, HttpStatusCode.Unauthorized)]
         public async Task AC07_Get_WithInvalidAccessToken_ShouldRespondWith_401Unauthorised_WWWAuthenticateHeader(TokenType tokenType, HttpStatusCode expectedStatusCode)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(tokenType), tokenType, nameof(expectedStatusCode), expectedStatusCode);
+
             await Test_AC06_AC07(tokenType, expectedStatusCode, @"Bearer error=""invalid_token""");
         }
 
@@ -254,69 +241,17 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData(HttpStatusCode.Unauthorized)]
         public async Task AC08_Get_WithExpiredAccessToken_ShouldRespondWith_401Unauthorised_WWWAuthenticateHeader(HttpStatusCode expectedStatusCode)
         {
+            Log.Information("Running test with Params: {P1}={V1}.", nameof(expectedStatusCode), expectedStatusCode);
+
             // Arrange
-            var accessToken = BaseTest.EXPIRED_CONSUMER_ACCESS_TOKEN;
+            var accessToken = Constants.AccessTokens.ConsumerAccessTokenBankingExpired;
 
             // Act
-            var api = new Infrastructure.API
-            {
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Get,
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                XV = "1",
-                XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                AccessToken = accessToken
-            };
+            var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, System.Net.Http.HttpMethod.Get);
             var response = await api.SendAsync();
 
             // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                // Assert - Check error response
-                if (response.StatusCode != HttpStatusCode.OK)
-                { 
-                     Assert_HasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at ",
-                        response.Headers,
-                        "WWW-Authenticate",
-                        true);
-                }
-            }
-        }
-
-        [Theory]
-        [InlineData(CERTIFICATE_FILENAME, CERTIFICATE_PASSWORD, HttpStatusCode.OK)]
-        [InlineData(ADDITIONAL_CERTIFICATE_FILENAME, ADDITIONAL_CERTIFICATE_PASSWORD, HttpStatusCode.Unauthorized)]  // Different holder of key
-        public async Task AC09_Get_WithDifferentHolderOfKey_ShouldRespondWith_401Unauthorised(string certificateFilename, string certificatePassword, HttpStatusCode expectedStatusCode)
-        {
-            // Arrange
-            var accessToken = await Fixture.DataHolder_AccessToken_Cache.GetAccessToken(TokenType.KAMILLA_SMITH);
-
-            // Act
-            var api = new Infrastructure.API
-            {
-                CertificateFilename = certificateFilename,
-                CertificatePassword = certificatePassword,
-                HttpMethod = HttpMethod.Get,
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/userinfo",
-                XV = "1",
-                XFapiAuthDate = DateTime.Now.ToUniversalTime().ToString("r"),
-                AccessToken = accessToken
-            };
-
-            string? thumbprint = null;
-            if (BaseTest.STANDALONE)
-            {
-                thumbprint = certificateFilename == ADDITIONAL_CERTIFICATE_FILENAME ? BaseTest.XTLSADDITIONALCLIENTCERTTHUMBPRINT : null;
-            }
-
-            var response = await api.SendAsync(XTlsClientCertThumbprint: thumbprint);
-
-            // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -324,9 +259,63 @@ namespace CdrAuthServer.IntegrationTests
                 // Assert - Check error response
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    var expectedContent = @"{""error"":""invalid_token"",""error_description"":""ERR-AUTH-001: Holder of Key check failed""}";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
+                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at ",
+                       response.Headers,
+                       "WWW-Authenticate",
+                       true);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task AC09_Get_WithCurrentHolderOfKey_Success()
+        {
+            // Arrange
+            var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(TokenType.KamillaSmith);
+
+            string? thumbprint = null;
+            if (_authServerOptions.STANDALONE)
+            {
+                thumbprint = _authServerOptions.XTLSCLIENTCERTTHUMBPRINT;
+            }
+
+            // Act
+            var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, thumbprint, HttpMethod.Get, Constants.Certificates.CertificateFilename, Constants.Certificates.CertificatePassword);
+            var response = await api.SendAsync();
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.OK);
+            }
+        }
+
+        [Theory]
+        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)]  // Different holder of key
+        public async Task AC09_Get_WithDifferentHolderOfKey_ShouldRespondWith_401Unauthorised(string certificateFilename, string certificatePassword)
+        {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(certificateFilename), certificateFilename, nameof(certificatePassword), certificatePassword);
+
+            // Arrange
+            var accessToken = await _dataHolderAccessTokenCache.GetAccessToken(TokenType.KamillaSmith);
+
+            AuthoriseException expectedError = new InvalidKeyHolderException();
+
+            string? thumbprint = null;
+            if (_authServerOptions.STANDALONE)
+            {
+                thumbprint = certificateFilename == Constants.Certificates.AdditionalCertificateFilename ? _authServerOptions.XTLSADDITIONALCLIENTCERTTHUMBPRINT : _authServerOptions.XTLSCLIENTCERTTHUMBPRINT;
+            }
+
+            // Act
+            var api = _apiServiceDirector.BuildUserInfoAPI("1", accessToken, thumbprint, HttpMethod.Get, certificateFilename, certificatePassword);
+            var response = await api.SendAsync();
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
     }

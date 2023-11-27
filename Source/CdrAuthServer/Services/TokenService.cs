@@ -548,12 +548,12 @@ namespace CdrAuthServer.Services
             };
 
             // Add the scopes as an array.
-            claims.AddRange(SetAccessTokenScopes(tokenRequest.scope, GrantTypes.ClientCredentials, configOptions).Split(' ').Select(s =>
-                new Claim(ClaimNames.Scope, s)));
+            var scopes = SetAccessTokenScopes(tokenRequest.scope, GrantTypes.ClientCredentials, configOptions).Split(' ');
+            claims.AddRange(scopes.Select(s => new Claim(ClaimNames.Scope, s)));
 
             return await CreateToken(
                 claims,
-                configOptions.Issuer,
+                scopes.Contains(Scopes.AdminMetricsRead) ? "cds-au" : configOptions.Issuer,
                 TokenTypes.AccessToken,
                 configOptions.AccessTokenExpirySeconds,
                 configOptions,

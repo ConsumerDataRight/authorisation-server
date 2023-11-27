@@ -1,32 +1,77 @@
 #undef FIXME_MJS_BELONGS_IN_MDH_INTEGRATION_TESTS // FIXME - MJS - the test using this code needs to be in MDH integration tests since it uses MDH endpoint (ie $"{DH_MTLS_GATEWAY_URL}/cds-au/v1/banking/accounts")
 
-using CdrAuthServer.IntegrationTests.Extensions;
-using CdrAuthServer.IntegrationTests.Fixtures;
-using CdrAuthServer.IntegrationTests.Infrastructure.API2;
+using CdrAuthServer.IntegrationTests.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.CdsExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
-using System;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Serilog;
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
-
-#nullable enable
+using Xunit.DependencyInjection;
+using static ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services.DataHolderAuthoriseService;
+using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests
 {
-    public class US17652_CdrAuthServer_ArrangementRevocation : BaseTest, IClassFixture<TestFixture>
+    public class US17652_CdrAuthServer_ArrangementRevocation : BaseTest, IClassFixture<BaseFixture>
     {
-        static private async Task Arrange()
+        private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
+        private readonly IDataHolderRegisterService _dataHolderRegisterService;
+        private readonly IDataHolderParService _dataHolderParService;
+        private readonly IDataHolderTokenService _dataHolderTokenService;
+        private readonly ISqlQueryService _sqlQueryService;
+        private readonly IDataHolderCDRArrangementRevocationService _cdrArrangementRevocationService;
+        private readonly IApiServiceDirector _apiServiceDirector;
+
+        public US17652_CdrAuthServer_ArrangementRevocation(IOptions<TestAutomationOptions> options,
+            IOptions<TestAutomationAuthServerOptions> authServerOptions,
+            IDataHolderRegisterService dataHolderRegisterService,
+            IDataHolderParService dataHolderParService,
+            IDataHolderTokenService dataHolderTokenService,
+            ISqlQueryService sqlQueryService,
+            IDataHolderCDRArrangementRevocationService cdrArrangementRevocationService,
+             IApiServiceDirector apiServiceDirector,
+            ITestOutputHelperAccessor testOutputHelperAccessor,
+            IConfiguration config)
+            : base(testOutputHelperAccessor, config)
+
         {
-            TestSetup.DataHolder_PurgeIdentityServer();
-            await TestSetup.DataHolder_RegisterSoftwareProduct();
+            if (testOutputHelperAccessor is null)
+            {
+                throw new ArgumentNullException(nameof(testOutputHelperAccessor));
+            }
+
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
+            _dataHolderRegisterService = dataHolderRegisterService ?? throw new ArgumentNullException(nameof(dataHolderRegisterService));
+            _dataHolderParService = dataHolderParService ?? throw new ArgumentNullException(nameof(dataHolderParService));
+            _dataHolderTokenService = dataHolderTokenService ?? throw new ArgumentNullException(nameof(dataHolderTokenService));
+            _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
+            _cdrArrangementRevocationService = cdrArrangementRevocationService ?? throw new ArgumentNullException(nameof(cdrArrangementRevocationService));
+            _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        static int CountPersistedGrant(string persistedGrantType, string? key = null)
+        private async Task Arrange()
         {
-            using var connection = new SqlConnection(IDENTITYSERVER_CONNECTIONSTRING);
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
+            await _dataHolderRegisterService.RegisterSoftwareProduct();
+        }
+
+        int CountPersistedGrant(string persistedGrantType, string? key = null)
+        {
+            using var connection = new SqlConnection(_options.AUTHSERVER_CONNECTIONSTRING);
             connection.Open();
 
             SqlCommand selectCommand;
@@ -52,27 +97,26 @@ namespace CdrAuthServer.IntegrationTests
             await Arrange();
 
             // Arrange - Get authcode
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,             
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, sharingDuration: SHARING_DURATION) 
-            }.Authorise();
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+               .WithUserId(Constants.Users.UserIdKamillaSmith)
+               .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+               .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+               .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get token and cdrArrangementId
-            var cdrArrangementId = (await DataHolder_Token_API.GetResponse(authCode))?.CdrArrangementId;
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
 
             // Act - Revoke CDR arrangement
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(cdrArrangementId: cdrArrangementId);
+            var response = await _cdrArrangementRevocationService.SendRequest(cdrArrangementId: cdrArrangementId);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-                await Assert_HasNoContent2(response.Content);
+                await Assertions.AssertHasNoContent2(response.Content);
 
                 // Assert - Check persisted grants no longer exist
                 CountPersistedGrant("refresh_token").Should().Be(0);
@@ -80,9 +124,9 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        static async Task RevokeCdrArrangement(string cdrArrangementId)
+        async Task RevokeCdrArrangement(string cdrArrangementId)
         {
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(cdrArrangementId: cdrArrangementId);
+            var response = await _cdrArrangementRevocationService.SendRequest(cdrArrangementId: cdrArrangementId);
             if (response.StatusCode != HttpStatusCode.NoContent)
             {
                 throw new Exception("Error revoking cdr arrangement");
@@ -112,23 +156,23 @@ namespace CdrAuthServer.IntegrationTests
 
                 return response;
             }
-#endif            
+#endif
+
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(revokeArrangement), revokeArrangement, nameof(expectedStatusCode), expectedStatusCode);
 
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,             
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, sharingDuration: SHARING_DURATION) 
-            }.Authorise();
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+           .WithUserId(Constants.Users.UserIdKamillaSmith)
+           .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+           .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+           .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get token response using authCode
-            var tokenResponse = await DataHolder_Token_API.GetResponse(authCode);
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
             if (tokenResponse == null || tokenResponse.AccessToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
 
             // Arrange - Revoke the arrangement
@@ -142,64 +186,85 @@ namespace CdrAuthServer.IntegrationTests
             var response = await GetAccounts(tokenResponse.AccessToken);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(expectedStatusCode);
 
                 if (expectedStatusCode != HttpStatusCode.OK)
                 {
-                    await Assert_HasNoContent2(response.Content);
+                    await Assertions.Assert_HasNoContent2(response.Content);
                 }
             }
 #endif            
         }
 
-        [Theory]
-        [InlineData(false, HttpStatusCode.OK)]
-        [InlineData(true, HttpStatusCode.BadRequest)]
-        // When an arrangement has been revoked, trying to use associated refresh token to get newly minted access token should result in error (401Unauthorised)
-        public async Task AC03_GetAccessToken_WithRevokedRefreshToken_ShouldRespondWith_401Unauthorised(bool revokeArrangement, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC03_GetAccessToken_WithValidRefreshToken_Success()
         {
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, sharingDuration: SHARING_DURATION) 
-            }.Authorise();
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+           .WithUserId(Constants.Users.UserIdKamillaSmith)
+           .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+           .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+           .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get token response using authCode
-            var tokenResponse = await DataHolder_Token_API.GetResponse(authCode);
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);//, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
+            if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
+
+            // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked            
+            var response = await _dataHolderTokenService.SendRequest(
+                grantType: "refresh_token",
+                refreshToken: tokenResponse?.RefreshToken,
+                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS
+                );
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                response.StatusCode.Should().Be(HttpStatusCode.OK);
+            }
+        }
+
+        [Fact]
+        // When an arrangement has been revoked, trying to use associated refresh token to get newly minted access token should result in error (401Unauthorised)
+        public async Task AC03_GetAccessToken_WithRevokedRefreshToken_ShouldRespondWith_401Unauthorised()
+        {
+            // Arrange
+            await Arrange();
+
+            var expectedError = new InvalidRefreshTokenException();
+
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+           .WithUserId(Constants.Users.UserIdKamillaSmith)
+           .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+           .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+           .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
+
+            // Arrange - Get token response using authCode
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);//, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
             if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
 
             // Arrange - Revoke the arrangement
-            if (revokeArrangement)
-            {
-                await RevokeCdrArrangement(tokenResponse.CdrArrangementId);
-            }
+            await RevokeCdrArrangement(tokenResponse.CdrArrangementId);
 
             // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked            
-            var response = await DataHolder_Token_API.SendRequest(
+            var response = await _dataHolderTokenService.SendRequest(
                 grantType: "refresh_token",
                 refreshToken: tokenResponse?.RefreshToken,
-                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
+                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS
+                );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                if (expectedStatusCode != HttpStatusCode.OK)
-                {
-                    // Assert - Check json
-                    var expectedResponse = @"{""error"":""invalid_grant"",""error_description"":""ERR-TKN-002: refresh_token is invalid""}";
-                    await Assert_HasContent_Json(expectedResponse, response.Content);
-                }
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
@@ -211,23 +276,18 @@ namespace CdrAuthServer.IntegrationTests
             await Arrange();
 
             // Act
-            const string CdrArrangementId = "foo";
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(cdrArrangementId: CdrArrangementId);
+            var cdrArrangementId = "foo";
+            var response = await _cdrArrangementRevocationService.SendRequest(cdrArrangementId: cdrArrangementId);
+
+            var expectedError = new InvalidArrangementException(cdrArrangementId);
+            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError));
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+                response.StatusCode.Should().Be(expectedError.StatusCode);
 
-                var expectedResponse = $@"{{
-                    ""errors"": [{{
-                        ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
-                        ""title"": ""Invalid Consent Arrangement"",
-                        ""detail"": ""{CdrArrangementId}"",
-                        ""meta"": {{}}
-                    }}]
-                }}";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertHasContentJson(expectedContent, response.Content);
             }
         }
 
@@ -235,91 +295,86 @@ namespace CdrAuthServer.IntegrationTests
         // Calling revocation endpoint with arrangementid that is not associated with the DataRecipient should result in error (422UnprocessableEntity)
         public async Task AC05_POST_WithNonAssociatedArrangementID_ShouldRespondWith_422UnprocessableEntity()
         {
-            static async Task<JWKS_Endpoint> ArrangeAdditionalDataRecipient()
+            async Task<string> ArrangeAdditionalDataRecipient()
             {
                 // Patch Register for additional data recipient
-                TestSetup.Register_PatchRedirectUri(
-                    ADDITIONAL_SOFTWAREPRODUCT_ID,
-                    ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
-                TestSetup.Register_PatchJwksUri(
-                    ADDITIONAL_SOFTWAREPRODUCT_ID,
-                    ADDITIONAL_SOFTWAREPRODUCT_JWKS_URI_FOR_INTEGRATION_TESTS);
+                Helpers.AuthServer.PatchRedirectUriForRegister(_options,
+                    Constants.SoftwareProducts.AdditionalSoftwareProductId,
+                    _options.ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
+                Helpers.AuthServer.PatchJwksUriForRegister(_options,
+                    Constants.SoftwareProducts.AdditionalSoftwareProductId,
+                    _options.ADDITIONAL_SOFTWAREPRODUCT_JWKS_URI_FOR_INTEGRATION_TESTS);
 
                 // Stand-up JWKS endpoint for additional data recipient
-                var jwks_endpoint = new JWKS_Endpoint(
-                    ADDITIONAL_SOFTWAREPRODUCT_JWKS_URI_FOR_INTEGRATION_TESTS,
-                    ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                    ADDITIONAL_JWKS_CERTIFICATE_PASSWORD);
+                var jwks_endpoint = new JwksEndpoint(
+                    _options.ADDITIONAL_SOFTWAREPRODUCT_JWKS_URI_FOR_INTEGRATION_TESTS,
+                    Constants.Certificates.AdditionalJwksCertificateFilename,
+                    Constants.Certificates.AdditionalJwksCertificatePassword);
                 jwks_endpoint.Start();
 
                 // Register software product for additional data recipient
-                await TestSetup.DataHolder_RegisterSoftwareProduct(
-                    ADDITIONAL_BRAND_ID,
-                    ADDITIONAL_SOFTWAREPRODUCT_ID,
-                    ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                    ADDITIONAL_JWKS_CERTIFICATE_PASSWORD);
+                var (_, _, clientId) = await _dataHolderRegisterService.RegisterSoftwareProduct(
+                    Constants.Brands.AdditionalBrandId,
+                    Constants.SoftwareProducts.AdditionalSoftwareProductId,
+                    Constants.Certificates.AdditionalJwksCertificateFilename,
+                    Constants.Certificates.AdditionalJwksCertificatePassword);
 
-                return jwks_endpoint;
+                return clientId;
             }
 
             // Arrange
             await Arrange();
-            await using var additional_jwks_endpoint = await ArrangeAdditionalDataRecipient();
+            string originalRegisteredClientId = _options.LastRegisteredClientId;
 
             // Arrange - Get authcode and thus create a CDR arrangement for ADDITIONAL_SOFTWAREPRODUCT_ID client
-            var additionalClientId = GetClientId(ADDITIONAL_SOFTWAREPRODUCT_ID);
-            var requestUri = await PAR_GetRequestUri(
-                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, 
-                clientId: additionalClientId,
-                jwtCertificateForClientAssertionFilename: ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                jwtCertificateForClientAssertionPassword: ADDITIONAL_JWKS_CERTIFICATE_PASSWORD,
-                jwtCertificateForRequestObjectFilename: ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                jwtCertificateForRequestObjectPassword: ADDITIONAL_JWKS_CERTIFICATE_PASSWORD,
-                redirectUri: ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
-                sharingDuration: SHARING_DURATION);
+            await ArrangeAdditionalDataRecipient();
+            string additionalClientId = _options.LastRegisteredClientId;
 
-            (var additional_authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,            
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                ClientId = additionalClientId,
-                RedirectURI = ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
-                JwtCertificateFilename = ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                JwtCertificatePassword = ADDITIONAL_JWKS_CERTIFICATE_PASSWORD,
-                RequestUri = requestUri 
-            }.Authorise(redirectUrl: ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
+            var requestUri = await _dataHolderParService.GetRequestUri(
+                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
+                clientId: additionalClientId,
+                jwtCertificateForClientAssertionFilename: Constants.Certificates.AdditionalJwksCertificateFilename,
+                jwtCertificateForClientAssertionPassword: Constants.Certificates.AdditionalJwksCertificatePassword,
+                jwtCertificateForRequestObjectFilename: Constants.Certificates.AdditionalJwksCertificateFilename,
+                jwtCertificateForRequestObjectPassword: Constants.Certificates.AdditionalJwksCertificatePassword,
+                redirectUri: _options.ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
+                sharingDuration: Constants.AuthServer.SharingDuration);
+
+            // Arrange - Get authcode
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, true, _authServerOptions)
+           .WithUserId(Constants.Users.UserIdKamillaSmith)
+           .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+           .WithClientId(additionalClientId)
+           .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+           .WithCertificateFilename(Constants.Certificates.CertificateFilename)
+           .WithCertificatePassword(Constants.Certificates.CertificatePassword)
+           .WithRequestUri(requestUri)
+           .BuildAsync();
+
+            (var additional_authCode, _) = await authService.Authorise();
 
             // Arrange - Get the cdrArrangementId created by ADDITIONAL_SOFTWAREPRODUCT_ID client
-            var additional_cdrArrangementId = (await DataHolder_Token_API.GetResponse(
+            var additional_cdrArrangementId = (await _dataHolderTokenService.GetResponse(
                 additional_authCode,
                 clientId: additionalClientId,
-                redirectUri: ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
-                jwkCertificateFilename: ADDITIONAL_JWKS_CERTIFICATE_FILENAME,
-                jwkCertificatePassword: ADDITIONAL_JWKS_CERTIFICATE_PASSWORD
+                redirectUri: _options.ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
+                jwkCertificateFilename: Constants.Certificates.AdditionalJwksCertificateFilename,
+                jwkCertificatePassword: Constants.Certificates.AdditionalJwksCertificatePassword
             ))?.CdrArrangementId;
 
-            // Act - Have SOFTWAREPRODUCT_ID client attempt to revoke CDR arrangement created by ADDITIONAL_SOFTWAREPRODUCT_ID client
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(cdrArrangementId: additional_cdrArrangementId);
+            var expectedError = new InvalidArrangementException(additional_cdrArrangementId);
+            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError));
+
+            // Act - Have original registered client attempt to revoke CDR arrangement created by ADDITIONAL_SOFTWAREPRODUCT_ID client
+            var response = await _cdrArrangementRevocationService.SendRequest(clientId: originalRegisteredClientId, cdrArrangementId: additional_cdrArrangementId);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+                response.StatusCode.Should().Be(expectedError.StatusCode);
 
                 // Assert - Check json
-                var expectedResponse = $@"{{
-                    ""errors"": [
-                        {{
-                            ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
-                            ""title"": ""Invalid Consent Arrangement"",
-                            ""detail"": ""{additional_cdrArrangementId}"",
-                            ""meta"": {{}}
-                        }}
-                    ]
-                }}";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertHasContentJson(expectedContent, response.Content);
 
                 // Assert - Check persisted grants still exist
                 CountPersistedGrant("refresh_token").Should().Be(1);
@@ -334,32 +389,28 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode            
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
-            }.Authorise();
+            var expectedError = new ClientNotFoundException();
+
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+            .WithUserId(Constants.Users.UserIdKamillaSmith)
+            .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+            .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+            .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get cdrArrangementId
-            var cdrArrangementId = (await DataHolder_Token_API.GetResponse(authCode))?.CdrArrangementId;
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
 
             // Act
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(
+            var response = await _cdrArrangementRevocationService.SendRequest(
                 cdrArrangementId: cdrArrangementId,
                 clientId: "foo");
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check json
-                var expectedResponse = @"{""error"":""invalid_client"",""error_description"":""ERR-GEN-004: Client not found""}";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
@@ -370,32 +421,29 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode            
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
-            }.Authorise();
+            var expectedError = new InvalidClientAssertionTypeException();
+
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+        .WithUserId(Constants.Users.UserIdKamillaSmith)
+        .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+        .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+        .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
+
 
             // Arrange - Get cdrArrangementId
-            var cdrArrangementId = (await DataHolder_Token_API.GetResponse(authCode))?.CdrArrangementId;
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
 
             // Act
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(
+            var response = await _cdrArrangementRevocationService.SendRequest(
                 cdrArrangementId: cdrArrangementId,
                 clientAssertionType: "foo");
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check json
-                var expectedResponse = @"{""error"":""invalid_client"",""error_description"":""ERR-CLIENT_ASSERTION-003: client_assertion_type must be urn:ietf:params:oauth:client-assertion-type:jwt-bearer""}";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
@@ -406,74 +454,94 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode            
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
-            }.Authorise();
+            var expectedError = new InvalidClientAssertionFormatException();
+
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+       .WithUserId(Constants.Users.UserIdKamillaSmith)
+       .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+       .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+       .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get cdrArrangementId
-            var cdrArrangementId = (await DataHolder_Token_API.GetResponse(authCode))?.CdrArrangementId;
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
 
             // Act
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(
+            var response = await _cdrArrangementRevocationService.SendRequest(
                 cdrArrangementId: cdrArrangementId,
                 clientAssertion: "foo");
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check json
-                var expectedResponse = @"{""error"":""invalid_client"",""error_description"":""ERR-CLIENT_ASSERTION-005: Cannot read client_assertion.  Invalid format.""}";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
-        [Theory]
-        [InlineData(JWT_CERTIFICATE_FILENAME, JWT_CERTIFICATE_PASSWORD, HttpStatusCode.NoContent)]
-        [InlineData(ADDITIONAL_CERTIFICATE_FILENAME, ADDITIONAL_CERTIFICATE_PASSWORD, HttpStatusCode.BadRequest)]  // ie different holder of key
-        // Calling revocation endpoint with different holder of key should result in error
-        public async Task AC09_POST_WithDifferentHolderOfKey_ShouldRespondWith_400BadRequest(string jwtCertificateFilename, string jwtCertificatePassword, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC09_POST_WithCurrentHolderOfKey_Success_NoContent()
         {
             // Arrange
             await Arrange();
 
-            // Arrange - Get authcode            
-            (var authCode, _) = await new DataHolder_Authorise_APIv2
-            {
-                UserId = USERID_KAMILLASMITH,
-                OTP = AUTHORISE_OTP,
-                SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                Scope = US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
-                RequestUri = await PAR_GetRequestUri(scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, sharingDuration: SHARING_DURATION) 
-            }.Authorise();
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+       .WithUserId(Constants.Users.UserIdKamillaSmith)
+       .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+       .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+       .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get cdrArrangementId
-            var cdrArrangementId = (await DataHolder_Token_API.GetResponse(authCode))?.CdrArrangementId;
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
 
             // Act
-            var response = await DataHolder_CDRArrangementRevocation_API.SendRequest(
+            var response = await _cdrArrangementRevocationService.SendRequest(
+                cdrArrangementId: cdrArrangementId,
+                jwtCertificateFilename: Constants.Certificates.JwtCertificateFilename,
+                jwtCertificatePassword: Constants.Certificates.JwtCertificatePassword);
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            }
+        }
+
+        [Theory]
+        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)]  // ie different holder of key
+        // Calling revocation endpoint with different holder of key should result in error
+        public async Task AC09_POST_WithDifferentHolderOfKey_ShouldRespondWith_400BadRequest(string jwtCertificateFilename, string jwtCertificatePassword)
+        {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(jwtCertificateFilename), jwtCertificateFilename, nameof(jwtCertificatePassword), jwtCertificatePassword);
+
+            // Arrange
+            await Arrange();
+
+            var expectedError = new TokenValidationClientAssertionException();
+
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+       .WithUserId(Constants.Users.UserIdKamillaSmith)
+       .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+       .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
+       .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
+
+            // Arrange - Get cdrArrangementId
+            var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
+
+            // Act
+            var response = await _cdrArrangementRevocationService.SendRequest(
                 cdrArrangementId: cdrArrangementId,
                 jwtCertificateFilename: jwtCertificateFilename,
                 jwtCertificatePassword: jwtCertificatePassword);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    // Assert - Check json
-                    var expectedResponse = @"{""error"":""invalid_client"",""error_description"":""ERR-JWT-004: client_assertion - token validation error""}";
-                    await Assert_HasContent_Json(expectedResponse, response.Content);
-                }
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
     }

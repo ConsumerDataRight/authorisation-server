@@ -10,7 +10,7 @@ namespace CdrAuthServer
     public class ErrorCatalogue
     {
         static ErrorCatalogue _instance;
-        private static object locker = new object();
+        private static readonly object locker = new object();
         public static IDictionary<string, ErrorDefinition> _errorCatalogue = new Dictionary<string, ErrorDefinition>();
 
         public static class Categories
@@ -41,6 +41,8 @@ namespace CdrAuthServer
         // MTLS
         public const string MTLS_MULTIPLE_THUMBPRINTS = "ERR-MTLS-001";
         public const string MTLS_NO_CERTIFICATE = "ERR-MTLS-002";
+        public const string MTLS_CERT_OCSP_FAILED = "ERR-MTLS-003";
+        public const string MTLS_CERT_OCSP_ERROR = "ERR-MTLS-004";
 
         //Auth
         public const string AUTHORIZATION_HOLDER_OF_KEY_CHECK_FAILED = "ERR-AUTH-001";
@@ -150,6 +152,8 @@ namespace CdrAuthServer
             // MTLS errors.
             AddToCatalogue(MTLS_MULTIPLE_THUMBPRINTS, Categories.Mtls, "client_certificate_error", "Multiple certificate thumbprints found on request", StatusCodes.Status403Forbidden);
             AddToCatalogue(MTLS_NO_CERTIFICATE, Categories.Mtls, "client_certificate_required", "No client certificate was found on request", StatusCodes.Status403Forbidden);
+            AddToCatalogue(MTLS_CERT_OCSP_ERROR, Categories.Mtls, "certificate_ocsp_invalid", "Certificate status check: {0}", StatusCodes.Status400BadRequest);
+            AddToCatalogue(MTLS_CERT_OCSP_FAILED, Categories.Mtls, "certificate_ocsp_failed", "Certificate status check failed for {0} with result: {1}", StatusCodes.Status400BadRequest);
 
             // Authorization errors.
             AddToCatalogue(AUTHORIZATION_HOLDER_OF_KEY_CHECK_FAILED, Categories.Authorization, "invalid_token", "Holder of Key check failed", StatusCodes.Status401Unauthorized);

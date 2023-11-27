@@ -1,37 +1,52 @@
-using CdrAuthServer.IntegrationTests.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
-
-#nullable enable
+using Xunit.DependencyInjection;
 
 namespace CdrAuthServer.IntegrationTests
 {
     public class US15221_US12969_US15586_CdrAuthServer_Registration_GET : BaseTest, IClassFixture<RegisterSoftwareProductFixture>
     {
+        private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
+        private readonly ISqlQueryService _sqlQueryService;
+        private readonly IApiServiceDirector _apiServiceDirector;
+        private readonly string _clientId;
+
+        public US15221_US12969_US15586_CdrAuthServer_Registration_GET(IOptions<TestAutomationOptions> options, IOptions<TestAutomationAuthServerOptions> authServerOptions, ISqlQueryService sqlQueryService, IApiServiceDirector apiServiceDirector, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
+            : base(testOutputHelperAccessor, config)
+        {
+            if (testOutputHelperAccessor is null)
+            {
+                throw new ArgumentNullException(nameof(testOutputHelperAccessor));
+            }
+
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
+            _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
+            _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
+            _clientId = _options.LastRegisteredClientId;
+        }
+
         [Fact]
         public async Task AC08_Get_WithValidClientId_ShouldRespondWith_200OK_Profile()
         {
             // Arrange
-            var clientId = GetClientId(SOFTWAREPRODUCT_ID);
-            var accessToken = await new DataHolderAccessToken(clientId).GetAccessToken();
+            var accessToken = await new DataHolderAccessToken(_clientId, _options.DH_MTLS_GATEWAY_URL, _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE).GetAccessToken();
 
             // Act
-            var api = new Infrastructure.API
-            {
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/register/{clientId}",
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Get,
-                AccessToken = accessToken
-            };
+            var api = _apiServiceDirector.BuildDataholderRegisterAPI(accessToken, registrationRequest: null, httpMethod: HttpMethod.Get, clientId: _clientId);
             var response = await api.SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
             }
@@ -41,70 +56,46 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC09_Get_WithExpiredAccessToken_ShouldRespondWith_401Unauthorized_ExpiredAccessTokenErrorResponse()
         {
             // Arrange
-            var clientId = GetClientId(SOFTWAREPRODUCT_ID);
-            var accessToken = await new DataHolderAccessToken(clientId).GetAccessToken(true);
+            var accessToken = await new DataHolderAccessToken(_clientId, _options.DH_MTLS_GATEWAY_URL, _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE).GetAccessToken(true);
 
             // Act
-            var api = new Infrastructure.API
-            {
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/register/{clientId}",
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Get,
-                AccessToken = accessToken
-            };
+            var api = _apiServiceDirector.BuildDataholderRegisterAPI(accessToken, registrationRequest: null, httpMethod: HttpMethod.Get, clientId: _clientId);
             var response = await api.SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     // Assert - Check WWWAutheticate header
-                    Assert_HasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
+                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
                         response.Headers, "WWW-Authenticate");
                 }
             }
         }
 
-        [Theory]
-        [InlineData(SOFTWAREPRODUCT_ID, HttpStatusCode.OK)]
-        [InlineData(GUID_FOO, HttpStatusCode.Unauthorized)]
-        public async Task AC10_Get_WithInvalidClientId_ShouldRespondWith_401Unauthorized_WWWAuthenticateHeader(string softwareProductId, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC10_Get_WithInvalidClientId_ShouldRespondWith_401Unauthorized_WWWAuthenticateHeader()
         {
             // Arrange
-            var accessToken = await new DataHolderAccessToken(GetClientId(SOFTWAREPRODUCT_ID)).GetAccessToken();
-
-            var clientId = softwareProductId switch
-            {
-                SOFTWAREPRODUCT_ID => GetClientId(softwareProductId),
-                _ => softwareProductId
-            };
+            var accessToken = await new DataHolderAccessToken(_clientId, _options.DH_MTLS_GATEWAY_URL, _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE).GetAccessToken();
 
             // Act
-            var api = new Infrastructure.API
-            {
-                URL = $"{DH_MTLS_GATEWAY_URL}/connect/register/{clientId.ToLower()}",
-                CertificateFilename = CERTIFICATE_FILENAME,
-                CertificatePassword = CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Get,
-                AccessToken = accessToken
-            };
-            var response = await api.SendAsync(AllowAutoRedirect: false);
+            var api = _apiServiceDirector.BuildDataholderRegisterAPI(accessToken, registrationRequest: null, httpMethod: HttpMethod.Get, clientId: Constants.GuidFoo);
+            var response = await api.SendAsync(allowAutoRedirect: false);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
+                response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-                // Assert - Check error response
-                if (response.StatusCode != HttpStatusCode.OK)
                 {
                     // Assert - Check error response 
-                    Assert_HasHeader(@"Bearer error=""invalid_request"", error_description=""The client is unknown""",
+                    // TODO - replace with authorise exception
+                    Assertions.AssertHasHeader(@"Bearer error=""invalid_request"", error_description=""The client is unknown""",
                         response.Headers,
                         "WWW-Authenticate",
                         true); // starts with

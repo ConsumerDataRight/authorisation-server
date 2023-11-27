@@ -62,7 +62,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/register")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [Consumes("application/jwt")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ClientRegistrationResponse), StatusCodes.Status201Created)]

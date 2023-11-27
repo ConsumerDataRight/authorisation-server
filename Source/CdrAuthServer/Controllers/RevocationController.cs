@@ -32,7 +32,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/revocation")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         public async Task<ActionResult> RevokeToken(
             [FromForm] string token,

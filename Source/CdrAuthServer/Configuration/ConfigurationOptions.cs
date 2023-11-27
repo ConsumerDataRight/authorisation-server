@@ -78,6 +78,7 @@ namespace CdrAuthServer.Configuration
         public bool SupportJarmEncryption { get; set; } = false;
         public string ClientCertificateThumbprintHttpHeaderName { get; set; } = HttpHeaders.ClientCertificateThumbprint;
         public string ClientCertificateCommonNameHttpHeaderName { get; set; } = HttpHeaders.ClientCertificateCommonName;
+        public string ClientCertificateHttpHeaderName { get; set; } = HttpHeaders.ClientCertificate;
         public IList<string>? OverrideMtlsChecks { get; set; }
         public string AutoFillCustomerId { get; set; } = string.Empty;
         public string AutoFillOtp { get; set; } = string.Empty;

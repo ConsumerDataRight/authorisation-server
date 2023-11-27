@@ -39,8 +39,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.IntegrationTe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.E2ETests", "CdrAuthServer.E2ETests\CdrAuthServer.E2ETests.csproj", "{FB0EAE35-BFBC-444E-B575-9093340DB740}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E43B55CB-B68B-4733-81A4-B293FD01C4F1}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.API.Logger", "CdrAuthServer.API.Logger\CdrAuthServer.API.Logger.csproj", "{4938DCAE-5403-4ABF-A383-5814F6174E86}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CdrAuthServer.GetDataRecipients", "CdrAuthServer.GetDataRecipients\CdrAuthServer.GetDataRecipients.csproj", "{15414FBE-A899-4670-833A-54C9496717F6}"

@@ -4,9 +4,9 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>1.0.3</Version>
-	<AssemblyVersion>1.0.3</AssemblyVersion>
-	<FileVersion>1.0.3</FileVersion>
+	<Version>1.1.1</Version>
+	<AssemblyVersion>1.1.1</AssemblyVersion>
+	<FileVersion>1.1.1</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
 	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.23.1" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

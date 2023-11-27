@@ -1,7 +1,7 @@
-![Consumer Data Right Logo](https://raw.githubusercontent.com/ConsumerDataRight/authorisation-server/main/Assets/cdr-logo.png) 
+![Consumer Data Right Logo](./Assets/cdr-logo.png?raw=true) 
 
 [![Consumer Data Standards v1.22.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.22.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)
-[![Conformance Test Suite 4.0](https://img.shields.io/badge/Conformance%20Test%20Suite-v4.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders)
+[![Conformance Test Suite 4.3.1](https://img.shields.io/badge/Conformance%20Test%20Suite-v4.3.1-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders)
 [![FAPI 1.0 Advanced Profile](https://img.shields.io/badge/FAPI%201.0-orange.svg)](https://openid.net/specs/openid-financial-api-part-2-1_0.html)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -17,7 +17,7 @@ The project is used in the Participant Tooling Authorisation Server, providing t
 The Authorisation Server:
 
 -   aligns to  [v1.22.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  of the  [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  in particular  [FAPI 1.0 Migration Phase 4](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  with backwards compatbility to Migration Phase 2 and 3;
--   has passed v4.0 of the  [Conformance Test Suite for Data Holders](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders); and
+-   has passed v4.3.1 of the  [Conformance Test Suite for Data Holders](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders); and
 -   is certified with the [FAPI 1.0 Advanced Profile](https://openid.net/specs/openid-financial-api-part-2-1_0.html)  .
 
 Note: Consumer Data Standards FAPI 1.0 Migration Phase 1 is no longer supported.
@@ -33,12 +33,12 @@ The Authorisation Server is certified by [OpenID](https://openid.net/connect/) u
 Full test results for the Authorisation Server can be seen on the [OpenID website](https://www.certification.openid.net/plan-detail.html?plan=BGnDgdFgYro9d&public=true).
 Certification for the Authorisation Server can be seen under the Australia CDR profile section on the [OpenID website](https://openid.net/certification/#FAPI_OPs)
 
-[<img src="https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-fapi-certification.png" alt="Authorisation Server - FAPI Certification"/>](https://raw.githubusercontent.com/ConsumerDataRight/AuthorisationServer/main/Assets/authorisation-server-fapi-certification.png)
+[<img src="./Assets/authorisation-server-fapi-certification.png?raw=true" alt="Authorisation Server - FAPI Certification"/>](./Assets/authorisation-server-fapi-certification.png?raw=true)
 
 ## Getting Started
-The Authorisation Server can be used for providing authentication to the [Mock Data Holder](https://github.com/ConsumerDataRight/mock-data-holder) and [Mock Data Holder Energy](https://github.com/ConsumerDataRight/mock-data-holder-energy). You can swap out any of the Mock Data Holders, and [Mock Data Recipient](https://github.com/ConsumerDataRight/mock-data-recipient) solutions with a solution of your own.
+The Authorisation Server can be used for providing authentication to the Banking and Energy [Mock Data Holders](https://github.com/ConsumerDataRight/mock-data-holder). You can swap out any of the Mock Data Holders and [Mock Data Recipient](https://github.com/ConsumerDataRight/mock-data-recipient) solutions with a solution of your own.
 
-Please note that the Authorisation Server can also run as an embedded component of the [Mock Data Holder](https://github.com/ConsumerDataRight/mock-data-holder) and [Mock Data Holder Energy](https://github.com/ConsumerDataRight/mock-data-holder-energy) solution. This is not covered in this guide.
+Please note that the Authorisation Server can also run as an embedded component of the Banking and Energy [Mock Data Holders](https://github.com/ConsumerDataRight/mock-data-holder) solution. This is not covered in this guide.
 
 There are a number of ways that the artefacts within this project can be used:
 1. Build and deploy the source code
@@ -51,9 +51,9 @@ To get started, clone the source code.
 git clone https://github.com/ConsumerDataRight/authorisation-server.git
 ```
 
-To get help on launching and debugging the solution, see the [help guide](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Help/debugging/HELP.md). 
+To get help on launching and debugging the solution, see the [help guide](./Help/debugging/HELP.md). 
 
-If you would like to contribute features or fixes back to the Authorisation Server repository, consult the [contributing guidelines](https://github.com/ConsumerDataRight/authorisation-server/blob/main/CONTRIBUTING.md).
+If you would like to contribute features or fixes back to the Authorisation Server repository, consult the [contributing guidelines](./CONTRIBUTING.md).
 
 ### Use the pre-built image
 
@@ -65,21 +65,21 @@ A version of the Authorisation Server is built into a single Docker image that i
 docker pull consumerdataright/authorisation-server
 ```
 
-To get help on launching the solution in a container, see the [help guide](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Help/container/HELP.md).
+To get help on launching the solution in a container, see the [help guide](./Help/container/HELP.md).
 
 #### Try it out
 
-Once the Authorisation Server container is running, you can use the provided [Authorisation Server Postman API collection](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Postman/README.md) to try it out.
+Once the Authorisation Server container is running, you can use the provided [Authorisation Server Postman API collection](./Postman/README.md) to try it out.
 
 #### Certificate Management
 
-Consult the [Certificate Management](https://github.com/ConsumerDataRight/authorisation-server/blob/main/CertificateManagement/README.md) documentation for more information about how certificates are used for the Authorisation Server.
+Consult the [Certificate Management](./CertificateManagement/README.md) documentation for more information about how certificates are used for the Authorisation Server.
 
 #### Loading your own data
 
 The Authorisation Server contains seed data files in a json format. The Authorisation Server will read directly from these files when:
- - Loading Customer and Account data for use in the Consent and Authorisation flow [User Interface](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Source/CdrAuthServer.UI/src/models/DataModels.ts).
- - Adding user name claims during a [token request](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Source/CdrAuthServer/Services/TokenService.cs).
+ - Loading Customer and Account data for use in the Consent and Authorisation flow [User Interface](./Source/CdrAuthServer.UI/src/models/DataModels.ts).
+ - Adding user name claims during a [token request](./Source/CdrAuthServer/Services/TokenService.cs).
 
 The following steps required to load your own data into the container instance or code running in Visual Studio:
 1. Within the `/Source/CdrAuthServer/Data` folder of the container or source code directory, make a copy of the `customer-seed-data.json` file for banking customers or the `customer-seed-data-energy.json` file for energy customers, renaming to a name of your choice, e.g. `my-new-customer-seed-data.json`.
@@ -105,13 +105,13 @@ To get help on launching the solution in a container, see the [help guide](./Hel
 
 ## Authorisation Server - Architecture
 The following diagram outlines the high level architecture of the Authorisation Server
-[<img src="https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-architecture.png" alt="Authorisation Server - Architecture"/>](https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-architecture.png)
+[<img src="./Assets/authorisation-server-architecture.png?raw=true" alt="Authorisation Server - Architecture"/>](./Assets/authorisation-server-architecture.png?raw=true)
 
 The following diagram illustrates the docker container for the Authorisation Server
-[<img src="https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-docker-container.png" alt="Authorisation Server - Docker Container"/>](https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-docker-container.png)
+[<img src="./Assets/authorisation-server-docker-container.png?raw=true" alt="Authorisation Server - Docker Container"/>](./Assets/authorisation-server-docker-container.png?raw=true)
 
 The following diagram illustrates the high level features for the Authorisation Server
-[<img src="https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-visual-studio.png" alt="Authorisation Server - Features"/>](https://raw.githubusercontent.com/ConsumerDataRight/Authorisation-Server/main/Assets/authorisation-server-visual-studio.png)
+[<img src="./Assets/authorisation-server-visual-studio.png?raw=true" alt="Authorisation Server - Features"/>](./Assets/authorisation-server-visual-studio.png?raw=true)
 
 ## Authorisation Server - Components
 The Authorisation Server contains the following components:
@@ -132,7 +132,7 @@ The Authorisation Server contains the following components:
   - Hosted at `https://localhost:3000`
 - Azure Function
   - An Azure Function that can automate the continuous Get Data Recipients discovery process.
-  - To get help on the Azure Functions, see the [help guide](https://github.com/ConsumerDataRight/authorisation-server/blob/main/Help/azurefunctions/HELP.md).
+  - To get help on the Azure Functions, see the [help guide](./Help/azurefunctions/HELP.md).
 - Repository
   - A SQL database containing clients, grants and log entries for identity provider solutions.
 
@@ -141,6 +141,8 @@ The following technologies have been used to build the Authorisation Server:
 - The source code has been written in `C#` using the `.Net 6` framework.
 - The mTLS Gateway has been implemented using `Ocelot`.
 - The Repository utilises a `SQL` instance.
+- `xUnit` is the framework used for writing and running tests.
+- `Microsoft Playwright` is the framework used for Web Testing.
 
 # Features
 The Authorisation Server contains the following features:
@@ -221,18 +223,22 @@ The information below lists the customisation required for each endpoint:
 
 # Testing
 A collection of API requests has been made available in [Postman](https://www.postman.com/) in order to test the Authorisation Server
-(when integrated with the [Mock Data Holder](https://github.com/ConsumerDataRight/mock-data-holder) or 
-[Mock Data Holder Engergy](https://github.com/ConsumerDataRight/mock-data-holder-energy) solutions) and view the expected interactions. 
-See the [Mock Data Holder Postman](https://github.com/ConsumerDataRight/mock-data-holder/blob/main/Postman/README.md) and [Mock Data Holder Energy Postman](https://github.com/ConsumerDataRight/mock-data-holder-energy/blob/main/Postman/README.md) documentation for more information.
+(when integrated with the Banking or Energy [Mock Data Holders](https://github.com/ConsumerDataRight/mock-data-holder) solutions) and view the expected interactions. 
+See the [Mock Data Holder Postman](https://github.com/ConsumerDataRight/mock-data-holder/blob/main/Postman/Banking/README.md) and [Mock Data Holder Energy Postman](https://github.com/ConsumerDataRight/mock-data-holder/blob/main/Postman/Energy/README.md) documentation for more information.
+
+Automated tests have been created as part of this solution. See the [Test Automation Execution Guide](./Help/testing/HELP.md) documentation for more information.
 
 # Contribute
-We encourage contributions from the community.  See our [contributing guidelines](https://github.com/ConsumerDataRight/authorisation-server/blob/main/CONTRIBUTING.md).
+We encourage contributions from the community.  See our [contributing guidelines](./CONTRIBUTING.md).
 
 # Code of Conduct
-This project has adopted the **Contributor Covenant**.  For more information see the [code of conduct](https://github.com/ConsumerDataRight/authorisation-server/blob/main/CODE_OF_CONDUCT.md).
+This project has adopted the **Contributor Covenant**.  For more information see the [code of conduct](./CODE_OF_CONDUCT.md).
+
+# Security Policy
+See our [security policy](./SECURITY.md) for information on security controls, reporting a vulnerability and supported versions.
 
 # License
-[MIT License](https://github.com/ConsumerDataRight/authorisation-server/blob/main/LICENSE)
+[MIT License](./LICENSE)
 
 # Notes
-The Authorisation Server is provided as a development tool only.  It conforms to the Consumer Data Standards.
+The Authorisation Server is provided as a development tool only.  It conforms to the Consumer Data Standards. 

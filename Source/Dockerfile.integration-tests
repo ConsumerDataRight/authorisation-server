@@ -18,9 +18,8 @@ RUN dotnet dev-certs https
 
 # Run tests
 WORKDIR /src/CdrAuthServer.IntegrationTests
+
 # RUN dotnet build
 RUN dotnet build --configuration Release
 
 ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]
-# ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--filter", "US44264_CdrAuthServer_JARM", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]
-# ENTRYPOINT ["tail", "-f", "/dev/null"]
