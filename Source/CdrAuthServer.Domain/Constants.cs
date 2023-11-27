@@ -210,6 +210,7 @@ namespace CdrAuthServer.Domain
             public const string Banking = "bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:payees:read bank:regular_payments:read";
             public const string Energy = "energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.usage:read energy:electricity.der:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.paymentschedule:read energy:accounts.concessions:read energy:billing:read";
             public const string AdminMetadataUpdate = "admin:metadata:update";
+            public const string AdminMetricsRead = "admin:metrics.basic:read";
             public const string BankingSectorScopes = $"{OpenId} {Profile} {Registration} {Common} {Banking}";
             public const string AllSectorScopes = $"{BankingSectorScopes} {Energy}";
 

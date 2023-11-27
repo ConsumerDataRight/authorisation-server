@@ -2,9 +2,12 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <IsPackable>false</IsPackable>
-        <Version>1.0.3</Version>
-        <FileVersion>1.0.3</FileVersion>
-        <AssemblyVersion>1.0.3</AssemblyVersion>
+		<Version>1.1.1</Version>
+		<AssemblyVersion>1.1.1</AssemblyVersion>
+		<FileVersion>1.1.1</FileVersion>
+		<Configurations>Debug;Release;Shared</Configurations>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="appsettings.json">
@@ -16,16 +19,25 @@
         <Content Include="appsettings.Release.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
-        <Content Include="appsettings.Release.Standalone.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
     </ItemGroup>
+
+	<Choose>
+		<When Condition="'$(Configuration)' == 'Shared'">
+			<ItemGroup>
+				<ProjectReference Include="..\..\..\sb-mock-solution-test-automation\Source\ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation\ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.csproj" />
+			</ItemGroup>
+		</When>
+		<Otherwise>
+			<ItemGroup>
+				<PackageReference Include="ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation" Version="1.0.0" />
+			</ItemGroup>
+		</Otherwise>
+	</Choose>
     <ItemGroup>
-        <PackageReference Include="FluentAssertions" Version="6.7.0" />
-        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.9" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
-        <PackageReference Include="Microsoft.Playwright" Version="1.26.0" />
-        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -34,13 +46,21 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.0" />
-        <PackageReference Include="Dapper" Version="2.0.123" />
         <PackageReference Include="Otp.NET" Version="1.2.2" />
     </ItemGroup>
-
     <ItemGroup>
-        <ProjectReference Include="..\CdrAuthServer.IntegrationTests\CdrAuthServer.IntegrationTests.csproj" />
+      <None Update="Certificates\client-additional.pfx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Certificates\client-invalid.pfx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Certificates\client.pfx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Certificates\MDR\jwks.pfx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

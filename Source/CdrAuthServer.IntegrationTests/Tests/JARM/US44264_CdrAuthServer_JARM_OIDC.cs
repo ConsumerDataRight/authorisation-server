@@ -1,18 +1,43 @@
 #undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.DependencyInjection;
 
 namespace CdrAuthServer.IntegrationTests.JARM
 {
     // JARM - OIDC  related tests
     public class US44264_CdrAuthServer_JARM_OIDC : BaseTest
     {
+        private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
+        private readonly IApiServiceDirector _apiServiceDirector;
+
+        public US44264_CdrAuthServer_JARM_OIDC(IOptions<TestAutomationOptions> options, IOptions<TestAutomationAuthServerOptions> authServerOptions, IApiServiceDirector apiServiceDirector, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
+            : base(testOutputHelperAccessor, config)
+        {
+            if (testOutputHelperAccessor is null)
+            {
+                throw new ArgumentNullException(nameof(testOutputHelperAccessor));
+            }
+
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
+            _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
+        }
+
         private class OIDCResponse
         {
             public string? issuer { get; set; }
@@ -52,30 +77,26 @@ namespace CdrAuthServer.IntegrationTests.JARM
         private async Task TestOIDC(string[] expectedScopes)
         {
             // Act
-            var responseMessage = await new API
-            {
-                Method = HttpMethod.Get,
-                URL = $"{CDRAUTHSERVER_BASEURI}/.well-known/openid-configuration",
-            }.SendAsync();
+            var responseMessage = await _apiServiceDirector.BuildAuthServerOpenIdConfigurationAPI().SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 responseMessage.StatusCode.Should().Be(HttpStatusCode.OK);
 
                 // Assert - Check content type
-                Assert_HasContentType_ApplicationJson(responseMessage.Content);
+                Assertions.AssertHasContentTypeApplicationJson(responseMessage.Content);
 
                 // Assert - Check content
                 var response = JsonConvert.DeserializeObject<OIDCResponse>(await responseMessage.Content.ReadAsStringAsync());
-                response.issuer.Should().Be(CDRAUTHSERVER_BASEURI);
-                response.jwks_uri.Should().Be($"{CDRAUTHSERVER_BASEURI}/.well-known/openid-configuration/jwks");
-                response.registration_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/register");
-                response.authorization_endpoint.Should().Be($"{CDRAUTHSERVER_BASEURI}/connect/authorize");
-                response.token_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/token");
-                response.userinfo_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/userinfo");
-                response.revocation_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/revocation");
+                response.issuer.Should().Be(_authServerOptions.CDRAUTHSERVER_BASEURI);
+                response.jwks_uri.Should().Be($"{_authServerOptions.CDRAUTHSERVER_BASEURI}/.well-known/openid-configuration/jwks");
+                response.registration_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/register");
+                response.authorization_endpoint.Should().Be($"{_authServerOptions.CDRAUTHSERVER_BASEURI}/connect/authorize");
+                response.token_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/token");
+                response.userinfo_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/userinfo");
+                response.revocation_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/revocation");
                 response.scopes_supported.Should().Contain(expectedScopes);
                 response.claims_supported.Should().Contain(new string[] { "name", "given_name", "family_name", "sharing_duration", "iss", "sub", "aud", "acr", "exp", "iat", "nonce", "auth_time", "updated_at" });
                 response.id_token_signing_alg_values_supported.Should().Contain(new string[] { "PS256", "ES256" });
@@ -83,9 +104,9 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 response.code_challenge_methods_supported.Should().Contain(new string[] { "S256" });
                 response.request_parameter_supported.Should().Be(false);
                 response.request_uri_parameter_supported.Should().Be(true);
-                response.introspection_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/introspect");
-                response.pushed_authorization_request_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/par");
-                response.cdr_arrangement_revocation_endpoint.Should().Be($"{CDRAUTHSERVER_SECUREBASEURI}/connect/arrangements/revoke");
+                response.introspection_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/introspect");
+                response.pushed_authorization_request_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/par");
+                response.cdr_arrangement_revocation_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/arrangements/revoke");
                 response.acr_values_supported.Should().BeSubsetOf(new string[] { "urn:cds.au:cdr:2", "urn:cds.au:cdr:3" });
                 response.require_pushed_authorization_requests.Should().Be(true);
                 response.request_object_signing_alg_values_supported.Should().Contain(new string[] { "PS256", "ES256" });

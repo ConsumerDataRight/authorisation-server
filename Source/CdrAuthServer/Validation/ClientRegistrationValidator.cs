@@ -367,7 +367,7 @@ namespace CdrAuthServer.Validation
             // Retrieve the JWKS from the Register's SSA JWKS endpoint.
             var configOptions = _configuration.GetConfigurationOptions();
             _logger.LogInformation("Retrieving SSA JWKS from Register {uri}...", configOptions?.CdrRegister?.SsaJwksUri);
-            return await _jwksService.GetJwks(new Uri(configOptions.CdrRegister.SsaJwksUri), clientRegistrationRequest.SoftwareStatement.Header.Kid);
+            return await _jwksService.GetJwks(new Uri(configOptions?.CdrRegister?.SsaJwksUri ?? "about:blank"), clientRegistrationRequest.SoftwareStatement.Header.Kid);
         }
 
         private static string GetDisplayName(string propName)

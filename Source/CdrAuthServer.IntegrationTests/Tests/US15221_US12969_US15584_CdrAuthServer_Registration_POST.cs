@@ -1,25 +1,41 @@
-using System;
-using System.Net;
-using System.Threading.Tasks;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
-using Xunit;
-using System.IdentityModel.Tokens.Jwt;
-using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
-using CdrAuthServer.IntegrationTests.Infrastructure;
-using CdrAuthServer.IntegrationTests.Infrastructure.API2;
-using CdrAuthServer.IntegrationTests.Fixtures;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using Xunit;
+using Xunit.DependencyInjection;
+using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests
 {
-    public class US15221_US12969_US15584_CdrAuthServer_Registration_POST : BaseTest, IClassFixture<TestFixture>
+    public class US15221_US12969_US15584_CdrAuthServer_Registration_POST : BaseTest, IClassFixture<BaseFixture>
     {
+        private readonly TestAutomationOptions _options;
+        private readonly IRegisterSsaService _registerSSAService;
+        private readonly IDataHolderRegisterService _dataHolderRegisterService;
+
+        private readonly string _latestSSAVersion = "3";
+
+        public US15221_US12969_US15584_CdrAuthServer_Registration_POST(IOptions<TestAutomationOptions> options, IRegisterSsaService registerSSAService, IDataHolderRegisterService dataHolderRegisterService, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
+            : base(testOutputHelperAccessor, config)
+        {
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _registerSSAService = registerSSAService ?? throw new ArgumentNullException(nameof(registerSSAService));
+            _dataHolderRegisterService = dataHolderRegisterService ?? throw new ArgumentNullException(nameof(dataHolderRegisterService));
+        }
+
         // Get payload from a JWT. Need to convert JArray claims into a string[] otherwise when we re-sign the token the JArray is not properly serialized.
-        static private Dictionary<string, object> GetJWTPayload(JwtSecurityToken jwt)
+        private static Dictionary<string, object> GetJWTPayload(JwtSecurityToken jwt)
         {
             var payload = new Dictionary<string, object>();
 
@@ -46,20 +62,19 @@ namespace CdrAuthServer.IntegrationTests
             return payload;
         }
 
-        [Theory]
-        [InlineData("3")]
-        public async Task AC01_Post_WithUnregistedSoftwareProduct_ShouldRespondWith_201Created_CreatedProfile(string ssaVersion)
+        [Fact]
+        public async Task AC01_Post_WithUnregistedSoftwareProduct_ShouldRespondWith_201Created_CreatedProfile()
         {
             // Arrange
-            TestSetup.DataHolder_PurgeIdentityServer();
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, ssaVersion);
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
 
             // Act
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(ssa);
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 response.StatusCode.Should().Be(
@@ -68,7 +83,7 @@ namespace CdrAuthServer.IntegrationTests
 
                 if (response.StatusCode == HttpStatusCode.Created)
                 {
-                    Assert_HasContentType_ApplicationJson(response.Content);
+                    Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                     // Check for the registration response properties.
                     var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseContent);
@@ -89,24 +104,23 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [Theory]
-        [InlineData("3")]
-        public async Task AC01_Post_WithUnregistedSoftwareProduct_MandatoryOnlyFields_ShouldRespondWith_201Created_CreatedProfile(string ssaVersion)
+        [Fact]
+        public async Task AC01_Post_WithUnregistedSoftwareProduct_MandatoryOnlyFields_ShouldRespondWith_201Created_CreatedProfile()
         {
             // Arrange
-            TestSetup.DataHolder_PurgeIdentityServer();
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, ssaVersion);
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion, industry: ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums.Industry.ALL);
 
             // Act
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(
                 ssa,
                 applicationType: "",
                 requestObjectSigningAlg: "",
-                redirect_uris: null);
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+                redirectUris: null);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 response.StatusCode.Should().Be(
@@ -115,7 +129,7 @@ namespace CdrAuthServer.IntegrationTests
 
                 if (response.StatusCode == HttpStatusCode.Created)
                 {
-                    Assert_HasContentType_ApplicationJson(response.Content);
+                    Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                     // Check for the registration response properties.
                     var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseContent);
@@ -124,7 +138,7 @@ namespace CdrAuthServer.IntegrationTests
                     Assert.True(json["response_types"] is JArray && (json["response_types"] as JArray).Any());
                     Assert.Equal("web", json["application_type"]);
                     Assert.Equal("data-recipient-software-product", json["software_roles"]);
-                    Assert.Equal("PS256", json["token_endpoint_auth_signing_alg"]); 
+                    Assert.Equal("PS256", json["token_endpoint_auth_signing_alg"]);
                     Assert.Equal("private_key_jwt", json["token_endpoint_auth_method"]);
                     Assert.Equal("PS256", json["id_token_signed_response_alg"]);
                     Assert.Equal("RSA-OAEP", json["id_token_encrypted_response_alg"]);
@@ -139,12 +153,12 @@ namespace CdrAuthServer.IntegrationTests
         [Fact]
         public async Task AC02_Post_WithRegistedSoftwareProduct_ShouldRespondWith_400BadRequest_DuplicateErrorResponse()
         {
-            static async Task Arrange(string ssa)
+            async Task Arrange(string ssa)
             {
-                TestSetup.DataHolder_PurgeIdentityServer();
+                Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
-                var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(ssa);
-                var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+                var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa);
+                var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
                 if (response.StatusCode != HttpStatusCode.Created)
                 {
@@ -153,82 +167,74 @@ namespace CdrAuthServer.IntegrationTests
             }
 
             // Arrange
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, "3");
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
             await Arrange(ssa);
 
+            var expectedError = new DuplicateRegistrationForSoftwareIdException();
+
             // Act - Try to register the same product again
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(ssa);
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert - Check statuscode
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check application/json
-                Assert_HasContentType_ApplicationJson(response.Content);
-
-                // Assert - Check json
-                var expectedResponse = @"{
-                    ""error"": ""invalid_client_metadata"",
-                    ""error_description"": ""ERR-DCR-001: Duplicate registrations for a given software_id are not valid.""
-                }";
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
-        [Theory]
-        [InlineData(true, HttpStatusCode.Created)]
-        [InlineData(false, HttpStatusCode.BadRequest)]
-        public async Task AC03_Post_WithValidButUnapprovedSSA_400BadRequest_UnapprovedSSAErrorResponse(bool signedWithRegisterCertificate, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC03_Post_WithValidSSA_Success_Created()
+        {
+            // Arrange
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
+
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
+
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa);
+
+            // Act
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                response.StatusCode.Should().Be(HttpStatusCode.Created);
+            }
+        }
+
+        [Fact]
+        public async Task AC03_Post_WithValidButUnapprovedSSA_400BadRequest_UnapprovedSSAErrorResponse()
         {
             // Fake a SSA by signing with certificate that is not the Register certificate
-            static string CreateFakeSSA(string ssa)
+            string CreateFakeSSA(string ssa)
             {
                 var decodedSSA = new JwtSecurityTokenHandler().ReadJwtToken(ssa);
 
                 var payload = GetJWTPayload(decodedSSA);
 
                 // Sign with a non-SSA certicate (ie just use a data recipient certificate)
-                var fakeSSA = JWT2.CreateJWT(
-                    CERTIFICATE_FILENAME,
-                    CERTIFICATE_PASSWORD,
-                    payload);
+                var fakeSSA = Helpers.Jwt.CreateJWT(Constants.Certificates.CertificateFilename, Constants.Certificates.CertificatePassword, payload);
 
                 return fakeSSA;
             }
 
             // Arrange
-            TestSetup.DataHolder_PurgeIdentityServer();
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, "3");
+            var expectedError = new InvalidSoftwareStatementException();
 
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(
-                signedWithRegisterCertificate ? ssa : CreateFakeSSA(ssa)
-            );
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
+
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(CreateFakeSSA(ssa));
 
             // Act
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert - Check statuscode
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                if (expectedStatusCode != HttpStatusCode.Created)
-                {
-                    // Assert - Check application/json
-                    Assert_HasContentType_ApplicationJson(response.Content);
-
-                    // Assert - Check json
-                    var expectedResponse = @"{
-                        ""error"": ""invalid_software_statement"",
-                        ""error_description"": ""ERR-DCR-005: SSA validation failed.""
-                    }";
-                    await Assert_HasContent_Json(expectedResponse, response.Content);
-                }
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
@@ -236,30 +242,21 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC06_Post_WithInvalidSSAPayload_400BadRequest_InvalidSSAPayloadResponse()
         {
             // Arrange 
-            TestSetup.DataHolder_PurgeIdentityServer();
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, "3");
-            const string REDIRECT_URI = "foo";
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(ssa, redirect_uris: new string[] { REDIRECT_URI });
+            const string RedirectUri = "foo";
+            var expectedError = new InvalidRedirectUriException(RedirectUri);
+
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa, redirectUris: new string[] { RedirectUri });
 
             // Act
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert - Check statuscode
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check application/json
-                Assert_HasContentType_ApplicationJson(response.Content);
-
-                var expectedResponse = @$"{{
-                        ""error"": ""invalid_redirect_uri"",
-                         ""error_description"": ""ERR-DCR-003: The redirect_uri '{REDIRECT_URI}' is not valid as it is not included in the software_statement""
-                }}";
-
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
 
@@ -267,30 +264,20 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC07_Post_WithInvalidMetadata_400BadRequest_InvalidMetadataResponse()
         {
             // Arrange 
-            TestSetup.DataHolder_PurgeIdentityServer();
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
-            var ssa = await Register_SSA_API.GetSSA(BRANDID, SOFTWAREPRODUCT_ID, "3");
-            var registrationRequest = DataHolder_Register_API.CreateRegistrationRequest(ssa, token_endpoint_auth_signing_alg: "HS256"); // HS256 is invalid metadata (ie should be PS256)
+            var expectedError = new TokenEndpointAuthSigningAlgClaimInvalidException();
+
+            var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa, tokenEndpointAuthSigningAlg: "HS256"); // HS256 is invalid metadata (ie should be PS256)
 
             // Act
-            var response = await DataHolder_Register_API.RegisterSoftwareProduct(registrationRequest);
+            var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert - Check statuscode
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                // Assert - Check application/json
-                Assert_HasContentType_ApplicationJson(response.Content);
-
-                // Assert - Check json
-                var expectedResponse = @"{
-                    ""error"":""invalid_client_metadata"",
-                    ""error_description"":""The 'token_endpoint_auth_signing_alg' claim value must be one of 'PS256,ES256'.""
-                }";
-
-                await Assert_HasContent_Json(expectedResponse, response.Content);
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
     }

@@ -44,7 +44,6 @@ services:
       - CdrAuthServer__AccessTokenExpirySeconds=3600
       # use environment variable to turn on JARM. Default to false.
       - CdrAuthServer__SupportJarmEncryption=${USE_JARM_ENCRYPTION:-false}
-
       - CdrAuthServer__HeadlessMode=true
     # NOTE - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user
     # volumes:
@@ -102,7 +101,7 @@ services:
       context: .
       dockerfile: Dockerfile.integration-tests
     environment:
-      - ASPNETCORE_ENVIRONMENT=Release.Standalone
+      - ASPNETCORE_ENVIRONMENT=Release
       # use environment variable to turn on JARM. Default to false.
       - USE_JARM_ENCRYPTION=${USE_JARM_ENCRYPTION:-false}
     volumes:

@@ -1,7 +1,7 @@
 # Dockerfile for E2E tests
 
-# NB: Ensure playwright version used in CDR.SandboxManagement.E2ETests and base image below are same (ie currently 1.26.0)
-FROM mcr.microsoft.com/playwright/dotnet:v1.26.0-focal as build
+# NB: Ensure playwright version used in the ConsumerDataRight.ParticipantTooling.Shared.TestAutomation NuGet package and base image below are same (ie currently 1.36.0)
+FROM mcr.microsoft.com/playwright/dotnet:v1.36.0-focal as build
 
 ###############################################################################
 # Build E2E tests
@@ -29,4 +29,3 @@ RUN dotnet build --configuration Release
 # Run E2E tests
 ###############################################################################
 ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]
-# ENTRYPOINT ["tail", "-f", "/dev/null"]

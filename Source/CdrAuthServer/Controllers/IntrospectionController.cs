@@ -38,7 +38,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/introspect")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         public async Task<JsonResult> Introspect([FromForm] string token)
         {

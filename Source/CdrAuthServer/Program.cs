@@ -177,6 +177,9 @@ builder.Services.AddTransient<ICdrRepository, CdrRepository>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+builder.Services.AddScoped<ValidateMtlsAttribute>();
+builder.Services.AddHttpClient<ValidateMtlsAttribute>();
+
 var connectionString = builder.Configuration.GetConnectionString(DbConstants.ConnectionStrings.Default);
 builder.Services.AddDbContext<CdrAuthServervDatabaseContext>(options => options.UseSqlServer(connectionString));
 
@@ -228,7 +231,6 @@ if (!string.IsNullOrEmpty(basePathExpression))
         var matches = Regex.Matches(context.Request.Path, basePathExpression, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeout:TimeSpan.FromMilliseconds(500));
         if (matches.Any())
         {
-
             var path = matches[0].Groups[0].Value;
             var remainder = matches[0].Groups[1].Value;
             context.Request.Path = $"/{remainder}";

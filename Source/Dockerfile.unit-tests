@@ -11,8 +11,8 @@ COPY . ./
 
 # Build tests
 WORKDIR /src
-RUN dotnet build --configuration Release
+RUN dotnet build CdrAuthServer.sln --configuration Release
 
 # Run tests
-ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--filter", "UnitTests", "--no-build", "--logger", "trx;verbosity=detailed", "-r", "/testresults"]
+ENTRYPOINT ["dotnet", "test", "CdrAuthServer.sln", "--configuration", "Release", "--filter", "UnitTests", "--no-build", "--logger", "trx;verbosity=detailed", "-r", "/testresults"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

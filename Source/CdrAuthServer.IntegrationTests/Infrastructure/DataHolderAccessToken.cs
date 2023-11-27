@@ -1,23 +1,21 @@
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services;
+using Newtonsoft.Json;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Net.Http;
-using Newtonsoft.Json;
-using System;
+using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests
 {
-    public class DataHolderTokenResponse
+    public class DataHolderAccessTokenResponse
     {
-        static public async Task<DataHolderTokenResponse> Deserialize(HttpResponseMessage responseMessage)
+        static public async Task<DataHolderAccessTokenResponse> Deserialize(HttpResponseMessage responseMessage)
         {
             var content = await responseMessage.Content.ReadAsStringAsync();
 
-            return JsonConvert.DeserializeObject<DataHolderTokenResponse>(content);
+            return JsonConvert.DeserializeObject<DataHolderAccessTokenResponse>(content);
         }
 
-#nullable disable // FIXME - MJS - fix nullable warnings
         [JsonProperty("id_token")]
         public string IdToken { get; set; }
 
@@ -38,38 +36,48 @@ namespace CdrAuthServer.IntegrationTests
 
         [JsonProperty("cdr_arrangement_id")]
         public string CdrArrangementId { get; set; }
-#nullable enable // FIXME - MJS - fix nullable warnings        
     }
 
     public class DataHolderAccessToken
     {
-        public DataHolderAccessToken(string? clientId)
+        private readonly string _dhMtlsGatewayUrl;
+        private readonly string _redirectUri;
+        private readonly string _xtlsThumbprint;
+        private readonly bool _isStandalone;
+
+        public DataHolderAccessToken(string? clientId, string dhMtlsGatewayUrl, string redirectUri, string xtlsThumbprint, bool isStandalone)
         {
             ClientId = clientId;
+            _dhMtlsGatewayUrl = dhMtlsGatewayUrl;
+            _redirectUri = redirectUri;
+            _xtlsThumbprint = xtlsThumbprint;
+            _isStandalone = isStandalone;
+            URL = $"{_dhMtlsGatewayUrl}/connect/token";
+            ClientRedirectURI = _redirectUri;
         }
 
-        public string URL { get; set; } = $"{BaseTest.DH_MTLS_GATEWAY_URL}/connect/token";
+        public string URL { get; init; }
 
-        public string CertificateFilename { get; set; } = BaseTest.CERTIFICATE_FILENAME;
+        public string CertificateFilename { get; set; } = Constants.Certificates.CertificateFilename;
 
-        public string CertificatePassword { get; set; } = BaseTest.CERTIFICATE_PASSWORD;
+        public string CertificatePassword { get; set; } = Constants.Certificates.CertificatePassword;
 
         public string? ClientId { get; set; }
 
-        public string ClientAssertionType { get; set; } = BaseTest.CLIENTASSERTIONTYPE;
+        public string ClientAssertionType { get; set; } = Constants.ClientAssertionType;
 
-        public string ClientRedirectURI { get; set; } = BaseTest.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
+        public string ClientRedirectURI { get; init; }
 
-        public string Scope { get; set; } = BaseTest.SCOPE_REGISTRATION;
+        public string Scope { get; set; } = Constants.Scopes.ScopeRegistration;
 
         public string GrantType { get; set; } = "client_credentials";
 
         public async Task<HttpResponseMessage> GetAccessTokenResponseMessage()
         {
-            var clientAssertion = new PrivateKeyJwt2
+            var clientAssertion = new PrivateKeyJwtService
             {
-                CertificateFilename = BaseTest.JWT_CERTIFICATE_FILENAME,
-                CertificatePassword = BaseTest.JWT_CERTIFICATE_PASSWORD,
+                CertificateFilename = Constants.Certificates.JwtCertificateFilename,
+                CertificatePassword = Constants.Certificates.JwtCertificatePassword,
                 Issuer = ClientId,
                 Audience = URL
             }.Generate();
@@ -108,13 +116,9 @@ namespace CdrAuthServer.IntegrationTests
 
             var content = new FormUrlEncodedContent(formFields);
 
-            using var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            clientHandler.ClientCertificates.Add(new X509Certificate2(CertificateFilename, CertificatePassword, X509KeyStorageFlags.Exportable));
+            using var client = Helpers.Web.CreateHttpClient(CertificateFilename, CertificatePassword);
 
-            using var client = new HttpClient(clientHandler);
-
-            BaseTest.AttachHeadersForStandAlone(URL, content.Headers);
+            Helpers.AuthServer.AttachHeadersForStandAlone(URL, content.Headers, _dhMtlsGatewayUrl, _xtlsThumbprint, _isStandalone);
 
             var response = await client.PostAsync(URL, content);
 
@@ -125,7 +129,7 @@ namespace CdrAuthServer.IntegrationTests
         {
             if (expired)
             {
-                return BaseTest.DATAHOLDER_ACCESSTOKEN_EXPIRED;
+                return Constants.AccessTokens.DataHolderAccessTokenExpired;
             }
 
             var responseMessage = await GetAccessTokenResponseMessage();
@@ -137,7 +141,7 @@ namespace CdrAuthServer.IntegrationTests
 
             var content = await responseMessage.Content.ReadAsStringAsync();
 
-            var tokenResponse = JsonConvert.DeserializeObject<DataHolderTokenResponse>(content);
+            var tokenResponse = JsonConvert.DeserializeObject<DataHolderAccessTokenResponse>(content);
 
             return tokenResponse.AccessToken;
         }

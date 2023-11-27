@@ -164,6 +164,7 @@ namespace CdrAuthServer.Extensions
             _configurationOptions.ClockSkewSeconds = SetDefault(_configurationOptions.ClockSkewSeconds, 0);
             _configurationOptions.ClientCertificateThumbprintHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateThumbprintHttpHeaderName, HttpHeaders.ClientCertificateThumbprint);
             _configurationOptions.ClientCertificateCommonNameHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateCommonNameHttpHeaderName, HttpHeaders.ClientCertificateCommonName);
+            _configurationOptions.ClientCertificateHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateHttpHeaderName, HttpHeaders.ClientCertificate);
 
             // If needing to turn off mtls checking at specific endpoints, such as for FAPI JARM testing with PAR endpoint.
             var endpointList = _config.GetValue<string>("CdrAuthServer:OverrideMtlsCheckEndpointList", "");

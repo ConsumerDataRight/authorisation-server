@@ -33,7 +33,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/arrangements/revoke")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         [Consumes("application/x-www-form-urlencoded")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
