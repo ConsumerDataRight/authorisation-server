@@ -78,7 +78,7 @@ services:
       context: .
       dockerfile: Dockerfile.e2e-tests
     environment:
-      - ASPNETCORE_ENVIRONMENT=Release.Standalone
+      - ASPNETCORE_ENVIRONMENT=Release
     volumes:
       - "./_temp/cdr-auth-server-e2e-tests-standalone/testresults:/testresults"
     depends_on:

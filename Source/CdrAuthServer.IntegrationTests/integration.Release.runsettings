@@ -5,7 +5,7 @@
         <EnvironmentVariables>
             <!-- List of environment variables we want to set as element and its value-->
             <!-- <ASPNETCORE_ENVIRONMENT>Release</ASPNETCORE_ENVIRONMENT> -->
-            <ASPNETCORE_ENVIRONMENT>Release.Standalone</ASPNETCORE_ENVIRONMENT>
+            <ASPNETCORE_ENVIRONMENT>Release</ASPNETCORE_ENVIRONMENT>
             <HeadlessMode>false</HeadlessMode>     
         </EnvironmentVariables>
     </RunConfiguration>

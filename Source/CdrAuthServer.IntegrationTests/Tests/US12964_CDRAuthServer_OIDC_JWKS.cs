@@ -1,17 +1,32 @@
 #undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System.Net;
 using Xunit;
+using Xunit.DependencyInjection;
 
 namespace CdrAuthServer.IntegrationTests
 {
     public class US12962_CDRAuthServer_OIDC_JWKS : BaseTest
     {
+        private readonly IApiServiceDirector _apiServiceDirector;
+
+        public US12962_CDRAuthServer_OIDC_JWKS(
+            IApiServiceDirector apiServiceDirector, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
+            : base(testOutputHelperAccessor, config)
+        {
+            if (testOutputHelperAccessor is null)
+            {
+                throw new ArgumentNullException(nameof(testOutputHelperAccessor));
+            }
+
+            _apiServiceDirector = apiServiceDirector ?? throw new System.ArgumentNullException(nameof(apiServiceDirector));
+        }
         private class AC01_Expected
         {
             public class Key
@@ -30,20 +45,16 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC01_FromMDH_Get_ShouldRespondWith_200OK_OIDC_JWKS()
         {
             // Act
-            var response = await new API
-            {
-                Method = HttpMethod.Get,
-                URL = $"{CDRAUTHSERVER_BASEURI}/.well-known/openid-configuration/jwks",
-            }.SendAsync();
+            var response = await _apiServiceDirector.BuildAuthServerJWKSAPI().SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
                 // Assert - Check content type
-                Assert_HasContentType_ApplicationJson(response.Content);
+                Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                 // Assert - Check JWKS
                 var actualJson = await response.Content.ReadAsStringAsync();
@@ -52,7 +63,7 @@ namespace CdrAuthServer.IntegrationTests
                 actual.Keys?.Length.Should().Be(2);
                 actual.Keys?[0].kty.Should().Be("RSA");
                 actual.Keys?[0].use.Should().Be("sig");
-                actual.Keys?[0].kid.Should().Be("7C5716553E9B132EF325C49CA2079737196C03DB"); 
+                actual.Keys?[0].kid.Should().Be("7C5716553E9B132EF325C49CA2079737196C03DB");
                 actual.Keys?[0].e.Should().Be("AQAB");
                 actual.Keys?[0].n.Should().Be("muidQL6h9QizbiZxZi3rpwNVDy7mXjtcl-C2rpI4JZzo0n2x-3KAHoCuuR7ZcX3b2DgfkI2IB9NsspdtZsAgKO0MYDROCn8TrIPKlvP4M8YwNQ1modLS9IfVqZU6Tp_mWpn89po7oZiTGq-qihv-xBUQwHM9FHplPP6DvA5Yl5UUHDdN2s9qnodjBI3SAyuVOY6s9X9iv-wDBYvI_981nEYA7Ndgm-QxW6qH0FgA8OC4yLE8e2QDEjL31JAXAJDcUTRTwiQL5jv_hd9Wze6_Oe19mcl1RKn1-z_96riylD3VrwqAR5KkmkyI35WBytAdUU1jpyT1D-RVxX-G3FHoUCgXPDSyvul9Djet65KZE1mkzZfCmo_2s44XcF_Mv4cBfayMdNkodu2EgTsBzgd7lmGszlDhEMZeLDELOIXdQRs5b6g7pt6YRRcGfDo6eRBuR6n9VCES5L9RNizUI--LISnM-W9tWxReGDoj6-YwLFq7bHNt42psvxJO96f3ISwn"); // MJS - This should be derived
 
@@ -66,20 +77,16 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC01_Get_ShouldRespondWith_200OK_OIDC_JWKS()
         {
             // Act
-            var response = await new API
-            {
-                Method = HttpMethod.Get,
-                URL = $"{CDRAUTHSERVER_BASEURI}/.well-known/openid-configuration/jwks",
-            }.SendAsync();
+            var response = await _apiServiceDirector.BuildAuthServerJWKSAPI().SendAsync();
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
                 // Assert - Check content type
-                Assert_HasContentType_ApplicationJson(response.Content);
+                Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                 // Assert - Check json
                 var expected = @"
@@ -112,7 +119,7 @@ namespace CdrAuthServer.IntegrationTests
                         }
                     ]
                 }";
-                await Assert_HasContent_Json(expected, response.Content);
+                await Assertions.AssertHasContentJson(expected, response.Content);
 
 #if DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
                 await WriteJsonToFileAsync($"c:/temp/expected.json", expected);

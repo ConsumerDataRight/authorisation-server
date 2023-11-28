@@ -31,7 +31,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/par")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         [Consumes("application/x-www-form-urlencoded")]
         [Produces("application/json")]

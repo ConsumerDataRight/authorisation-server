@@ -1,29 +1,42 @@
-using System;
-using System.Net;
-using System.Threading.Tasks;
+using CdrAuthServer.IntegrationTests.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Serilog;
+using System.Net;
 using Xunit;
-using CdrAuthServer.IntegrationTests.Infrastructure.API2;
-using CdrAuthServer.IntegrationTests.Fixtures;
-
-#nullable enable
+using Xunit.DependencyInjection;
+using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests
 {
     public class US12966_CdrAuthServer_Introspection : BaseTest, IClassFixture<RegisterSoftwareProductFixture>
     {
-        private RegisterSoftwareProductFixture Fixture { get; init; }
+        private readonly TestAutomationOptions _options;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly ISqlQueryService _sqlQueryService;
+        private readonly IDataHolderIntrospectionService _dataHolderIntrospectionService;
 
-        public US12966_CdrAuthServer_Introspection(RegisterSoftwareProductFixture fixture)
+        public US12966_CdrAuthServer_Introspection(IOptions<TestAutomationOptions> options, IAuthorizationService authorizationService, ISqlQueryService sqlQueryService, IDataHolderIntrospectionService dataHolderIntrospectionService, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
+            : base(testOutputHelperAccessor, config)
         {
-            Fixture = fixture;
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+            _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
+            _dataHolderIntrospectionService = dataHolderIntrospectionService ?? throw new ArgumentNullException(nameof(dataHolderIntrospectionService));
         }
 
-        static private void Arrange()
+        private void Arrange()
         {
-            TestSetup.DataHolder_PurgeIdentityServer(true);
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options, true);
         }
 
         class IntrospectionResponse
@@ -52,22 +65,24 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH)]
+        [InlineData(TokenType.KamillaSmith)]
         public async Task AC01_Post_ShouldRespondWith_200OK_IntrospectionInfo(TokenType tokenType)
         {
-            const int REFRESHTOKEN_LIFETIME_SECONDS = DAYS_90;
+            Log.Information("Running test with Params: {P1}={V1}.", nameof(tokenType), tokenType);
+
+            const int REFRESHTOKEN_LIFETIME_SECONDS = Constants.AuthServer.Days90;
             const int EXPIRY_GRACE_SECONDS = 120; // Grace period for expiry check (ie window size)
 
             // Arrange
             Arrange();
             var approximateGrantTime_Epoch = (Int32)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds;
-            var tokenResponse = await GetToken(tokenType);
+            var tokenResponse = await _authorizationService.GetToken(tokenType);
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(token: tokenResponse.RefreshToken);
+            var response = await _dataHolderIntrospectionService.SendRequest(token: tokenResponse.RefreshToken);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -95,17 +110,19 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData(true, false)] // invalid refresh token, expect active to be false
         public async Task AC02_Post_WithInvalidRefreshToken_ShouldRespondWith_200OK_ActiveFalse(bool invalidRefreshToken, bool expectedActive)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}", nameof(invalidRefreshToken), invalidRefreshToken, nameof(expectedActive), expectedActive);
+
             // Arrange
             Arrange();
-            var tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(
+            var response = await _dataHolderIntrospectionService.SendRequest(
                 token: invalidRefreshToken ? "foo" : tokenResponse.RefreshToken
             );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -122,18 +139,20 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData(true, false)] // missing refresh token, expect active to be false
         public async Task AC03_Post_WithMissingRefreshToken_ShouldRespondWith_200OK_ActiveFalse(bool missingRefreshToken, bool expectedActive)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(missingRefreshToken), missingRefreshToken, nameof(expectedActive), expectedActive);
+
             // Arrange
             Arrange();
-            var tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(
+            var response = await _dataHolderIntrospectionService.SendRequest(
                 token: missingRefreshToken ? null : tokenResponse.RefreshToken,
                 tokenTypeHint: missingRefreshToken ? null : "refresh_token"
              );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -150,29 +169,31 @@ namespace CdrAuthServer.IntegrationTests
         [InlineData(true, false)] // expired refresh token, expect active to be false
         public async Task AC04_Post_WithExpiredRefreshToken_ShouldRespondWith_200OK_ActiveFalse(bool expired, bool expectedActive)
         {
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(expired), expired, nameof(expectedActive), expectedActive);
+
             // Arrange
             Arrange();
 
-            DataHolder_Token_API.Response? tokenResponse;
+            ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Dataholders.TokenResponse tokenResponse;
             if (expired)
             {
                 const int EXPIRED_LIFETIME_SECONDS = 10;
 
-                tokenResponse = await GetToken(TokenType.KAMILLA_SMITH, tokenLifetime: EXPIRED_LIFETIME_SECONDS, sharingDuration: EXPIRED_LIFETIME_SECONDS);
+                tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith, tokenLifetime: EXPIRED_LIFETIME_SECONDS, sharingDuration: EXPIRED_LIFETIME_SECONDS);
 
                 // Wait for token to expire
                 await Task.Delay((EXPIRED_LIFETIME_SECONDS + 5) * 1000);
             }
             else
             {
-                tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+                tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
             }
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(token: tokenResponse.RefreshToken);
+            var response = await _dataHolderIntrospectionService.SendRequest(token: tokenResponse.RefreshToken);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -184,98 +205,145 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [Theory]
-        [InlineData(SOFTWAREPRODUCT_ID, HttpStatusCode.OK)]
-        [InlineData("foo", HttpStatusCode.BadRequest)]
-        public async Task AC06_Post_WithInvalidClientId_ShouldRespondWith_400BadRequest_ErrorResponse(string clientId, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC06_Post_WithValidClientId_Success()
         {
-            if (clientId == SOFTWAREPRODUCT_ID)
-            {           
-                clientId = GetClientId(BaseTest.SOFTWAREPRODUCT_ID);
-            }
+            var clientId = _options.LastRegisteredClientId;
 
             // Arrange
             Arrange();
-            var tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
+
+            var expectedError = new ClientNotFoundException();
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(
+            var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
                 clientId: clientId
             );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                // Assert - Check error response
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    var expectedContent = @"{""error"": ""invalid_client"", ""error_description"": ""ERR-GEN-004: Client not found""}";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                response.StatusCode.Should().Be(HttpStatusCode.OK);
             }
         }
 
         [Theory]
-        [InlineData(CLIENTASSERTIONTYPE, HttpStatusCode.OK)]
-        [InlineData("foo", HttpStatusCode.BadRequest)]
-        public async Task AC07_Post_WithInvalidClientAssertionType_ShouldRespondWith_400BadRequest_ErrorResponse(string clientAssertionType, HttpStatusCode expectedStatusCode)
+        [InlineData("foo")]
+        public async Task AC06_Post_WithInvalidClientId_ShouldRespondWith_400BadRequest_ErrorResponse(string clientId)
+        {
+            Log.Information("Running test with Params: {P1}={V1}.", nameof(clientId), clientId);
+
+            // Arrange
+            Arrange();
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
+
+            var expectedError = new ClientNotFoundException();
+
+            // Act
+            var response = await _dataHolderIntrospectionService.SendRequest(
+                token: tokenResponse.RefreshToken,
+                clientId: clientId
+            );
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                await Assertions.AssertErrorAsync(response, expectedError);
+            }
+        }
+
+        [Fact]
+        public async Task AC07_Post_WithValidClientAssertionType_Success()
         {
             // Arrange
             Arrange();
-            var tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(
+            var response = await _dataHolderIntrospectionService.SendRequest(
+                token: tokenResponse.RefreshToken,
+                clientAssertionType: Constants.ClientAssertionType
+            );
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.OK);
+            }
+        }
+
+        [Theory]
+        [InlineData("foo")]
+        public async Task AC07_Post_WithInvalidClientAssertionType_ShouldRespondWith_400BadRequest_ErrorResponse(string clientAssertionType)
+        {
+            Log.Information("Running test with Params: {P1}={V1}.", nameof(clientAssertionType), clientAssertionType);
+
+            // Arrange
+            Arrange();
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
+
+            var expectedError = new InvalidClientAssertionTypeException();
+
+            // Act
+            var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
                 clientAssertionType: clientAssertionType
             );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                await Assertions.AssertErrorAsync(response, expectedError);
+            }
+        }
+
+        [Fact]
+        public async Task AC08_Post_WithNullClientAssertion_Success()
+        {
+            // Arrange
+            Arrange();
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
+
+            // Act
+            var response = await _dataHolderIntrospectionService.SendRequest(
+                token: tokenResponse.RefreshToken,
+                clientAssertion: null
+            );
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                // Assert - Check error response
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    var expectedContent = @"{""error"": ""invalid_client"", ""error_description"":""ERR-CLIENT_ASSERTION-003: client_assertion_type must be urn:ietf:params:oauth:client-assertion-type:jwt-bearer""}";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                response.StatusCode.Should().Be(HttpStatusCode.OK);
             }
         }
 
         [Theory]
-        [InlineData(null, HttpStatusCode.OK)] // valid client assertion
-        [InlineData("foo", HttpStatusCode.BadRequest)]
-        public async Task AC08_Post_WithInvalidClientAssertion_ShouldRespondWith_400BadRequest_ErrorResponse(string clientAssertion, HttpStatusCode expectedStatusCode)
+        [InlineData("foo")]
+        public async Task AC08_Post_WithInvalidClientAssertion_ShouldRespondWith_400BadRequest_ErrorResponse(string clientAssertion)
         {
+            Log.Information("Running test with Params: {P1}={V1}.", nameof(clientAssertion), clientAssertion);
+
             // Arrange
             Arrange();
-            var tokenResponse = await GetToken(TokenType.KAMILLA_SMITH);
+            var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
+
+            var expectedError = new InvalidClientAssertionFormatException();
 
             // Act
-            var response = await DataHolder_Introspection_API.SendRequest(
+            var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
                 clientAssertion: clientAssertion
             );
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                // Assert - Check error response
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    var expectedContent = @"{""error"": ""invalid_client"", ""error_description"":""ERR-CLIENT_ASSERTION-005: Cannot read client_assertion.  Invalid format.""}";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                await Assertions.AssertErrorAsync(response, expectedError);
             }
         }
     }

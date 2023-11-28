@@ -12,7 +12,7 @@
     },
     "MDH-CdrAuthServer": {
       "commandName": "Project",
-      "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
+      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
@@ -92,7 +92,7 @@
     },
     "MDHE-CdrAuthServerWorkingWithContainers": {
       "commandName": "Project",
-      "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
+      "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Release",
         "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",

@@ -32,7 +32,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/token")]
-        [ValidateMtls]
+        [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion(true)]
         [Consumes("application/x-www-form-urlencoded")]
         [Produces("application/json")]

@@ -1,90 +1,139 @@
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using System.Web;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.APIs;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Serilog;
+using System.Net;
+using System.Web;
 using Xunit;
-using CdrAuthServer.IntegrationTests.Infrastructure.API2;
-using CdrAuthServer.IntegrationTests.Fixtures;
+using Xunit.DependencyInjection;
 using XUnit_Skippable;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Collections.Generic;
-
-#nullable enable
+using static ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services.DataHolderAuthoriseService;
+using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests
 {
     public class US12678_CdrAuthServer_Authorisation : BaseTest, IClassFixture<RegisterSoftwareProductFixture>
     {
-        static private void Arrange()
+        private readonly IDataHolderParService _dataHolderParService;
+        private readonly IDataHolderTokenService _dataHolderTokenService;
+        private readonly ISqlQueryService _sqlQueryService;
+        private readonly IApiServiceDirector _apiServiceDirector;
+        private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
+
+        private readonly string _accountLoginUrl;
+
+        public US12678_CdrAuthServer_Authorisation(
+            IOptions<TestAutomationOptions> options,
+            IOptions<TestAutomationAuthServerOptions> authServerOptions,
+           IDataHolderParService dataHolderParService,
+           IDataHolderTokenService dataHolderTokenService,
+           ISqlQueryService sqlQueryService,
+            IApiServiceDirector apiServiceDirector,
+            ITestOutputHelperAccessor testOutputHelperAccessor,
+            IConfiguration config)
+            : base(testOutputHelperAccessor, config)
         {
-            TestSetup.DataHolder_PurgeIdentityServer(true);
+            Log.Information("Constructing {ClassName}.", nameof(US12678_CdrAuthServer_Authorisation));
+
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions?.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
+            _dataHolderParService = dataHolderParService ?? throw new ArgumentNullException(nameof(dataHolderParService));
+            _dataHolderTokenService = dataHolderTokenService ?? throw new ArgumentNullException(nameof(dataHolderTokenService));
+            _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
+            _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
+
+            _accountLoginUrl = $"{_options.MDH_HOST}:8001/account/login";
         }
 
-        [Theory]
-        [InlineData(TokenType.KAMILLA_SMITH)]
-        public async Task AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken(TokenType tokenType)
+        private void Arrange()
+        {
+            Helpers.AuthServer.PurgeAuthServerForDataholder(_options, true);
+        }
+
+        [Fact]
+        public async Task AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken()
         {
             // Arrange
             Arrange();
 
+            // Perform authorise and consent flow and get authCode
+            var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+             .WithUserId(Constants.Users.UserIdKamillaSmith)
+             .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+             .BuildAsync();
+
+            (var authCode, _) = await authService.Authorise();
+
             // Act
-            var tokenResponse = await GetToken(tokenType); // Perform E2E authorisaton/consentflow
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
+            if (tokenResponse == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - TokenResponse is null");
+            if (tokenResponse.IdToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Id token is null");
+            if (tokenResponse.AccessToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Access token is null");
+            if (tokenResponse.RefreshToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Refresh token is null");
+            if (tokenResponse.CdrArrangementId == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - CdrArrangementId is null");
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 tokenResponse.AccessToken.Should().NotBeNullOrEmpty();
-                tokenResponse.ExpiresIn.Should().Be(TOKEN_EXPIRY_SECONDS);
+                tokenResponse.ExpiresIn.Should().Be(_authServerOptions.ACCESSTOKENLIFETIMESECONDS);
                 tokenResponse.RefreshToken.Should().NotBeNullOrEmpty();
                 tokenResponse.IdToken.Should().NotBeNullOrEmpty();
                 tokenResponse.CdrArrangementId.Should().NotBeNullOrEmpty();
             }
         }
 
-        private static HttpClient CreateHttpClient()
-        {
-            var httpClientHandler = new HttpClientHandler
-            {
-                AllowAutoRedirect = false
-            };
-            httpClientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            httpClientHandler.ClientCertificates.Add(new X509Certificate2(CERTIFICATE_FILENAME, CERTIFICATE_PASSWORD, X509KeyStorageFlags.Exportable));
-            var httpClient = new HttpClient(httpClientHandler);
-            return httpClient;
-        }
 
-        // [Theory]
         [SkippableTheory]
-        [InlineData("code id_token", HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")]
-        [InlineData("foo",
-            HttpStatusCode.Redirect,
-            SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, // Unsuccessful request should redirect back to DR
-            "error=invalid_request&error_description=Unsupported response_type value&state="
-        )]
-        public async Task AC02_Get_WithInvalidResponseType_ShouldRespondWith_302Redirect_ErrorResponse(string responseType, HttpStatusCode expectedStatusCode, string expectedRedirectPath, string? expectedRedirectFragment = null)
+        [InlineData("code id_token", HttpStatusCode.Redirect, true)]
+        [InlineData("foo", HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
+        public async Task AC02_Get_WithInvalidResponseType_ShouldRespondWith_302Redirect_ErrorResponse(string responseType, HttpStatusCode expectedStatusCode, bool useSpecificRedirectUrl)
         {
-            if (BaseTest.HEADLESSMODE) 
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(responseType), responseType, nameof(expectedStatusCode), expectedStatusCode, nameof(useSpecificRedirectUrl), useSpecificRedirectUrl);
+
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            string? expectedRedirectFragment = null;
+            string expectedRedirectPath;
+            if (useSpecificRedirectUrl)
+            {
+                expectedRedirectPath = _accountLoginUrl;
+            }
+            else
+            {
+                expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
+
+                var expectedError = new UnsupportedResponseTypeRedirectException();
+                expectedRedirectFragment = GenerateErrorRedirectFragment(expectedError);
+            }
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder { ResponseType = responseType }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                     .WithResponseType(responseType)
+                     .Build().Url;
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -102,31 +151,40 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        // [Theory]
         [SkippableTheory]
-        [InlineData(null, HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")]
+        [InlineData(null, HttpStatusCode.Redirect, true)]
         [InlineData("foo", HttpStatusCode.BadRequest)]
-        public async Task AC03_Get_WithInvalidRequestBody_ShouldRespondWith_400BadRequest_ErrorResponse(string requestBody, HttpStatusCode expectedStatusCode, string? expectedRedirectPath = null)
+        public async Task AC03_Get_WithInvalidRequestBody_ShouldRespondWith_400BadRequest_ErrorResponse(string requestBody, HttpStatusCode expectedStatusCode, bool useSpecificUrl = false)
         {
-            if (BaseTest.HEADLESSMODE)
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(requestBody), requestBody, nameof(expectedStatusCode), expectedStatusCode, nameof(useSpecificUrl), useSpecificUrl);
+
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            if (expectedRedirectPath != null)
-                expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            var expectedRedirectPath = string.Empty;
+            if (useSpecificUrl)
+            {
+                expectedRedirectPath = _accountLoginUrl;
+            }
+
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder { Request = requestBody }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                     .WithRequest(requestBody)
+                     .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -146,33 +204,43 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        // [Theory]
         [SkippableTheory]
-        [InlineData(SCOPE, HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")] // Successful request should redirect to the DH login URI 
-        [InlineData(SCOPE + " admin:metadata:update", // Additional unsupported scope should be ignored
-            HttpStatusCode.Redirect,
-            "<MDH_HOST>:8001/account/login")]
-        public async Task AC04_Get_WithInvalidScope_ShouldRespondWith_200OK_Response(string scope, HttpStatusCode expectedStatusCode, string expectedRedirectPath, string? expectedRedirectFragment = null)
+        [InlineData(false, HttpStatusCode.Redirect)] // Successful request should redirect to the DH login URI 
+        [InlineData(true, // Additional unsupported scope should be ignored
+            HttpStatusCode.Redirect)]
+        public async Task AC04_Get_WithInvalidScope_ShouldRespondWith_200OK_Response(bool useAdditionalScope, HttpStatusCode expectedStatusCode)
         {
-            if (BaseTest.HEADLESSMODE) 
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(useAdditionalScope), useAdditionalScope, nameof(expectedStatusCode), expectedStatusCode);
+
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            var expectedRedirectPath = _accountLoginUrl;
+
+            var scope = Constants.Scopes.ScopeBanking;
+            if (useAdditionalScope)
+            {
+                scope += " admin:metadata:update";
+            }
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder { Scope = scope }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                    .WithScope(scope)
+                    .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             // Act
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -180,46 +248,54 @@ namespace CdrAuthServer.IntegrationTests
                 // Check redirect path
                 var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
-
-                // Check redirect fragment
-                if (expectedRedirectFragment != null)
-                {
-                    var redirectFragment = HttpUtility.UrlDecode(response?.Headers?.Location?.Fragment.TrimStart('#'));
-                    redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
-                }
             }
         }
 
-        // [Theory]
         [SkippableTheory]
-        [InlineData(SCOPE, HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")]
-        [InlineData(SCOPE_WITHOUT_OPENID, HttpStatusCode.Redirect,
-            SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, // Unsuccessful request should redirect back to DR
-            "error=invalid_request&error_description=OpenID Connect requests MUST contain the openid scope value.&state=")]
+        [InlineData(Constants.Scopes.ScopeBanking, HttpStatusCode.Redirect, false)]
+        [InlineData(Constants.Scopes.ScopeBankingWithoutOpenId, HttpStatusCode.Redirect, true)]
         public async Task AC05_Get_WithScopeMissingOpenId_ShouldRespondWith_302Redirect_ErrorResponse(
             string scope,
             HttpStatusCode expectedStatusCode,
-            string expectedRedirectPath,
-            string? expectedRedirectFragment = null)
+            bool useSpecificUrl)
         {
-            if (BaseTest.HEADLESSMODE) 
+            Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(scope), scope, nameof(expectedStatusCode), expectedStatusCode, nameof(useSpecificUrl), useSpecificUrl);
+
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            var expectedError = new MissingOpenIdScopeException();
+            var errorRedirectFragment = GenerateErrorRedirectFragment(expectedError);
+
+            string expectedRedirectPath;
+            string? expectedRedirectFragment = null;
+            if (useSpecificUrl)
+            {
+                expectedRedirectPath = _accountLoginUrl;
+                expectedRedirectFragment = errorRedirectFragment;
+            }
+            else
+            {
+                expectedRedirectPath = $"{_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS}{errorRedirectFragment}";
+            }
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder { Scope = scope }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                   .WithScope(scope)
+                   .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -237,40 +313,47 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        // [Theory]
         [SkippableTheory]
-        [InlineData(SOFTWAREPRODUCT_ID, HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")]
-        [InlineData(GUID_FOO, HttpStatusCode.Redirect,
-            SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, // Unsuccessful request should redirect back to DR
-            "error=invalid_request&error_description=Invalid client ID.&state=")]
-        public async Task AC06_Get_WithInvalidClientID_ShouldRespondWith_302Redirect_ErrorResponse(string softwareProductId, HttpStatusCode expectedStatusCode, string expectedRedirectPath, string? expectedRedirectFragment = null)
+        [InlineData(Constants.SoftwareProducts.SoftwareProductId, HttpStatusCode.Redirect, true)]
+        [InlineData(Constants.GuidFoo, HttpStatusCode.Redirect, false)]  // Unsuccessful request should redirect back to DR
+        public async Task AC06_Get_WithInvalidClientID_ShouldRespondWith_302Redirect_ErrorResponse(string softwareProductId, HttpStatusCode expectedStatusCode, bool useSpecificUrl)
         {
-            if (BaseTest.HEADLESSMODE) 
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            string? expectedRedirectFragment = null;
+            string expectedRedirectPath;
+            if (useSpecificUrl)
+            {
+                expectedRedirectPath = _accountLoginUrl;
+            }
+            else
+            {
+                expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
+
+                var expectedError = new InvalidClientIdRedirectException();
+                expectedRedirectFragment = GenerateErrorRedirectFragment(expectedError);
+            }
 
             // Arrange
             Arrange();
 
-            var clientId = softwareProductId switch
-            {
-                SOFTWAREPRODUCT_ID => GetClientId(softwareProductId),
-                _ => softwareProductId
-            };
+            var clientId = _options.LastRegisteredClientId;
 
-            // var AuthorisationURL = new AuthoriseURLBuilder { ClientId = clientId.ToLower() }.URL;
-            var AuthorisationURL = new AuthoriseURLBuilder { ClientId = clientId }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                   .WithClientId(clientId)
+                   .Build().Url;
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -288,86 +371,109 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        // [Theory]
-        [SkippableTheory]
-        [InlineData(SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, HttpStatusCode.Redirect)]
-        [InlineData("https://localhost:9001/foo", HttpStatusCode.BadRequest)]
-        public async Task AC07_Get_WithInvalidRedirectURI_ShouldRespondWith_400BadRequest_ErrorResponse(string redirectUri, HttpStatusCode expectedStatusCode)
+        [SkippableFact]
+        public async Task AC07_Get_WithValidRedirectURI_Success()
         {
-            if (BaseTest.HEADLESSMODE) 
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            redirectUri = BaseTest.SubstituteConstant(redirectUri);
+            var expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder { RedirectURI = redirectUri.ToLower() }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                   .WithRedirectURI(expectedRedirectPath.ToLower())
+                   .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                // Assert - Check error response
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    var expectedContent = @"{
-                        ""error"": ""invalid_request""
-                    }";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                response.StatusCode.Should().Be(HttpStatusCode.Redirect);
             }
         }
 
-        // [Theory]
-        [SkippableTheory]
-        [InlineData(JWT_CERTIFICATE_FILENAME, JWT_CERTIFICATE_PASSWORD, HttpStatusCode.Redirect, "<MDH_HOST>:8001/account/login")]
-        [InlineData(
-            INVALID_CERTIFICATE_FILENAME,
-            INVALID_CERTIFICATE_PASSWORD,
-            HttpStatusCode.Redirect,
-            SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, // Unsuccessful request should redirect back to DR
-                                                                // "error=invalid_client&error_description=Signature is not valid.&state="
-            "error=invalid_request_object&error_description=Invalid JWT request&state="
-        )]
+        [SkippableFact]
+        public async Task AC07_Get_WithInvalidRedirectURI_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (_authServerOptions.HEADLESSMODE)
+            {
+                throw new SkipTestException("Test not applicable for headless mode.");
+            }
 
+            var expectedError = new InvalidRequestException(""); //TODO: Why doesn't this use a description? Bug 64158
+            var expectedRedirectPath = "https://localhost:9001/foo";
+
+            // Arrange
+            Arrange();
+
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                   .WithRedirectURI(expectedRedirectPath.ToLower())
+                   .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
+
+            var response = await CreateHttpClient().SendAsync(request);
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                await Assertions.AssertErrorAsync(response, expectedError);
+            }
+        }
+
+        [SkippableTheory]
+        [InlineData(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, HttpStatusCode.Redirect, true)]
+        [InlineData(Constants.Certificates.InvalidCertificateFilename, Constants.Certificates.InvalidCertificatePassword, HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
         public async Task AC08_Get_WithUnsignedRequestBody_ShouldRespondWith_302Redirect_ErrorResponse(
             string jwt_certificateFilename,
             string jwt_certificatePassword,
             HttpStatusCode expectedStatusCode,
-            string expectedRedirectPath,
-            string? expectedRedirectFragment = null)
+            bool useSpecificUrl)
         {
-            if (BaseTest.HEADLESSMODE) 
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            expectedRedirectPath = BaseTest.SubstituteConstant(expectedRedirectPath);
+            var expectedError = new InvalidJwtException();
+            var errorRedirectFragment = GenerateErrorRedirectFragment(expectedError);
+
+            string? expectedRedirectFragment = null;
+            var expectedRedirectPath = _accountLoginUrl;
+            if (!useSpecificUrl)
+            {
+                expectedRedirectFragment = errorRedirectFragment;
+                expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
+            }
 
             // Arrange
             Arrange();
-            var AuthorisationURL = new AuthoriseURLBuilder
-            {
-                JWT_CertificateFilename = jwt_certificateFilename,
-                JWT_CertificatePassword = jwt_certificatePassword
-            }.URL;
-            var request = new HttpRequestMessage(HttpMethod.Get, AuthorisationURL);
 
-            BaseTest.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers);
+            var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                       .WithJWTCertificateFilename(jwt_certificateFilename)
+                       .WithJWTCertificatePassword(jwt_certificatePassword)
+                       .Build().Url;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+            Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             var response = await CreateHttpClient().SendAsync(request);
 
             // Assert
-            using (new AssertionScope())
+            using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 // Assert - Check status code
                 response.StatusCode.Should().Be(expectedStatusCode);
@@ -385,11 +491,10 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        // [Fact]
         [SkippableFact]
         public async Task AC09_UI_WithInvalidCustomerId_UIShouldShow_IncorrectCustomerIdMessage()
         {
-            if (BaseTest.HEADLESSMODE) 
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
@@ -397,25 +502,23 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             Func<Task> act = async () =>
             {
-                (var authCode, var idToken) = await new DataHolder_Authorise_APIv2
-                {
-                    UserId = "foo",
-                    OTP = BaseTest.AUTHORISE_OTP,
-                    // SelectedAccountIds = ACCOUNTIDS_ALL_JANE_WILSON,
-                    SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                    RequestUri = await PAR_GetRequestUri() 
-                }.Authorise();
+                var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+                  .WithUserId("foo")
+                  .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+                  .WithResponseMode(ResponseMode.FormPost)
+                  .BuildAsync();
+
+                await authService.Authorise();
             };
 
             // Act/Assert
-            await act.Should().ThrowAsync<EDataHolder_Authorise_IncorrectCustomerId>();
+            await act.Should().ThrowAsync<DataHolderAuthoriseIncorrectCustomerIdException>();
         }
 
-        // [Fact]
         [SkippableFact]
         public async Task AC10_UI_WithInvalidOTP_UIShouldShow_IncorrectPasswordMessage()
         {
-            if (BaseTest.HEADLESSMODE) 
+            if (_authServerOptions.HEADLESSMODE)
             {
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
@@ -423,17 +526,27 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             Func<Task> act = async () =>
             {
-                (var authCode, var idToken) = await new DataHolder_Authorise_APIv2
-                {
-                    UserId = BaseTest.USERID_KAMILLASMITH,
-                    OTP = "foo",
-                    SelectedAccountIds = ACCOUNTIDS_ALL_KAMILLA_SMITH,
-                    RequestUri = await PAR_GetRequestUri() 
-                }.Authorise();
+                var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
+                  .WithUserId(Constants.Users.UserIdKamillaSmith)
+                  .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
+                  .WithOTP("foo")
+                  .BuildAsync();
+
+                await authService.Authorise();
             };
 
             // Act/Assert
-            await act.Should().ThrowAsync<EDataHolder_Authorise_IncorrectOneTimePassword>();
+            await act.Should().ThrowAsync<DataHolderAuthoriseIncorrectOneTimePasswordException>();
+        }
+
+        private static HttpClient CreateHttpClient()
+        {
+            return Helpers.Web.CreateHttpClient(Constants.Certificates.CertificateFilename, Constants.Certificates.CertificatePassword, false);
+        }
+
+        private static string GenerateErrorRedirectFragment(AuthoriseException error)
+        {
+            return $"error={error.Error} & error_description={error.ErrorDescription}&state=";
         }
     }
 }

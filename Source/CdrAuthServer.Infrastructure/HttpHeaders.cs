@@ -10,6 +10,7 @@ namespace CdrAuthServer.Infrastructure
     {
         public const string ClientCertificateThumbprint = "X-TlsClientCertThumbprint";
         public const string ClientCertificateCommonName = "X-TlsClientCertCN";
+        public const string ClientCertificate = "X-TlsClientCert";
         public const string ForwardedHost = "X-Forwarded-Host";
         public const string WWWAuthenticate = "WWW-Authenticate";
     }
