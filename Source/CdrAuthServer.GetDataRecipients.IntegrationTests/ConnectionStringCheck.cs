@@ -16,7 +16,7 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
             PRODUCTION_SERVER
         };
 
-        static public string Check(string connectionString)
+        static public string Check(string? connectionString)
         {
             if (!String.IsNullOrEmpty(connectionString))
             {
@@ -30,7 +30,7 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                 }
             }
 
-            return connectionString;
+            return connectionString ?? "";
         }
     }
 
@@ -67,7 +67,7 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
         [InlineData("sql-cdrsandbox-test.database.windows.net")]
         [InlineData("localhost")]
         [InlineData("mssql")]
-        public void WhenNotOnBlackList_ShouldNotThrowException(string connectionString)
+        public void WhenNotOnBlackList_ShouldNotThrowException(string? connectionString)
         {
             using (new AssertionScope())
             {
@@ -77,7 +77,7 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                 using (new AssertionScope())
                 {
                     act.Should().NotThrow<Exception>();
-                    returnedConnectionString?.Should().Be(connectionString);
+                    returnedConnectionString?.Should().Be(connectionString ?? "");
                 }
             }
         }

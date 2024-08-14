@@ -1,12 +1,12 @@
-import { useRecoilValue } from "recoil";
 import { ClusterModel, CustomerModel } from "../models/DataModels";
 import settings from "../settings";
-import { CommonState } from "../state/Common.state";
-import { ACCESS_DENIED_ERROR_CODE, ConsentState } from "../state/Consent.state";
+// import { ACCESS_DENIED_ERROR_CODE } from "../@types/ConsentContextType";
+import { useCommonContext } from "../context/CommonContext";
+import { useConsentContext } from "../context/ConsentContext";
 
 export function useData() {
-    const commonState = useRecoilValue(CommonState);
-    const consentState = useRecoilValue(ConsentState);
+    const { commonState } = useCommonContext();
+    const { consentState } = useConsentContext();
 
     const getCustomerByLoginId = async (loginId: string): Promise<CustomerModel | null> => {
         const data = await fetch(getFullUrl(settings.DATA_FILE_NAME))
@@ -38,8 +38,8 @@ export function useData() {
             subject_id: consentState.subjectId,
             account_ids: consentState.accountIds?.join(','),
         } as any;
-        
-        if(consentState.errorCode){
+
+        if (consentState.errorCode) {
             queryData.error_code = consentState.errorCode ?? "";
         }
 
@@ -47,7 +47,7 @@ export function useData() {
         window.location.replace(constructCallbackUrl(queryData));
     }
 
-    const constructCallbackUrl = (queryData:any) => {
+    const constructCallbackUrl = (queryData: any) => {
         var queryString = Object.entries(queryData).map(([key, value]) => `${key}=${value}`).join('&');
         return `${commonState.inputParams?.return_url}?${queryString}`;
     }
@@ -57,7 +57,7 @@ export function useData() {
             ...commonState?.inputParams?.authorize_request,
             subject_id: consentState.subjectId,
             account_ids: consentState.accountIds?.join(','),
-            error_code: ACCESS_DENIED_ERROR_CODE,
+            error_code: "ERR-AUTH-009",
         };
 
         // Redirect back to the auth server

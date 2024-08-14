@@ -5,10 +5,8 @@ using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Web;
 using static CdrAuthServer.Domain.Constants;
 
@@ -43,6 +41,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpGet]
         [Route("/connect/authorize")]
+        [ApiVersionNeutral]
         public async Task<IActionResult> Authorise(
             [FromQuery] AuthorizeRequest authRequest)
         {
@@ -50,14 +49,14 @@ namespace CdrAuthServer.Controllers
             var validationResult = await _authorizeRequestValidator.Validate(authRequest, configOptions);
             if (!validationResult.IsValid)
             {
-                _logger.LogInformation("Authorization failed {@validationResult}", validationResult);
+                _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
                 return await CallbackErrorResponse(validationResult, authRequest.client_id, configOptions);
             }
 
             // Retrieve the request uri grant, this has already been validated in the validator.
             if (await _grantService.Get(GrantTypes.RequestUri, authRequest.request_uri, authRequest.client_id) is not RequestUriGrant requestUriGrant)
             {
-                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", authRequest.request_uri, authRequest.client_id);
+                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authRequest.request_uri, authRequest.client_id);
                 throw new InvalidOperationException($"requestUriGrant is null or not found");
             }
             requestUriGrant.UsedAt = DateTime.UtcNow;
@@ -106,6 +105,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpGet]
         [Route("/connect/authorize-callback")]
+        [ApiVersionNeutral]
         public async Task<IActionResult> AuthoriseCallBack(
             [FromQuery] AuthorizeCallbackRequest authCallbackRequest)
         {
@@ -114,14 +114,14 @@ namespace CdrAuthServer.Controllers
             validationResult = _authorizeRequestValidator.ValidateCallback(validationResult, authCallbackRequest);
             if (!validationResult.IsValid)
             {
-                _logger.LogInformation("Authorization failed {@validationResult}", validationResult);
+                _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
                 return await CallbackErrorResponse(validationResult, authCallbackRequest.client_id, configOptions);
             }
 
             // Retrieve the request uri grant, this has already been validated in the validator.
             if (await _grantService.Get(GrantTypes.RequestUri, authCallbackRequest.request_uri, authCallbackRequest.client_id) is not RequestUriGrant requestUriGrant)
             {
-                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", authCallbackRequest.request_uri, authCallbackRequest.client_id);
+                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authCallbackRequest.request_uri, authCallbackRequest.client_id);
                 throw new InvalidOperationException($"requestUriGrant is null or not found");
             }
 
@@ -134,6 +134,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/authorize-confirm")]
+        [ApiVersionNeutral]
         public async Task<IActionResult> AuthoriseConfirm(
            [FromForm] string clientId,
            [FromForm] string requestUri,
@@ -156,7 +157,7 @@ namespace CdrAuthServer.Controllers
             var validationResult = await _authorizeRequestValidator.Validate(authRequest, configOptions, false);
             if (!validationResult.IsValid)
             {
-                _logger.LogInformation("Authorization failed {@validationResult}", validationResult);
+                _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
                 return await CallbackErrorResponse(validationResult, authRequest.client_id, configOptions);
             }
 
@@ -164,10 +165,10 @@ namespace CdrAuthServer.Controllers
             var grant = await _grantService.Get(GrantTypes.RequestUri, requestUri, clientId) as RequestUriGrant;
             if (grant == null)
             {
-                _logger.LogError("requestUriGrant for request_uri:{uri} for client:{id} not found", 
-                    requestUri.Replace(Environment.NewLine, ""), 
+                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found",
+                    requestUri.Replace(Environment.NewLine, ""),
                     clientId.Replace(Environment.NewLine, ""));
-                throw new InvalidOperationException($"requestUriGrant is null or not found");
+                throw new InvalidOperationException("requestUriGrant is null or not found");
             }
 
             // If cancelling the process.
@@ -213,7 +214,7 @@ namespace CdrAuthServer.Controllers
             };
             await _grantService.Create(grant);
 
-            _logger.LogInformation("created AuthorizationCodeGrant for client:{id} subjectid:{subid}", authRequestObject.ClientId, subjectId);
+            _logger.LogInformation("created AuthorizationCodeGrant for client:{Id} subjectid:{Subid}", authRequestObject.ClientId, subjectId);
             string? idToken = null;
 
             // If using hybrid flow then we need to generate an id_token to return from authorisation endpoint.
@@ -227,14 +228,14 @@ namespace CdrAuthServer.Controllers
                     state: authRequestObject.State,
                     nonce: authRequestObject.Nonce,
                     authCode: grant.Key);
-                _logger.LogInformation("created Id token for client:{id} subjectid:{subid}", authRequestObject.ClientId, subjectId);
+                _logger.LogInformation("created Id token for client:{Id} subjectid:{Subid}", authRequestObject.ClientId, subjectId);
             }
 
             var client = await _clientService.Get(authRequestObject.ClientId);
             return await CallbackResponse(authRequestObject, client, configOptions, grant, idToken);
         }
 
-        private string FilterScopes(string scope, ConfigurationOptions configOptions)
+        private static string FilterScopes(string scope, ConfigurationOptions configOptions)
         {
             var scopes = scope.Split(' ');
             return string.Join(" ", scopes.Where(

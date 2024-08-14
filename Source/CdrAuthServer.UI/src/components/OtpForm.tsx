@@ -2,20 +2,19 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Typography, Grid, TextField, Button, Link } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useRecoilValue, useRecoilState } from "recoil";
 import { useAlert } from "../hooks/useAlert";
 import { AlertTypeEnum } from "../models/Common";
 import { OtpInputModel } from "../models/LoginModels";
-import { CommonState, DataHolderName } from "../state/Common.state";
-import { LoginState } from "../state/Login.state";
 import * as Yup from 'yup';
 import { useData } from "../hooks/useData";
+import { useCommonContext } from "../context/CommonContext";
+import { useLoginContext } from "../context/LoginContext";
 
 export function OtpForm({ otp, onComplete }: { otp: string, onComplete: () => void }) {
     const { createAlert, closeAlert } = useAlert();
-    const dataHolderName = useRecoilValue(DataHolderName);
-    const [loginState, setLoginState] = useRecoilState(LoginState);
-    const [commonState, _] = useRecoilState(CommonState);
+    const {commonState} = useCommonContext();
+    const {loginState, setLoginState} = useLoginContext();
+    const dataHolderName = commonState.dataHolder?.BrandName;
     const { submitCancelConsentRequest } = useData();
 
     useEffect(() => {
@@ -68,12 +67,12 @@ export function OtpForm({ otp, onComplete }: { otp: string, onComplete: () => vo
 
     const onSubmit = (data: OtpInputModel) => {
         if (data.otp !== "000789") {
-            setLoginState({ ...loginState, otp: '' });
+            setLoginState({  ...loginState!, otp: '' });
             setError('otp', { type: 'custom', message: 'Invalid One Time Password' });
             return;
         }
 
-        setLoginState({ ...loginState, otp: data.otp });
+        setLoginState({ ...loginState!, otp: data.otp });
         closeAlert();
         onComplete();
     }
@@ -108,6 +107,7 @@ export function OtpForm({ otp, onComplete }: { otp: string, onComplete: () => vo
                                 error={errors.otp ? true : false}
                                 helperText={errors.otp?.message}
                                 inputProps={{ tabIndex: 1 }}
+                                id="otp"
                             />}
                         />
                     </Grid>

@@ -2,11 +2,13 @@ using CdrAuthServer;
 using CdrAuthServer.API.Logger;
 using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
+using CdrAuthServer.Domain.Models;
 using CdrAuthServer.Domain.Repositories;
 using CdrAuthServer.Extensions;
+using CdrAuthServer.Helpers;
+using CdrAuthServer.Infrastructure.Authorisation;
 using CdrAuthServer.Infrastructure.Certificates;
 using CdrAuthServer.Infrastructure.Extensions;
-using CdrAuthServer.Models;
 using CdrAuthServer.Repository;
 using CdrAuthServer.Repository.Infrastructure;
 using CdrAuthServer.Services;
@@ -24,7 +26,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Serilog;
 using System.Text.RegularExpressions;
-using static CdrAuthServer.Domain.Constants;
+using static CdrAuthServer.Infrastructure.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -51,14 +53,9 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 builder.Services.AddHttpClient<IJwksService, JwksService>()
-    .ConfigurePrimaryHttpMessageHandler(() =>
-    {
-        var handler = new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = (a, b, c, d) => true
-        };
-        return handler;
-    });
+    .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration));
+
+builder.Services.AddMemoryCache();
 
 // Build up a list of valid issuers and audiences for the JWT bearer authorization.
 var validIssuers = new List<string>();
@@ -84,7 +81,7 @@ else
 
 if (string.IsNullOrEmpty(metadataAddress))
 {
-    metadataAddress = $"{validIssuers.First()}/.well-known/openid-configuration";
+    metadataAddress = $"{validIssuers[0]}/.well-known/openid-configuration";
 }
 
 // Add JWT Bearer Authorisation.
@@ -96,16 +93,13 @@ builder.Services
         options.Configuration = new OpenIdConnectConfiguration()
         {
             JwksUri = $"{metadataAddress}/jwks",
-            JsonWebKeySet = await LoadJwks($"{metadataAddress}/jwks")
+            JsonWebKeySet = await LoadJwks($"{metadataAddress}/jwks", HttpHelper.CreateHttpClientHandler(builder.Configuration))
         };
 
         options.TokenValidationParameters = BuildTokenValidationParameters(options, validIssuers, validAudiences, clockSkew);
 
         // Ignore server certificate issues when retrieving OIDC configuration and JWKS.
-        options.BackchannelHttpHandler = new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
-        };
+        options.BackchannelHttpHandler =  HttpHelper.CreateHttpClientHandler(builder.Configuration);
     });
 
 builder.Services.AddAuthorization();
@@ -113,32 +107,31 @@ builder.Services.AddAuthorization();
 // Authorization
 builder.Services.AddMvcCore().AddAuthorization(options =>
 {
-    options.AddPolicy(AuthorisationPolicy.Registration.ToString(), policy =>
+    var allAuthPolicies = AuthorisationPolicies.GetAllPolicies();
+
+    //Apply all listed policities from a single source of truth that is also used for self-documentation
+    foreach (var pol in allAuthPolicies)
     {
-        policy.Requirements.Add(new ScopeRequirement(Scopes.Registration));
-        policy.Requirements.Add(new HolderOfKeyRequirement());
-    });
-    options.AddPolicy(AuthorisationPolicy.UserInfo.ToString(), policy =>
-    {
-        policy.Requirements.Add(new HolderOfKeyRequirement());
-    });
-    options.AddPolicy(AuthorisationPolicy.GetCustomerBasic.ToString(), policy =>
-    {
-        policy.Requirements.Add(new ScopeRequirement(Scopes.ResourceApis.Common.CustomerBasicRead));
-        policy.Requirements.Add(new HolderOfKeyRequirement());
-        policy.Requirements.Add(new AccessTokenRequirement());
-    });
-    options.AddPolicy(AuthorisationPolicy.GetBankingAccounts.ToString(), policy =>
-    {
-        policy.Requirements.Add(new ScopeRequirement(Scopes.ResourceApis.Banking.AccountsBasicRead));
-        policy.Requirements.Add(new HolderOfKeyRequirement());
-        policy.Requirements.Add(new AccessTokenRequirement());
-    });
-    options.AddPolicy(AuthorisationPolicy.AdminMetadataUpdate.ToString(), policy =>
-    {
-        policy.Requirements.Add(new ScopeRequirement(Scopes.AdminMetadataUpdate));
-        policy.Requirements.Add(new HolderOfKeyRequirement());
-    });
+        options.AddPolicy(pol.Name, policy =>
+        {
+            if (pol.ScopeRequirement != null && !pol.ScopeRequirement.IsNullOrEmpty())
+            {
+                policy.Requirements.Add(new ScopeRequirement(pol.ScopeRequirement));
+            }
+            if (pol.HasMtlsRequirement)
+            {
+                //policy.Requirements.Add(new MtlsRequirement()); //Currently not in CdrAuthServer but kept to later align with Mock Register
+            }
+            if (pol.HasHolderOfKeyRequirement)
+            {
+                policy.Requirements.Add(new HolderOfKeyRequirement());
+            }
+            if (pol.HasAccessTokenRequirement)
+            {
+                policy.Requirements.Add(new AccessTokenRequirement());
+            }
+        });
+    }
 });
 
 // Add CORS Policy
@@ -180,8 +173,18 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ValidateMtlsAttribute>();
 builder.Services.AddHttpClient<ValidateMtlsAttribute>();
 
+var enableSwagger = builder.Configuration.GetValue<bool>(ConfigurationKeys.EnableSwagger);
+if (enableSwagger)
+{
+    builder.Services.AddCdrSwaggerGen(opt =>
+    {
+        opt.SwaggerTitle = "Consumer Data Right (CDR) Participant Tooling - Mock Auth Server API";
+        opt.IncludeAuthentication = true;
+    }, false);
+}
+
 var connectionString = builder.Configuration.GetConnectionString(DbConstants.ConnectionStrings.Default);
-builder.Services.AddDbContext<CdrAuthServervDatabaseContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<CdrAuthServerDatabaseContext>(options => options.UseSqlServer(connectionString));
 
 if (builder.Configuration.GetSection("SerilogRequestResponseLogger") != null)
 {
@@ -190,7 +193,6 @@ if (builder.Configuration.GetSection("SerilogRequestResponseLogger") != null)
 }
 
 // Add services to the container.
-builder.Services.AddRazorPages();
 builder.Services
     .AddControllers(options =>
     {
@@ -228,7 +230,7 @@ if (!string.IsNullOrEmpty(basePathExpression))
 {
     app.Use((context, next) =>
     {
-        var matches = Regex.Matches(context.Request.Path, basePathExpression, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeout:TimeSpan.FromMilliseconds(500));
+        var matches = Regex.Matches(context.Request.Path, basePathExpression, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeout: TimeSpan.FromMilliseconds(500));
         if (matches.Any())
         {
             var path = matches[0].Groups[0].Value;
@@ -249,7 +251,11 @@ app.UseMiddleware<RequestResponseLoggingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapRazorPages();
+if (enableSwagger)
+{
+    app.UseCdrSwagger("PT Auth Server");
+}
+
 app.MapControllers();
 
 // Unhandled excecptions.
@@ -260,8 +266,7 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         // Try and retrieve the error from the ExceptionHandler middleware
         var exceptionDetails = context.Features.Get<IExceptionHandlerFeature>();
         var ex = exceptionDetails?.Error;
-        var error = new CdsErrorList();
-        error.Errors.Add(new CdsError() { Code = ErrorCodes.UnexpectedError, Title = "Unexpected Error Encountered", Detail = ex?.Message });
+        var error = new ResponseErrorList(CdrAuthServer.Domain.Constants.ErrorCodes.Cds.UnexpectedError, CdrAuthServer.Domain.Constants.ErrorTitles.UnexpectedError, ex?.Message);
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsync(JsonConvert.SerializeObject(error));
@@ -301,27 +306,23 @@ static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
     return context.Response.WriteAsync(result);
 }
 
-static async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> LoadJwks(string jwksUri)
+static async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> LoadJwks(string jwksUri, HttpMessageHandler httpMessageHandler)
 {
-    var handler = new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = (a, b, c, d) => true
-    };
-    var httpClient = new HttpClient(handler);
+    var httpClient = new HttpClient(httpMessageHandler);
     var httpResponse = await httpClient.GetAsync(jwksUri);
     return await httpResponse.Content.ReadAsJson<Microsoft.IdentityModel.Tokens.JsonWebKeySet>();
 }
 
 void MigrateDatabase()
 {
-    var optionsBuilder = new DbContextOptionsBuilder<CdrAuthServervDatabaseContext>();
+    var optionsBuilder = new DbContextOptionsBuilder<CdrAuthServerDatabaseContext>();
     // Run migrations if the DBO connection string is set.
     var migrationsConnectionString = builder.Configuration.GetConnectionString(DbConstants.ConnectionStrings.Migrations);
     if (!string.IsNullOrEmpty(migrationsConnectionString))
     {
         logger.Information("Found connection string for migrations dbo, migrating database");
         optionsBuilder.UseSqlServer(migrationsConnectionString);
-        using var dbContext = new CdrAuthServervDatabaseContext(optionsBuilder.Options);
+        using var dbContext = new CdrAuthServerDatabaseContext(optionsBuilder.Options);
         dbContext.Database.Migrate();
     }
 }
@@ -343,12 +344,10 @@ static TokenValidationParameters BuildTokenValidationParameters(
                 return issuer;
             }
 
-            foreach (var validIssuer in validationParameters.ValidIssuers)
+            var validIssuer = validationParameters.ValidIssuers.FirstOrDefault(v => v.Equals(issuer, StringComparison.OrdinalIgnoreCase) || issuer.StartsWith(v));
+            if (validIssuer != null)
             {
-                if (issuer.StartsWith(validIssuer))
-                {
-                    return issuer;
-                }
+                return issuer;
             }
 
             string errorMessage = $"IDX10205: Issuer validation failed. Issuer: '{issuer}'. Did not match: '{string.Join(',', validationParameters.ValidIssuers)}'.";
@@ -359,28 +358,15 @@ static TokenValidationParameters BuildTokenValidationParameters(
         },
 
         ValidateAudience = true,
-        ValidAudiences = validAudiences,
+        ValidAudiences = validAudiences,       
         AudienceValidator = (IEnumerable<string> audiences, SecurityToken securityToken, TokenValidationParameters validationParameters) =>
         {
-            bool isValid = false;
+            var validAudiences = new HashSet<string>(validationParameters.ValidAudiences, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var audience in audiences)
-            {
-                if (validationParameters.ValidAudiences.Contains(audience, StringComparer.OrdinalIgnoreCase))
-                {
-                    isValid = true;
-                    break;
-                }
-
-                foreach (var validAudience in validationParameters.ValidAudiences)
-                {
-                    if (audience.StartsWith(validAudience))
-                    {
-                        isValid = true;
-                        break;
-                    }
-                }
-            }
+            bool isValid = audiences.Any(audience =>
+                validAudiences.Contains(audience) ||
+                validAudiences.Any(validAudience => audience.StartsWith(validAudience, StringComparison.OrdinalIgnoreCase))
+            );
 
             if (!isValid)
             {
@@ -398,6 +384,6 @@ static TokenValidationParameters BuildTokenValidationParameters(
         ClockSkew = TimeSpan.FromSeconds(clockSkew),
 
         RequireSignedTokens = true,
-        IssuerSigningKeys = options.Configuration.JsonWebKeySet.Keys
+        IssuerSigningKeys = options.Configuration!.JsonWebKeySet.Keys
     };
 }

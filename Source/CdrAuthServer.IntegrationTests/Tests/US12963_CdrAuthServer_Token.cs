@@ -1,4 +1,5 @@
 ﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
@@ -85,14 +86,25 @@ namespace CdrAuthServer.IntegrationTests
 
         static void AssertIdToken(string? idToken)
         {
-            idToken.Should().NotBeNullOrEmpty();
+            string decryptedIdToken;
+
             if (idToken != null)
             {
-                // Decrypt the id token.
-                var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
-                var privateKey = privateKeyCertificate.GetRSAPrivateKey();
-                JweToken token = JWE.Decrypt(idToken, privateKey);
-                var decryptedIdToken = token.Plaintext;
+                var handler = new JwtSecurityTokenHandler();
+
+                // Only decrypt id token if it is encrypted (for hybrid flow scenarios)
+                if (!string.IsNullOrEmpty(handler.ReadJwtToken(idToken).Header.Enc))
+                {
+                    // Decrypt the id token.
+                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKey = privateKeyCertificate.GetRSAPrivateKey();
+                    JweToken token = JWE.Decrypt(idToken, privateKey);
+                    decryptedIdToken = token.Plaintext;
+                }
+                else
+                {
+                    decryptedIdToken = idToken;
+                }
 
                 var decodedIdToken = new JwtSecurityTokenHandler().ReadJwtToken(decryptedIdToken);
                 decodedIdToken.Claims.Should().ContainSingle(c => c.Type == "iss");
@@ -106,15 +118,52 @@ namespace CdrAuthServer.IntegrationTests
                 decodedIdToken.Claims.Should().ContainSingle(c => c.Type == "given_name");
                 decodedIdToken.Claims.Should().ContainSingle(c => c.Type == "updated_at");
             }
+            else
+            {
+                throw new Exception($"Cannot assert id token in {nameof(AssertIdToken)} method as id token is null.");
+            }
         }
 
         #region TEST_SCENARIO_A_IDTOKEN_AND_ACCESSTOKEN        
         [Fact]
-        public async Task AC01_Post_ShouldRespondWith_200OK_IDToken_AccessToken_RefreshToken()
+        public async Task AC01_Auth_Code_Flow_Post_ShouldRespondWith_200OK_IDToken_AccessToken_RefreshToken()
         {
             // Arrange
             var authCode = await GetAuthCode();
 
+            // Act
+            var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
+
+            // Assert
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                responseMessage.StatusCode.Should().Be(HttpStatusCode.OK);
+
+                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    Assertions.AssertHasContentTypeApplicationJson(responseMessage.Content);
+
+                    var tokenResponse = await _dataHolderTokenService.DeserializeResponse(responseMessage);
+                    tokenResponse.Should().NotBeNull();
+                    tokenResponse?.TokenType.Should().Be("Bearer");
+                    tokenResponse?.ExpiresIn.Should().Be(_authServerOptions.ACCESSTOKENLIFETIMESECONDS);
+                    tokenResponse?.CdrArrangementId.Should().NotBeNullOrEmpty();
+                    tokenResponse?.Scope.Should().Be(SCOPE_TOKEN_ACCOUNTS);
+                    tokenResponse?.AccessToken.Should().NotBeNullOrEmpty();
+                    tokenResponse?.IdToken.Should().NotBeNullOrEmpty();
+                    tokenResponse?.RefreshToken.Should().NotBeNullOrEmpty();
+
+                    AssertAccessToken(tokenResponse?.AccessToken);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AC01_Hybrid_Flow_Post_ShouldRespondWith_200OK_IDToken_AccessToken_RefreshToken()
+        {
+            // Arrange
+            var authCode = await GetAuthCode(responseType: ResponseType.CodeIdToken, responseMode: ResponseMode.Fragment);
+            
             // Act
             var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
 
@@ -219,7 +268,7 @@ namespace CdrAuthServer.IntegrationTests
 
             AuthoriseException expectedError;
 
-            if (grantType.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(grantType))
             {
                 expectedError = new MissingGrantTypeException();
             }
@@ -333,7 +382,7 @@ namespace CdrAuthServer.IntegrationTests
             var authCode = await GetAuthCode();
 
             AuthoriseException expectedError;
-            if (clientAssertionType.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(clientAssertionType))
             {
                 expectedError = new MissingClientAssertionTypeException();
             }
@@ -521,6 +570,25 @@ namespace CdrAuthServer.IntegrationTests
                 await Assertions.AssertErrorAsync(responseMessage, expectedError);
             }
         }
+
+        [Fact]
+        public async Task ACXXX_Post_InvalidClientEncryptionKey_ShouldRespondWith_400BadRequest_InvalidXXX()
+        {
+            // Arrange
+            var authCode = await GetAuthCode(responseType: ResponseType.CodeIdToken, responseMode: ResponseMode.Fragment);
+            Helpers.AuthServer.UpdateAuthServerClientClaim(_options, _clientId, "id_token_encrypted_response_alg", "RSA-OAEP-256");
+
+            // Act
+            var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
+
+            // Assert
+            var expectedError = new UnexpectedErrorException("Unable to get encryption key required for id_token encryption from client JWKS");
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                await Assertions.AssertErrorAsync(responseMessage, expectedError);
+            }
+        }
+
         #endregion
 
         #region TEST_SCENARIO_B_IDTOKEN_ACCESSTOKEN_REFRESHTOKEN
@@ -822,7 +890,7 @@ namespace CdrAuthServer.IntegrationTests
             return response.StatusCode;
         }
 
-        private async Task<string> GetAuthCode(int? sharingDuration = Constants.AuthServer.SharingDuration, string? scope = null)
+        private async Task<string> GetAuthCode(int? sharingDuration = Constants.AuthServer.SharingDuration, string? scope = null, ResponseType responseType = ResponseType.Code, ResponseMode responseMode = ResponseMode.Jwt)
         {
             if (_clientId == null)
             {
@@ -840,6 +908,8 @@ namespace CdrAuthServer.IntegrationTests
                  .WithScope(scope)
                  .WithClientId(_clientId)
                  .WithSharingDuration(sharingDuration)
+                 .WithResponseMode(responseMode)
+                 .WithResponseType(responseType)
                  .BuildAsync();
             (var authCode, _) = await authService.Authorise();
 

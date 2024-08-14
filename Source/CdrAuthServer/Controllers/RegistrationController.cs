@@ -1,8 +1,8 @@
 ﻿using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
-using CdrAuthServer.Domain;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Infrastructure;
+using CdrAuthServer.Infrastructure.Authorisation;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
@@ -37,8 +37,9 @@ namespace CdrAuthServer.Controllers
 
         [HttpGet]
         [Route("connect/register/{clientId}")]
+        [ApiVersionNeutral]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.Registration)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.Registration)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ClientRegistrationResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
@@ -49,7 +50,7 @@ namespace CdrAuthServer.Controllers
             var clientIdResult = await ValidateClientId(clientId);
             if (!clientIdResult.IsValid)
             {
-                _logger.LogInformation("Validation failed - {@clientIdResult}", clientIdResult);
+                _logger.LogInformation("Validation failed - {@ClientIdResult}", clientIdResult);
                 Response.Headers.Append(
                     HttpHeaders.WWWAuthenticate,
                     $"Bearer error=\"{clientIdResult.Error}\", error_description=\"{clientIdResult.ErrorDescription}\"");
@@ -62,6 +63,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/register")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [Consumes("application/jwt")]
         [Produces("application/json")]
@@ -97,8 +99,9 @@ namespace CdrAuthServer.Controllers
 
         [HttpPut]
         [Route("connect/register/{clientId}")]
+        [ApiVersionNeutral]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.Registration)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.Registration)]
         [Consumes("application/jwt")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ClientRegistrationResponse), StatusCodes.Status200OK)]
@@ -114,7 +117,7 @@ namespace CdrAuthServer.Controllers
             var clientIdResult = await ValidateClientId(clientId);
             if (!clientIdResult.IsValid)
             {
-                _logger.LogError("client_id validation failed with error:{error} errordescription:{desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
+                _logger.LogError("client_id validation failed with error:{Error} errordescription:{Desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
 
                 Response.Headers.Append(
                     HttpHeaders.WWWAuthenticate,
@@ -126,7 +129,7 @@ namespace CdrAuthServer.Controllers
             var result = await _clientRegistrationValidator.Validate(request, configOptions);
             if (!result.IsValid)
             {
-                _logger.LogError("client registration validation failed with error:{error} errordescription:{desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
+                _logger.LogError("client registration validation failed with error:{Error} errordescription:{Desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
                 return new BadRequestObjectResult(new Error(result.Error, result.ErrorDescription));
             }
 
@@ -139,8 +142,9 @@ namespace CdrAuthServer.Controllers
 
         [HttpDelete]
         [Route("connect/register/{clientId}")]
+        [ApiVersionNeutral]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.Registration)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.Registration)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(Error), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteRegistration([Required] string clientId)
@@ -149,7 +153,7 @@ namespace CdrAuthServer.Controllers
             var clientIdResult = await ValidateClientId(clientId);
             if (!clientIdResult.IsValid)
             {
-                _logger.LogError("client_id validation failed with error:{error} errordescription:{desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
+                _logger.LogError("client_id validation failed with error:{Error} errordescription:{Desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
 
                 Response.Headers.Append(
                     HttpHeaders.WWWAuthenticate,
@@ -162,7 +166,7 @@ namespace CdrAuthServer.Controllers
             return NoContent();
         }
 
-        private string FilterScopes(string scope, ConfigurationOptions configOptions)
+        private static string FilterScopes(string scope, ConfigurationOptions configOptions)
         {
             var scopes = scope.Split(' ');
             return string.Join(" ", scopes.Where(s => configOptions?.ScopesSupported?.Contains(s) is true || configOptions?.ClientCredentialScopesSupported?.Contains(s) is true));
@@ -175,7 +179,7 @@ namespace CdrAuthServer.Controllers
             || (!clientId.Equals(clientIdClaimValue.Value, StringComparison.OrdinalIgnoreCase))
             || (await _clientService.Get(clientId) == null))
             {
-                return Validation.ValidationResult.Fail(ErrorCodes.InvalidRequest, "The client is unknown");
+                return Validation.ValidationResult.Fail(ErrorCodes.Generic.InvalidRequest, "The client is unknown");
             }
 
             return Validation.ValidationResult.Pass();

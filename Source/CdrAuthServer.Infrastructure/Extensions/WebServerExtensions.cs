@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net.Security;
+using CertificateLoader = CdrAuthServer.Infrastructure.Certificates.CertificateLoader;
 
 namespace CdrAuthServer.Infrastructure.Extensions
 {
@@ -23,7 +23,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
                 options.ConfigureHttpsDefaults(async httpsOptions =>
                 {
                     httpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
-                    httpsOptions.ServerCertificate = await ((new CertificateLoader()).Load(configuration, serverCertificateConfigurationKey));
+                    httpsOptions.ServerCertificate = await (new CertificateLoader().Load(configuration, serverCertificateConfigurationKey));
                     httpsOptions.ClientCertificateMode = requireClientCertificate ? ClientCertificateMode.RequireCertificate : ClientCertificateMode.NoCertificate;
                 });
 

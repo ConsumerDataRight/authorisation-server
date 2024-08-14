@@ -14,8 +14,7 @@ namespace CdrAuthServer.IdPermanence
 
             using (var aes = Aes.Create())
             {
-                var alg = HashAlgorithm.Create("SHA512");
-                var keyHash = alg?.ComputeHash(Encoding.UTF8.GetBytes(key));
+                var keyHash = SHA512.HashData(Encoding.UTF8.GetBytes(key));
                 aes.Key = keyHash.Take(24).ToArray();
                 aes.IV = iv;
 
@@ -51,8 +50,7 @@ namespace CdrAuthServer.IdPermanence
                 {
                     using (var aes = Aes.Create())
                     {
-                        var alg = HashAlgorithm.Create("SHA512");
-                        var keyHash = alg?.ComputeHash(Encoding.UTF8.GetBytes(key));
+                        var keyHash = SHA512.HashData(Encoding.UTF8.GetBytes(key));
                         aes.Key = keyHash.Take(24).ToArray();
                         aes.IV = iv;
 

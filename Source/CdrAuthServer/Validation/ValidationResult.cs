@@ -51,7 +51,7 @@ namespace CdrAuthServer.Validation
             List<System.ComponentModel.DataAnnotations.ValidationResult> validationResults)
         {
             // Return the first client metadata error.
-            return ValidationResult.Fail(errorCode, validationResults.First().ErrorMessage);
+            return ValidationResult.Fail(errorCode, validationResults[0].ErrorMessage);
         }
     }
 }

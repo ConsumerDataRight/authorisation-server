@@ -1,12 +1,12 @@
 import { Box, List, ListItem, ListItemText, Typography } from "@mui/material"
 import { grey } from "@mui/material/colors"
 import { InternalLayout } from "../../components/InternalLayout"
-import { useRecoilValue } from 'recoil';
-import { DataRecipientName } from "../../state/Common.state"
+import { useCommonContext } from "../../context/CommonContext";
 
 export default function SharingPeriod() {
 
-    const dataRecipientName = useRecoilValue(DataRecipientName);
+    const { commonState } = useCommonContext();
+    const dataRecipientName = commonState.dataRecipient?.BrandName;
 
     return (
         <InternalLayout selectedMenu="settings" pageTitle="Sharing period">

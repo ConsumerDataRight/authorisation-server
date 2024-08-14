@@ -6,6 +6,7 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
     using static CdrAuthServer.Domain.Constants;
+    using static CdrAuthServer.Infrastructure.Constants;
 
     internal class GrantConfiguration : IEntityTypeConfiguration<Grant>
     {

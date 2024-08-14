@@ -1,6 +1,6 @@
 ﻿using CdrAuthServer.Authorisation;
-using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
+using CdrAuthServer.Infrastructure.Authorisation;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,10 +35,11 @@ namespace CdrAuthServer.Controllers
         [HttpPost]
         [HttpGet]
         [Route("connect/userinfo")]
+        [ApiVersionNeutral]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.UserInfo)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.UserInfo)]
         public async Task<IActionResult> GetUserInfo()
-        {            
+        {
             var configOptions = _config.GetConfigurationOptions(this.HttpContext);
 
             var client = await _clientService.Get(User.GetClientId());
@@ -50,17 +51,17 @@ namespace CdrAuthServer.Controllers
 
             // Check software product status (if configured).
             if (configOptions.CdrRegister.CheckSoftwareProductStatus)
-            {                
+            {
                 var softwareProductId = client.SoftwareId;
                 var softwareProduct = await _cdrService.GetSoftwareProduct(softwareProductId);
                 if (softwareProduct == null)
                 {
-                    _logger.LogInformation("Software Product not found {softwareProductId}", softwareProductId);
+                    _logger.LogInformation("Software Product not found {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                 }
                 if (!softwareProduct.IsActive())
                 {
-                    _logger.LogInformation("Software product status is removed - consents cannot be revoked {softwareProductId}", softwareProductId);
+                    _logger.LogInformation("Software product status is removed - consents cannot be revoked {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_STATUS_INACTIVE, softwareProduct.GetStatusDescription());
                 }
             }
@@ -81,18 +82,18 @@ namespace CdrAuthServer.Controllers
 
                 return new JsonResult(userInfo);
             }
-            else 
+            else
             {
                 var subjectId = User.GetSubject()
                                     .DecryptSub(client, _config);
-                
+
                 // Get customer login details from seed data file instead
                 var customer = await _customerService.Get(subjectId);
                 userInfo.FamilyName = customer.FamilyName;
                 userInfo.GivenName = customer.GivenName;
                 userInfo.Name = customer.Name;
 
-                return new JsonResult(userInfo);                
+                return new JsonResult(userInfo);
             }
         }
     }

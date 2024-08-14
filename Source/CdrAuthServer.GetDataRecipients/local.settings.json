@@ -3,7 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "StorageConnectionString": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "Schedule": "0-59 * * * *",
     "Register_CdrAuthServer_Logging_DB_ConnectionString": "Server=mssql;Database=cdr-auth-server;User Id='SA';Password='Pa{}w0rd2019';MultipleActiveResultSets=True;TrustServerCertificate=True;Encrypt=False",
     "Register_CdrAuthServer_MetadataUpdate_Endpoint": "https://cdr-auth-server:8082/cds-au/v1/admin/register/metadata",

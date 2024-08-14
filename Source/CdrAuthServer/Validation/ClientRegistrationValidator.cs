@@ -1,6 +1,7 @@
 ﻿using CdrAuthServer.Configuration;
 using CdrAuthServer.Domain;
 using CdrAuthServer.Extensions;
+using CdrAuthServer.Helpers;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using Microsoft.Extensions.Primitives;
@@ -79,15 +80,15 @@ namespace CdrAuthServer.Validation
             CheckMandatory(clientRegistrationRequest.Exp, nameof(clientRegistrationRequest.Exp));
             CheckMandatory(clientRegistrationRequest.Jti, nameof(clientRegistrationRequest.Jti));
             MustEqual(clientRegistrationRequest.Aud, nameof(clientRegistrationRequest.Aud), configOptions.Issuer);
-            MustEqual(clientRegistrationRequest.Iss, nameof(clientRegistrationRequest.Iss), clientRegistrationRequest.SoftwareStatement.SoftwareId);
-            MustBeOne(clientRegistrationRequest.TokenEndpointAuthSigningAlg, nameof(clientRegistrationRequest.TokenEndpointAuthSigningAlg), configOptions.TokenEndpointAuthSigningAlgValuesSupported);
-            MustBeOne(clientRegistrationRequest.TokenEndpointAuthMethod, nameof(clientRegistrationRequest.TokenEndpointAuthMethod), configOptions.TokenEndpointAuthMethodsSupported);
-            MustBeOne(clientRegistrationRequest.IdTokenSignedResponseAlg, nameof(clientRegistrationRequest.IdTokenSignedResponseAlg), configOptions.IdTokenSigningAlgValuesSupported);
+            MustEqual(clientRegistrationRequest.Iss, nameof(clientRegistrationRequest.Iss), clientRegistrationRequest.SoftwareStatement.SoftwareId!);
+            MustBeOne(clientRegistrationRequest.TokenEndpointAuthSigningAlg, nameof(clientRegistrationRequest.TokenEndpointAuthSigningAlg), configOptions.TokenEndpointAuthSigningAlgValuesSupported!);
+            MustBeOne(clientRegistrationRequest.TokenEndpointAuthMethod, nameof(clientRegistrationRequest.TokenEndpointAuthMethod), configOptions.TokenEndpointAuthMethodsSupported!);
+            MustBeOne(clientRegistrationRequest.IdTokenSignedResponseAlg, nameof(clientRegistrationRequest.IdTokenSignedResponseAlg), configOptions.IdTokenSigningAlgValuesSupported!);
             MustContain(clientRegistrationRequest.GrantTypes, nameof(clientRegistrationRequest.GrantTypes), "authorization_code");
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.RequestObjectSigningAlg))
             {
-                MustBeOne(clientRegistrationRequest.RequestObjectSigningAlg, nameof(clientRegistrationRequest.RequestObjectSigningAlg), configOptions.RequestObjectSigningAlgValuesSupported);
+                MustBeOne(clientRegistrationRequest.RequestObjectSigningAlg, nameof(clientRegistrationRequest.RequestObjectSigningAlg), configOptions.RequestObjectSigningAlgValuesSupported!);
             }
 
             // Response types is mandatory.
@@ -99,30 +100,30 @@ namespace CdrAuthServer.Validation
             {
                 foreach (var responseType in clientRegistrationRequest.ResponseTypes)
                 {
-                    MustBeOne(responseType, nameof(clientRegistrationRequest.ResponseTypes), configOptions.ResponseTypesSupported);
+                    MustBeOne(responseType, nameof(clientRegistrationRequest.ResponseTypes), configOptions.ResponseTypesSupported!);
                 }
 
                 if (clientRegistrationRequest.ResponseTypes.Contains(ResponseTypes.AuthCode))
                 {
-                    MustBeOne(clientRegistrationRequest.AuthorizationSignedResponseAlg, nameof(clientRegistrationRequest.AuthorizationSignedResponseAlg), configOptions.AuthorizationSigningAlgValuesSupported);
+                    MustBeOne(clientRegistrationRequest.AuthorizationSignedResponseAlg, nameof(clientRegistrationRequest.AuthorizationSignedResponseAlg), configOptions.AuthorizationSigningAlgValuesSupported!);
                 }
 
                 if (clientRegistrationRequest.ResponseTypes.Contains(ResponseTypes.Hybrid))
                 {
-                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseAlg, nameof(clientRegistrationRequest.IdTokenEncryptedResponseAlg), configOptions.IdTokenEncryptionAlgValuesSupported);
-                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseEnc, nameof(clientRegistrationRequest.IdTokenEncryptedResponseEnc), configOptions.IdTokenEncryptionEncValuesSupported);
+                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseAlg, nameof(clientRegistrationRequest.IdTokenEncryptedResponseAlg), configOptions.IdTokenEncryptionAlgValuesSupported!);
+                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseEnc, nameof(clientRegistrationRequest.IdTokenEncryptedResponseEnc), configOptions.IdTokenEncryptionEncValuesSupported!);
                 }
             }
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.AuthorizationEncryptedResponseEnc))
             {
-                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseEnc, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseEnc), configOptions.AuthorizationEncryptionEncValuesSupportedList);
-                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseAlg, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseAlg), configOptions.AuthorizationEncryptionAlgValuesSupportedList);
+                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseEnc, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseEnc), configOptions.AuthorizationEncryptionEncValuesSupportedList!);
+                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseAlg, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseAlg), configOptions.AuthorizationEncryptionAlgValuesSupportedList!);
             }
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.AuthorizationEncryptedResponseAlg))
             {
-                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseAlg, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseAlg), configOptions.AuthorizationEncryptionAlgValuesSupportedList);
+                MustBeOne(clientRegistrationRequest.AuthorizationEncryptedResponseAlg, nameof(clientRegistrationRequest.AuthorizationEncryptedResponseAlg), configOptions.AuthorizationEncryptionAlgValuesSupportedList!);
             }
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.ApplicationType))
@@ -135,21 +136,21 @@ namespace CdrAuthServer.Validation
             {
                 if (!clientRegistrationRequest.SoftwareStatement.RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase))
                 {
-                    _logger.LogError("redirect_uri: {redirectUri} is not present in SoftwareStatement", redirectUri);
+                    _logger.LogError("redirect_uri: {RedirectUri} is not present in SoftwareStatement", redirectUri);
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REGISTRATION_REQUEST_INVALID_REDIRECT_URI, redirectUri);
                 }
 
                 if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var _))
                 {
-                    _logger.LogError("malformed redirect_uri: {redirectUri}", redirectUri);
+                    _logger.LogError("malformed redirect_uri: {RedirectUri}", redirectUri);
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_REDIRECT_URI);
                 }
             }
 
-            if (_validationResults.Any())
+            if (_validationResults.Count != 0)
             {
-                _logger.LogError("validation failed: {@validationResults}", _validationResults);
-                return ValidationResult.Fail(ErrorCodes.InvalidClientMetadata, _validationResults);
+                _logger.LogError("validation failed: {@ValidationResults}", _validationResults);
+                return ValidationResult.Fail(ErrorCodes.Generic.InvalidClientMetadata, _validationResults);
             }
 
             return ValidationResult.Pass();
@@ -159,7 +160,7 @@ namespace CdrAuthServer.Validation
         {
             if (propValue == null || (propValue as string) == "")
             {
-                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MissingClaim, GetDisplayName(propName)), new string[] { propName }));
+                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MissingClaim, GetDisplayName(propName)), [propName]));
                 return false;
             }
 
@@ -177,11 +178,11 @@ namespace CdrAuthServer.Validation
             {
                 if (string.IsNullOrEmpty(customErrorMessage))
                 {
-                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustBeOne, GetDisplayName(propName), String.Join(",", expectedValues)), new string[] { propName }));
+                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustBeOne, GetDisplayName(propName), String.Join(",", expectedValues)), [propName]));
                 }
                 else
                 {
-                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(customErrorMessage, new string[] { propName }));
+                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(customErrorMessage, [propName]));
                 }
 
                 return false;
@@ -199,7 +200,7 @@ namespace CdrAuthServer.Validation
 
             if (!propValue?.ToString()?.Equals(expectedValue, StringComparison.OrdinalIgnoreCase) is true)
             {
-                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustEqual, GetDisplayName(propName), expectedValue), new string[] { propName }));
+                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustEqual, GetDisplayName(propName), expectedValue), [propName]));
             }
         }
 
@@ -207,7 +208,7 @@ namespace CdrAuthServer.Validation
         {
             if (!propValue.Contains(expectedValue, StringComparer.OrdinalIgnoreCase))
             {
-                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustContain, GetDisplayName(propName), expectedValue), new string[] { propName }));
+                _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustContain, GetDisplayName(propName), expectedValue), [propName]));
             }
         }
 
@@ -224,11 +225,11 @@ namespace CdrAuthServer.Validation
             var jwks = await _jwksService.GetJwks(new Uri(request.SoftwareStatement.JwksUri), request.Kid);
             if (jwks == null || jwks.Keys.Count == 0)
             {
-                _logger.LogError("Could not load JWKS from Data Recipient endpoint: {jwksUri}", request.SoftwareStatement.JwksUri);
+                _logger.LogError("Could not load JWKS from Data Recipient endpoint: {JwksUri}", request.SoftwareStatement.JwksUri);
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.UNABLE_TO_LOAD_JWKS_DATA_RECIPIENT, request.SoftwareStatement.JwksUri);
             }
 
-            _logger.LogInformation("Data Recipient JWKS: {jwks}", JsonConvert.SerializeObject(jwks));
+            _logger.LogInformation("Data Recipient JWKS: {Jwks}", JsonConvert.SerializeObject(jwks));
 
             // Assert - Validate Registration Request Signature
             var validationParameters = new TokenValidationParameters()
@@ -255,7 +256,7 @@ namespace CdrAuthServer.Validation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Client Registration Request validation failed - {message}", ex.Message);
+                _logger.LogError(ex, "Client Registration Request validation failed - {Message}", ex.Message);
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REGISTRATION_REQUEST_VALIDATION_FAILED);
             }
 
@@ -274,17 +275,14 @@ namespace CdrAuthServer.Validation
                 return ValidationResult.Pass();
             }
 
-            var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            _logger.LogDebug("Sending a request to: {SectorIdentifierUri}", sectorIdentifierUri);
 
-            _logger.LogDebug("Sending a request to: {sectorIdentifierUri}", sectorIdentifierUri);
-
-            var sectorIdClient = new HttpClient(clientHandler);
+            var sectorIdClient = new HttpClient(HttpHelper.CreateHttpClientHandler(_configuration));
             var sectorIdResponse = await sectorIdClient.GetAsync(sectorIdentifierUri);
 
             if (sectorIdResponse != null && sectorIdResponse.IsSuccessStatusCode)
             {
-                // TODO: need to validate the contents of the sector identifier.
+                // need to validate the contents of the sector identifier.
                 return ValidationResult.Pass();
             }
 
@@ -304,11 +302,11 @@ namespace CdrAuthServer.Validation
             var ssaJwks = await GetSsaJwks(clientRegistrationRequest);
             if (ssaJwks == null || ssaJwks.Keys.Count == 0)
             {
-                _logger.LogError("Could not load SSA JWKS from Register endpoint: {ssaJwksUri}", configOptions.CdrRegister.SsaJwksUri);
+                _logger.LogError("Could not load SSA JWKS from Register endpoint: {SsaJwksUri}", configOptions.CdrRegister!.SsaJwksUri);
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.UNABLE_TO_LOAD_JWKS_FROM_REGISTER, configOptions.CdrRegister.SsaJwksUri);
             }
 
-            _logger.LogInformation("Register SSA JWKS: {ssaJwks}", JsonConvert.SerializeObject(ssaJwks));
+            _logger.LogInformation("Register SSA JWKS: {SsaJwks}", JsonConvert.SerializeObject(ssaJwks));
 
             // Assert - Validate SSA Signature
             var validationParameters = new TokenValidationParameters()
@@ -342,31 +340,30 @@ namespace CdrAuthServer.Validation
 
         private async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetSsaJwks(ClientRegistrationRequest clientRegistrationRequest)
         {
-            // TODO: Remove this logic once CTS has removed the use of the x-cts-ssa-publickey header for passing SSA JWKS public key.
+            // Remove this logic once CTS has removed the use of the x-cts-ssa-publickey header for passing SSA JWKS public key.
             // Check if the SSA JWKS public key was passed as a http header (CTS).
             var ssaJwksHeaderName = _configuration.GetValue<string>("CdrAuthServer:RegisterSsaPublicKeyHttpHeaderName", "");
             if (!string.IsNullOrEmpty(ssaJwksHeaderName)
                 && _httpContextAccessor != null
                 && _httpContextAccessor.HttpContext != null
-                && _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(ssaJwksHeaderName, out StringValues publicKey))
+                && _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(ssaJwksHeaderName, out StringValues publicKey)
+                && !string.IsNullOrEmpty(publicKey))
             {
-                if (!string.IsNullOrEmpty(publicKey))
-                {
-                    _logger.LogInformation("SSA JWKS found in http header {header}: {value}", ssaJwksHeaderName, publicKey);
+               
+                _logger.LogInformation("SSA JWKS found in http header {Header}: {Value}", ssaJwksHeaderName, publicKey);
 
-                    var jwk = new Microsoft.IdentityModel.Tokens.JsonWebKey(publicKey);
-                    if (jwk?.Kid == clientRegistrationRequest.SoftwareStatement.Header.Kid)
-                    {
-                        var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet();
-                        jwks.Keys.Add(jwk);
-                        return jwks;
-                    }
+                var jwk = new Microsoft.IdentityModel.Tokens.JsonWebKey(publicKey);
+                if (jwk.Kid == clientRegistrationRequest.SoftwareStatement.Header.Kid)
+                {
+                    var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet();
+                    jwks.Keys.Add(jwk);
+                    return jwks;
                 }
             }
 
             // Retrieve the JWKS from the Register's SSA JWKS endpoint.
             var configOptions = _configuration.GetConfigurationOptions();
-            _logger.LogInformation("Retrieving SSA JWKS from Register {uri}...", configOptions?.CdrRegister?.SsaJwksUri);
+            _logger.LogInformation("Retrieving SSA JWKS from Register {Uri}...", configOptions?.CdrRegister?.SsaJwksUri);
             return await _jwksService.GetJwks(new Uri(configOptions?.CdrRegister?.SsaJwksUri ?? "about:blank"), clientRegistrationRequest.SoftwareStatement.Header.Kid);
         }
 

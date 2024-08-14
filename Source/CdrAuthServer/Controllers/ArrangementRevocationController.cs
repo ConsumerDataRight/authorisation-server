@@ -1,5 +1,6 @@
-﻿using CdrAuthServer.Configuration;
+﻿using CdrAuthServer.Domain.Models;
 using CdrAuthServer.Extensions;
+using CdrAuthServer.Infrastructure.Models;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
@@ -33,6 +34,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/arrangements/revoke")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         [Consumes("application/x-www-form-urlencoded")]
@@ -46,7 +48,7 @@ namespace CdrAuthServer.Controllers
             if (string.IsNullOrEmpty(cdrArrangementId))
             {
                 _logger.LogError("Missing required field of cdrArrangementId");
-                return BadRequest(CdsErrorList.MissingRequiredField(ClaimNames.CdrArrangementId));
+                return BadRequest(new ResponseErrorList().AddMissingRequiredField(ClaimNames.CdrArrangementId));
             }
 
             var client = await _clientService.Get(User.GetClientId());
@@ -64,24 +66,24 @@ namespace CdrAuthServer.Controllers
                 var softwareProduct = await _cdrService.GetSoftwareProduct(softwareProductId);
                 if (softwareProduct == null)
                 {
-                    _logger.LogError("Software Product not found {softwareProductId}", softwareProductId);
+                    _logger.LogError("Software Product not found {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                 }
                 if (softwareProduct.Status.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogError("Software product status is removed - consents cannot be revoked {softwareProductId}", softwareProductId);
+                    _logger.LogError("Software product status is removed - consents cannot be revoked {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_REMOVED);
                 }
             }
 
             if (await _grantService.Get(GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId) is not CdrArrangementGrant cdrArrangementGrant)
             {
-                _logger.LogError("{arrangement} with id:{id} not found for client:{clientid}", GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId);               
-                return UnprocessableEntity(CdsErrorList.InvalidConsentArrangement(cdrArrangementId));
+                _logger.LogError("{Arrangement} with id:{Id} not found for client:{Clientid}", GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId);
+                return UnprocessableEntity(new ResponseErrorList().AddInvalidConsentArrangement(cdrArrangementId));
             }
 
             // Delete the grants.
-            await _grantService.Delete(client.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken);
+            await _grantService.Delete(client.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken ?? "");
             await _grantService.Delete(client.ClientId, GrantTypes.CdrArrangement, cdrArrangementGrant.Key);
 
             return NoContent();

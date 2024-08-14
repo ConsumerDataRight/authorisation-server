@@ -1,15 +1,22 @@
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.APIs;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Jose;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Web;
 using Xunit;
 using Xunit.DependencyInjection;
@@ -240,7 +247,6 @@ namespace CdrAuthServer.IntegrationTests
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 authCode.Should().NotBeNullOrEmpty();
-                idToken.Should().NotBeNullOrEmpty();
             }
 
             // Act - Use the authCode to get token
@@ -264,11 +270,10 @@ namespace CdrAuthServer.IntegrationTests
         {
             var expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
             var expectedError = new ExpiredRequestUriException();
-            var expectedRedirectFragment = $"error={expectedError.Error}&error_description={expectedError.ErrorDescription}";
-
+         
             const int PAR_EXPIRY_SECONDS = 90;
 
-            var clientId = _options.LastRegisteredClientId;
+            var clientId = _options.LastRegisteredClientId ?? throw new NullReferenceException("Could not find Client Id.");
 
             // Arrange
             var response = await _dataHolderParService.SendRequest(_options.SCOPE, clientId: clientId);
@@ -284,12 +289,16 @@ namespace CdrAuthServer.IntegrationTests
             var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
                 .WithRequestUri(parResponse.RequestURI)
                 .WithClientId(clientId)
-                .Build().Url;
+                .WithJWTCertificateFilename(Constants.Certificates.JwtCertificateFilename)
+                .WithJWTCertificatePassword(Constants.Certificates.JwtCertificatePassword)
+                .WithResponseType(ResponseType.Code.ToEnumMemberAttrValue())
+            .Build().Url;
+
             var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var authResponse = await Helpers.Web.CreateHttpClient(Constants.Certificates.CertificateFilename, Constants.Certificates.CertificatePassword, false).SendAsync(request);
+            var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -301,12 +310,28 @@ namespace CdrAuthServer.IntegrationTests
                 var redirectPath = authResponse?.Headers?.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
-                // Check redirect query
-                if (expectedRedirectFragment != null)
+                var queryValues = HttpUtility.ParseQueryString(authResponse?.Headers.Location?.Query ?? throw new NullReferenceException());
+
+                // Check query has "response" param
+                var queryValueResponse = queryValues["response"];
+                
+                var encodedJwt = queryValueResponse;
+                queryValueResponse.Should().NotBeNullOrEmpty();
+
+                if (_authServerOptions.JARM_ENCRYPTION_ON)
                 {
-                    var redirectFragment = HttpUtility.UrlDecode(authResponse?.Headers?.Location?.Fragment.TrimStart('#'));
-                    redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
+                    // Decrypt the JARM JWT.
+                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKey = privateKeyCertificate.GetRSAPrivateKey();
+                    JweToken token = JWE.Decrypt(queryValueResponse, privateKey);
+                    encodedJwt = token.Plaintext;
                 }
+
+                // Check claims of decode jwt
+                var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
+                jwt.Claim("error").Value.Should().Be(expectedError.Error);
+                jwt.Claim("error_description").Value.Should().Be(expectedError.ErrorDescription);
+
             }
         }
 

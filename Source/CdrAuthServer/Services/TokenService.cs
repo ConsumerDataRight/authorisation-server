@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Domain;
+using CdrAuthServer.Domain.Extensions;
 using CdrAuthServer.Domain.Repositories;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.IdPermanence;
@@ -13,6 +14,7 @@ using Jose;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using static CdrAuthServer.Domain.Constants;
+using static CdrAuthServer.Infrastructure.Constants;
 
 namespace CdrAuthServer.Services
 {
@@ -89,7 +91,7 @@ namespace CdrAuthServer.Services
             }
 
             // If there are selected account Ids, add them to the access token.
-            if (accountIds != null && accountIds.Any())
+            if (accountIds != null && accountIds.Count > 0)
             {
                 var idPermananceManager = new IdPermanenceManager(_configuration);
                 var idParameters = new IdPermanenceParameters
@@ -109,7 +111,7 @@ namespace CdrAuthServer.Services
                 configOptions,
                 cnf: cnf);
         }
-
+                
         public async Task<string> IssueIdToken(
             string clientId,
             string subjectId,
@@ -121,35 +123,70 @@ namespace CdrAuthServer.Services
             string? accessToken = null,
             string? authTime = null)
         {
-            // Claims collection.
             var claims = new List<Claim>();
 
+            AddOptionalClaims(claims, nonce, authCode, accessToken, state);
+            await AddMandatoryClaims(claims, subjectId, clientId, authTime);
+
+
+            // Add user name claims. These should only be added during a token request, not the authorisation request.
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                await AddUserClaims(claims, subjectId, configOptions);
+            }
+
+            // Set the acr claim to a LoA of 2 - urn:cds.au:cdr:2
+            claims.Add(new Claim(ClaimNames.Acr, configOptions.DefaultAcrValue));
+
+            var (encryptedResponseAlg, encryptedResponseEnc, encryptedJwk) = await GetEncryptionParameters(clientId, encrypt);
+
+            _logger.LogDebug("Encrypting id_token: {Encrypt}", encrypt);
+            _logger.LogDebug("encryptedResponseAlg: {EncryptedResponseAlg}", encryptedResponseAlg);
+            _logger.LogDebug("encryptedResponseEnc: {EncryptedResponseEnc}", encryptedResponseEnc);
+            _logger.LogDebug("encryptedJwk: {EncryptedJwk}", encryptedJwk);
+
+            var client = await _clientService.Get(clientId);
+
+            return await CreateToken(
+                claims,
+                clientId,
+                TokenTypes.IdToken,
+                configOptions.IdTokenExpirySeconds,
+                configOptions,
+                signingAlg: client!.IdTokenSignedResponseAlg ?? Constants.Algorithms.Signing.PS256,
+                encryptedResponseAlg: encryptedResponseAlg,
+                encryptedResponseEnc: encryptedResponseEnc,
+                clientJwk: encryptedJwk);
+        }
+
+        private static void AddOptionalClaims(List<Claim> claims, string? nonce, string? authCode, string? accessToken, string? state)
+        {
             // if nonce was sent, must be mirrored in id token
             if (nonce != null && nonce.HasValue())
             {
                 claims.Add(new Claim(ClaimNames.Nonce, nonce));
             }
-
-            // add iat claim
-            claims.Add(new Claim(ClaimNames.IssuedAt, DateTime.UtcNow.ToEpoch().ToString(), ClaimValueTypes.Integer64));
-
             // add at_hash claim
             if (accessToken != null && accessToken.HasValue())
             {
                 claims.Add(new Claim(ClaimNames.AccessTokenHash, CreateHashClaimValue(accessToken)));
             }
-
             // add c_hash claim
             if (authCode != null && authCode.HasValue())
             {
                 claims.Add(new Claim(ClaimNames.AuthorizationCodeHash, CreateHashClaimValue(authCode)));
             }
-
             // add s_hash claim
             if (state != null && state.HasValue())
             {
                 claims.Add(new Claim(ClaimNames.StateHash, CreateHashClaimValue(state)));
             }
+        }
+
+        private async Task AddMandatoryClaims(List<Claim> claims, string subjectId, string clientId, string? authTime)
+        {
+            // add iat claim
+            claims.Add(new Claim(ClaimNames.IssuedAt, DateTime.UtcNow.ToEpoch().ToString(), ClaimValueTypes.Integer64));
 
             // Run the sub claim through the ID Permanence.
             var client = await _clientService.Get(clientId);
@@ -160,65 +197,48 @@ namespace CdrAuthServer.Services
 
             // add updated_at claim
             claims.Add(new Claim(ClaimNames.UpdatedAt, DateTime.UtcNow.ToEpoch().ToString(), ClaimValueTypes.Integer64));
+        }
 
-            // Add user name claims. These should only be added during a token request, not the authorisation request.
-            if (!string.IsNullOrEmpty(accessToken))
+        private async Task AddUserClaims(List<Claim> claims, string subjectId, ConfigurationOptions configOptions)
+        {
+            if (configOptions.HeadlessMode)
             {
-                if (configOptions.HeadlessMode)
-                {
-                    var user = new HeadlessModeUser();
-                    claims.Add(new Claim(ClaimNames.Name, user.Subject));
-                    claims.Add(new Claim(ClaimNames.FamilyName, user.FamilyName));
-                    claims.Add(new Claim(ClaimNames.GivenName, user.GivenName));
-                }
-                else
-                {
-                    // User claims look up from from seed data source
-                    claims.Add(new Claim(ClaimNames.Name, subjectId));
-                    
-                    // Get customer login details from seed data file instead
-                    var userInfo = await _customerService.Get(subjectId);                    
-                    claims.Add(new Claim(ClaimNames.GivenName, userInfo.GivenName));
-                    claims.Add(new Claim(ClaimNames.FamilyName, userInfo.FamilyName));
-                }
+                var user = new HeadlessModeUser();
+                claims.Add(new Claim(ClaimNames.Name, user.Subject));
+                claims.Add(new Claim(ClaimNames.FamilyName, user.FamilyName));
+                claims.Add(new Claim(ClaimNames.GivenName, user.GivenName));
             }
-
-            // Set the acr claim to a LoA of 2 - urn:cds.au:cdr:2
-            claims.Add(new Claim(ClaimNames.Acr, configOptions.DefaultAcrValue));
-
-            Microsoft.IdentityModel.Tokens.JsonWebKey? clientJwk = null;
-            if (encrypt)
+            else
             {
-                // Get the client enc jwk.
-                var jwks = await _clientService.GetJwks(client);
-                clientJwk = jwks.Keys.First(jwk => jwk.Alg == client.IdTokenEncryptedResponseAlg);
+                claims.Add(new Claim(ClaimNames.Name, subjectId));
+                var userInfo = await _customerService.Get(subjectId);
+                claims.Add(new Claim(ClaimNames.GivenName, userInfo.GivenName));
+                claims.Add(new Claim(ClaimNames.FamilyName, userInfo.FamilyName));
             }
+        }
 
+        private async Task<(string? encryptedResponseAlg, string? encryptedResponseEnc, Microsoft.IdentityModel.Tokens.JsonWebKey? encryptedJwk)> GetEncryptionParameters(string clientId, bool encrypt)
+        {
             string? encryptedResponseAlg = null;
             string? encryptedResponseEnc = null;
             Microsoft.IdentityModel.Tokens.JsonWebKey? encryptedJwk = null;
+
             if (encrypt)
             {
-                encryptedResponseAlg = client.IdTokenEncryptedResponseAlg ?? Constants.Algorithms.Jwe.Alg.RSAOAEP256;
+                var client = await _clientService.Get(clientId);
+                var jwks = await _clientService.GetJwks(client!);
+                encryptedJwk = jwks.Keys.FirstOrDefault(jwk => jwk.Alg == client!.IdTokenEncryptedResponseAlg);
+
+                if (encryptedJwk == null)
+                {
+                    throw new InvalidOperationException("Unable to get encryption key required for id_token encryption from client JWKS");
+                }
+
+                encryptedResponseAlg = client!.IdTokenEncryptedResponseAlg ?? Constants.Algorithms.Jwe.Alg.RSAOAEP256;
                 encryptedResponseEnc = client.IdTokenEncryptedResponseEnc ?? Constants.Algorithms.Jwe.Enc.A256GCM;
-                encryptedJwk = clientJwk;
             }
 
-            _logger.LogDebug("Encrypting id_token: {encrypt}", encrypt);
-            _logger.LogDebug("encryptedResponseAlg: {encryptedResponseAlg}", encryptedResponseAlg);
-            _logger.LogDebug("encryptedResponseEnc: {encryptedResponseEnc}", encryptedResponseEnc);
-            _logger.LogDebug("encryptedJwk: {encryptedJwk}", encryptedJwk);
-
-            return await CreateToken(
-                claims,
-                clientId,
-                TokenTypes.IdToken,
-                configOptions.IdTokenExpirySeconds,
-                configOptions,
-                signingAlg: client.IdTokenSignedResponseAlg ?? Constants.Algorithms.Signing.PS256,
-                encryptedResponseAlg: encryptedResponseAlg,
-                encryptedResponseEnc: encryptedResponseEnc,
-                clientJwk: encryptedJwk);
+            return (encryptedResponseAlg, encryptedResponseEnc, encryptedJwk);
         }
 
         private string EncryptSub(string subjectId, Client client)
@@ -227,7 +247,7 @@ namespace CdrAuthServer.Services
             var param = new SubPermanenceParameters()
             {
                 SoftwareProductId = client.SoftwareId,
-                SectorIdentifierUri = client.SectorIdentifierUri
+                SectorIdentifierUri = client.SectorIdentifierUri ?? ""
             };
 
             return idPermanenceManager.EncryptSub(subjectId, param);
@@ -236,7 +256,7 @@ namespace CdrAuthServer.Services
         private static string CreateHashClaimValue(string value)
         {
             var octets = Encoding.ASCII.GetBytes(value);
-            var hash = SHA256.Create().ComputeHash(octets);
+            var hash = SHA256.HashData(octets);
             return Base64UrlEncoder.Encode(hash[..(hash.Length / 2)]);
         }
 
@@ -257,7 +277,7 @@ namespace CdrAuthServer.Services
                 return await GetRefreshTokenResponse(tokenRequest, cnf, configOptions);
             }
 
-            return new TokenResponse() { Error = new Error(ErrorCodes.UnsupportedGrantType, $"Invalid grant_type: {tokenRequest.grant_type}") };
+            return new TokenResponse() { Error = new Error(ErrorCodes.Generic.UnsupportedGrantType, $"Invalid grant_type: {tokenRequest.grant_type}") };
         }
 
         private async Task<TokenResponse> GetRefreshTokenResponse(TokenRequest tokenRequest, string cnf, ConfigurationOptions configOptions)
@@ -267,7 +287,7 @@ namespace CdrAuthServer.Services
             {
                 throw new InvalidOperationException($"Value is null or empty {nameof(refreshTokenGrant)}");
             }
-            if (await _grantService.Get(GrantTypes.CdrArrangement, refreshTokenGrant.CdrArrangementId, tokenRequest.client_id) is not CdrArrangementGrant cdrArrangementGrant)
+            if (await _grantService.Get(GrantTypes.CdrArrangement, refreshTokenGrant.CdrArrangementId ?? "", tokenRequest.client_id) is not CdrArrangementGrant cdrArrangementGrant)
             {
                 throw new InvalidOperationException($"Value is null or empty {nameof(cdrArrangementGrant)}");
             }
@@ -285,7 +305,7 @@ namespace CdrAuthServer.Services
                     {
                         return new TokenResponse()
                         {
-                            Error = new Error(ErrorCodes.InvalidScope, "Additional scopes were requested in the refresh_token request")
+                            Error = new Error(ErrorCodes.Generic.InvalidScope, "Additional scopes were requested in the refresh_token request")
                         };
                     }
                 }
@@ -295,26 +315,38 @@ namespace CdrAuthServer.Services
             }
             
             List<string> accountIds = GetAccountIdsForRefreshToken(cdrArrangementGrant.Data);
+            string? idToken;
 
             // Refresh the access_token and id_token.
-            var accessToken = await IssueAccessToken(
-                refreshTokenGrant.ClientId,
-                refreshTokenGrant.SubjectId,                
-                accountIds,
-                scope,
-                cnf,
-                configOptions,
-                refreshTokenGrant.CdrArrangementId,
-                cdrArrangementGrant.Version,
-                refreshTokenGrant.AuthorizationCode);
+            string? accessToken;
+            try
+            {
+                accessToken = await IssueAccessToken(
+                    refreshTokenGrant.ClientId,
+                    refreshTokenGrant.SubjectId,
+                    accountIds,
+                    scope,
+                    cnf,
+                    configOptions,
+                    refreshTokenGrant.CdrArrangementId,
+                    cdrArrangementGrant.Version,
+                    refreshTokenGrant.AuthorizationCode);
 
-            var idToken = await IssueIdToken(
-                refreshTokenGrant.ClientId,
-                refreshTokenGrant.SubjectId,
-                configOptions,
-                configOptions.AlwaysEncryptIdTokens || refreshTokenGrant.ResponseType.IsHybridFlow(),
-                accessToken: accessToken,
-                authTime: refreshTokenGrant.CreatedAt.ToEpoch().ToString());
+                idToken = await IssueIdToken(
+                   refreshTokenGrant.ClientId,
+                   refreshTokenGrant.SubjectId,
+                   configOptions,
+                   configOptions.AlwaysEncryptIdTokens || (refreshTokenGrant.ResponseType?.IsHybridFlow() ?? false),
+                   accessToken: accessToken,
+                   authTime: refreshTokenGrant.CreatedAt.ToEpoch().ToString());
+            }
+            catch (Exception ex)
+            {
+                return new TokenResponse()
+                {
+                    Error = new Error(ErrorCodes.Cds.UnexpectedError, ex.Message)
+                };
+            }
 
             return new TokenResponse()
             {
@@ -328,25 +360,23 @@ namespace CdrAuthServer.Services
             };
         }
 
-        private List<string> GetAccountIdsForRefreshToken(IDictionary<string, object> data)
+        private static List<string> GetAccountIdsForRefreshToken(IDictionary<string, object> data)
         {            
-            if (data.ContainsKey(ClaimNames.AccountId))
+            if (data.TryGetValue(ClaimNames.AccountId, out var item))
             {
-                var item = data[ClaimNames.AccountId];
-
                 if (item != null)
                 {
                     var accountIds = ((System.Collections.IEnumerable)item);
-                    List<string> accountList = new List<string>();
+                    List<string> accountList = [];
 
                     foreach (var accountId in accountIds)
                     {                        
-                        accountList.Add(accountId.ToString());
+                        accountList.Add(accountId.ToString() ?? "");
                     }                    
                     return accountList;
                 }
             }
-            return new List<string>();
+            return [];
         }
 
         private async Task<TokenResponse> GetAuthCodeTokenResponse(TokenRequest tokenRequest, string cnf, ConfigurationOptions configOptions)
@@ -357,11 +387,9 @@ namespace CdrAuthServer.Services
                 throw new InvalidOperationException($"Value is null or empty {nameof(authCodeGrant)}");
             }
 
-            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);            
+            var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request ?? "");            
             var sharingDuration = authRequestObject?.Claims.SharingDuration ?? 0;
             var existingCdrArrangementId = authRequestObject?.Claims.CdrArrangementId;
-            string? cdrArrangementId = null;
-            int? cdrArrangementVersion = null;
             string? refreshToken = null;
             DateTime? expiresAt = null;
             DateTime authTime = DateTime.UtcNow;
@@ -372,6 +400,8 @@ namespace CdrAuthServer.Services
                 expiresAt = DateTime.UtcNow.AddSeconds(sharingDuration);
             }
 
+            string? cdrArrangementId;
+            int? cdrArrangementVersion;
             // Amending consent.
             if (!string.IsNullOrEmpty(existingCdrArrangementId))
             {
@@ -391,7 +421,7 @@ namespace CdrAuthServer.Services
                 cdrArrangementGrant.Version = cdrArrangementVersion.Value;
 
                 // As the cdr arrangement has been amended the existing refresh token needs to be removed and a new refresh token needs to be issued.
-                await _grantService.Delete(authCodeGrant.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken);
+                await _grantService.Delete(authCodeGrant.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken ?? "");
 
                 refreshToken = Guid.NewGuid().ToString();
                 var refreshTokenGrant = new RefreshTokenGrant()
@@ -404,7 +434,7 @@ namespace CdrAuthServer.Services
                     Scope = authCodeGrant.Scope, // Filtered scopes.
                     SubjectId = authCodeGrant.SubjectId,
                     CdrArrangementId = cdrArrangementId,
-                    ResponseType = authRequestObject?.ResponseType,
+                    ResponseType = authRequestObject!.ResponseType,
                     AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                 };
                 await _grantService.Create(refreshTokenGrant);
@@ -429,11 +459,11 @@ namespace CdrAuthServer.Services
                         ClientId = authCodeGrant.ClientId,
                         GrantType = GrantTypes.RefreshToken,
                         CreatedAt = authTime,
-                        ExpiresAt = expiresAt.Value,
+                        ExpiresAt = expiresAt!.Value,
                         Scope = authCodeGrant.Scope, // Filtered scopes.
                         SubjectId = authCodeGrant.SubjectId,
                         CdrArrangementId = cdrArrangementId,
-                        ResponseType = authRequestObject?.ResponseType,
+                        ResponseType = authRequestObject!.ResponseType,
                         AuthorizationCode = tokenRequest.code // Keep track of the original auth code that initiated the request
                     };
                     await _grantService.Create(refreshTokenGrant);
@@ -467,26 +497,37 @@ namespace CdrAuthServer.Services
             }
 
             // Issue the id_token and access_token.
-            var accessToken = await IssueAccessToken(
-                authCodeGrant.ClientId,
-                authCodeGrant.SubjectId,
-                authCodeGrant.GetAccountIds(),
-                accessTokenScopes,
-                cnf,
-                configOptions,
-                cdrArrangementId,
-                cdrArrangementVersion,
-                tokenRequest.code);
+            string? accessToken = null, idToken = null;
+            try
+            {
+                accessToken = await IssueAccessToken(
+                    authCodeGrant.ClientId,
+                    authCodeGrant.SubjectId,
+                    authCodeGrant.GetAccountIds(),
+                    accessTokenScopes ?? "",
+                    cnf,
+                    configOptions,
+                    cdrArrangementId,
+                    cdrArrangementVersion,
+                    tokenRequest.code);
 
-            var idToken = await IssueIdToken(
-                authCodeGrant.ClientId,
-                authCodeGrant.SubjectId,
-                configOptions,
-                encrypt: configOptions.AlwaysEncryptIdTokens || authRequestObject.IsHybridFlow(),
-                authCode: authCodeGrant.Key,
-                nonce: authRequestObject?.Nonce,
-                accessToken: accessToken,
-                authTime: authTime.ToEpoch().ToString());
+                idToken = await IssueIdToken(
+                    authCodeGrant.ClientId,
+                    authCodeGrant.SubjectId,
+                    configOptions,
+                    encrypt: configOptions.AlwaysEncryptIdTokens || authRequestObject.IsHybridFlow(),
+                    authCode: authCodeGrant.Key,
+                    nonce: authRequestObject!.Nonce,
+                    accessToken: accessToken,
+                    authTime: authTime.ToEpoch().ToString());
+            }
+            catch (Exception ex)
+            {
+                return new TokenResponse()
+                {
+                    Error = new Error(ErrorCodes.Cds.UnexpectedError, ex.Message)
+                };
+            }
 
             return new TokenResponse()
             {
@@ -514,17 +555,9 @@ namespace CdrAuthServer.Services
 
             var requestedScopes = requestedScope.Split(' ');
             var allowedScopes = allowedScope.Split(' ');
-            var returnScopes = new StringBuilder();
 
             // Return the subset of scopes requested.
-            foreach (var scope in requestedScopes)
-            {
-                if (allowedScopes.Contains(scope))
-                {
-                    returnScopes.Append(scope);
-                    returnScopes.Append(' ');
-                }
-            }
+            var returnScopes = string.Join(" ", requestedScopes.Where(scope => allowedScopes.Contains(scope)));
 
             return returnScopes.ToString().TrimEnd(' ');
         }
@@ -543,8 +576,8 @@ namespace CdrAuthServer.Services
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimNames.ClientId, tokenRequest.client_id),
-                new Claim(ClaimNames.JwtId, Guid.NewGuid().ToString())
+                new(ClaimNames.ClientId, tokenRequest.client_id),
+                new(ClaimNames.JwtId, Guid.NewGuid().ToString())
             };
 
             // Add the scopes as an array.
@@ -604,12 +637,12 @@ namespace CdrAuthServer.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.WriteToken(jwt);
 
-            _logger.LogInformation("encryptedResponseAlg: {encryptedResponseAlg}", encryptedResponseAlg);
-            _logger.LogInformation("encryptedResponseEnc: {encryptedResponseEnc}", encryptedResponseEnc);
+            _logger.LogInformation("encryptedResponseAlg: {EncryptedResponseAlg}", encryptedResponseAlg);
+            _logger.LogInformation("encryptedResponseEnc: {EncryptedResponseEnc}", encryptedResponseEnc);
 
             if (string.IsNullOrEmpty(encryptedResponseAlg) || string.IsNullOrEmpty(encryptedResponseEnc))
             {
-                _logger.LogInformation("token jwt created for encryptedResponseAlg:{alg} encryptedResponseEnc:{enc}", encryptedResponseAlg, encryptedResponseEnc);
+                _logger.LogInformation("token jwt created for encryptedResponseAlg:{Alg} encryptedResponseEnc:{Enc}", encryptedResponseAlg, encryptedResponseEnc);
                 return token;
             }
 
@@ -627,20 +660,17 @@ namespace CdrAuthServer.Services
                     GetJweAlgorithm(encryptedResponseAlg),
                     GetJweEncryption(encryptedResponseEnc),
                     extraHeaders: new Dictionary<string, object>() {
-                        { "kid", clientJwk.Kid }
+                        { "kid", clientJwk!.Kid }
                     });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Encrypting Id Token with Alg {alg}, Enc {enc} failed", encryptedResponseAlg, encryptedResponseEnc);
+                _logger.LogError(ex, "Encrypting Id Token with Alg {Alg}, Enc {Enc} failed", encryptedResponseAlg, encryptedResponseEnc);
                 throw new FormatException("Error encrypting id token jwt", ex);
             }
             finally
             {
-                if (rsaEncryption != null)
-                {
-                    rsaEncryption.Dispose();
-                }
+                rsaEncryption?.Dispose();
             }
         }
 
@@ -651,8 +681,8 @@ namespace CdrAuthServer.Services
             if (signingAlg.Equals(Constants.Algorithms.Signing.ES256))
             {
                 var es256Cert = await _configuration.GetES256SigningCertificate();
-                var ecdsa = es256Cert.GetECDsaPrivateKey();
-                var securityKey = new ECDsaSecurityKey(ecdsa) { KeyId = es256Cert.Thumbprint };
+                var ecdsa = es256Cert?.GetECDsaPrivateKey();
+                var securityKey = new ECDsaSecurityKey(ecdsa) { KeyId = es256Cert?.Thumbprint };
                 return new SigningCredentials(securityKey, SecurityAlgorithms.EcdsaSha256)
                 {
                     CryptoProviderFactory = new CryptoProviderFactory()
@@ -703,18 +733,18 @@ namespace CdrAuthServer.Services
             };
         }
 
-        private string SetAccessTokenScopes(string scope, string grantType, ConfigurationOptions configOptions)
+        private static string SetAccessTokenScopes(string scope, string grantType, ConfigurationOptions configOptions)
         {
             var scopes = scope.Split(' ');
             var allowedScopes = grantType == GrantTypes.ClientCredentials ? configOptions.ClientCredentialScopesSupported : configOptions.ScopesSupported;
 
-            return string.Join(" ", scopes.Where(s => allowedScopes.Contains(s)));
+            return string.Join(" ", scopes.Where(s => allowedScopes?.Contains(s) ?? false));
         }
 
         public async Task AddToBlacklist(string id)
         {
             await _tokenRepository.AddToBlacklist(id);
-            _logger.LogInformation("Revoked token with id:{id} in repository", id);
+            _logger.LogInformation("Revoked token with id:{Id} in repository", id);
         }
 
         public async Task<bool> IsTokenBlacklisted(string id)

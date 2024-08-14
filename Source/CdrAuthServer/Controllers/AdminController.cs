@@ -1,7 +1,10 @@
 ﻿using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
+using CdrAuthServer.Helpers;
 using CdrAuthServer.Infrastructure;
+using CdrAuthServer.Infrastructure.Attributes;
+using CdrAuthServer.Infrastructure.Authorisation;
 using CdrAuthServer.Models;
 using CdrAuthServer.Models.Json;
 using CdrAuthServer.Services;
@@ -38,11 +41,11 @@ namespace CdrAuthServer.Controllers
         [HttpPost]        
         [Route("cds-au/v1/admin/register/metadata")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.AdminMetadataUpdate)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.AdminMetadataUpdate)]
+        [ApiVersion("1")]
+        [ReturnXV("1")]
         public async Task<IActionResult> RefreshDataRecipients(DataRecipientRequest dataRecipientRequest)
         {
-            Response.Headers.Add("x-v", "1");
-
             if (dataRecipientRequest is null)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, "Invalid Data recipient");
@@ -53,26 +56,19 @@ namespace CdrAuthServer.Controllers
 
             if (!clientIdResult.IsValid)
             {
-                _logger.LogInformation("Validation failed - {@clientIdResult}", clientIdResult);
+                _logger.LogInformation("Validation failed - {@ClientIdResult}", clientIdResult);
                 Response.Headers.Append(
                     HttpHeaders.WWWAuthenticate,
                     $"Bearer error=\"{clientIdResult.Error}\", error_description=\"{clientIdResult.ErrorDescription}\"");
                 return new UnauthorizedObjectResult(new { error = clientIdResult.Error, error_description = clientIdResult.ErrorDescription });
             }
 
-            if (dataRecipientRequest != null && string.Equals( dataRecipientRequest.Data?.Action, "REFRESH",StringComparison.OrdinalIgnoreCase))
+            if (string.Equals( dataRecipientRequest.Data?.Action, "REFRESH",StringComparison.OrdinalIgnoreCase))
             {
-                var getDataRecipientsEndpoint = _configOptions.CdrRegister.GetDataRecipientsEndpoint;                
+                var getDataRecipientsEndpoint = _configOptions.CdrRegister?.GetDataRecipientsEndpoint;                
                 if (!string.IsNullOrEmpty(getDataRecipientsEndpoint))
                 {
-                    // Validate Request headers for x-v and x-min-v versions
-                    var (isValidVersion, versionError, versionErrorStatusCode) = HttpContext.Request.Headers.ValidateVersion();
-                    if (!isValidVersion)
-                    {
-                        _logger.LogError("Version validation failed - {@versionError}", versionError);
-                        return new JsonResult(versionError) { StatusCode = versionErrorStatusCode ?? 400 };
-                    }
-
+                 
                     // Call the Register to get the data recipients list.
                     // With new endpoints x-v header version should be 3
                     var jsonResponse = await GetData(getDataRecipientsEndpoint, _configOptions.CdrRegister.Version);
@@ -90,7 +86,7 @@ namespace CdrAuthServer.Controllers
                             await _cdrService.PurgeDataRecipients();
 
                             // If data was retrieved, then insert it in our repository.
-                            if (softwareProducts.Any())
+                            if (softwareProducts.Count > 0)
                             {
                                 await _cdrService.InsertDataRecipients(softwareProducts);
                                 return Ok($"Data recipient records refreshed from {getDataRecipientsEndpoint}.");
@@ -104,9 +100,9 @@ namespace CdrAuthServer.Controllers
 
         private async Task<List<SoftwareProduct>> MapSoftwareProductList(List<LegalEntity?> dataRecipients)
         {
-            List<SoftwareProduct> softwareProducts = new List<SoftwareProduct>();
+            List<SoftwareProduct> softwareProducts = [];
 
-            if (dataRecipients.Any())
+            if (dataRecipients.Count != 0)
             {
                 foreach (LegalEntity legalEntity in dataRecipients) 
                 {                                         
@@ -138,15 +134,15 @@ namespace CdrAuthServer.Controllers
             return softwareProducts;
         }
 
-        private async Task<string> GetData(string endpoint, int version)
+        private async Task<string?> GetData(string endpoint, int version)
         {            
-            _logger.LogInformation("Retrieving data from {endpoint} (x-v: {version})...", endpoint, version);
+            _logger.LogInformation("Retrieving data from {Endpoint} (x-v: {Version})...", endpoint, version);
             
-            var httpClient = GetHttpClient();
+            var httpClient = new HttpClient(HttpHelper.CreateHttpClientHandler(_configOptions.EnableServerCertificateValidation));
             httpClient.DefaultRequestHeaders.Add("x-v", version.ToString());
             var response = await httpClient.GetAsync(endpoint);
 
-            _logger.LogInformation("Status code: {statusCode}", response.StatusCode);
+            _logger.LogInformation("Status code: {StatusCode}", response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
@@ -162,17 +158,10 @@ namespace CdrAuthServer.Controllers
             if (clientIdClaimValue == null 
                 || (await _clientService.Get(clientIdClaimValue.Value) == null))
             {
-                return ValidationResult.Fail(ErrorCodes.InvalidRequest, "The client is unknown");
+                return ValidationResult.Fail(ErrorCodes.Generic.InvalidRequest, "The client is unknown");
             }
 
             return ValidationResult.Pass();
-        }
-
-        private static HttpClient GetHttpClient()
-        {
-            var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            return new HttpClient(clientHandler);
         }
     }
 }

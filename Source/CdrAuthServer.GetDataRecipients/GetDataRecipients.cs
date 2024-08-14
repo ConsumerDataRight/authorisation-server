@@ -1,10 +1,10 @@
 using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Extensions;
 using CdrAuthServer.Infrastructure.Models;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -15,65 +15,68 @@ using System.Threading.Tasks;
 
 namespace CdrAuthServer.GetDataRecipients
 {
-    public static class GetDataRecipientsFunction
+    public class GetDataRecipientsFunction
     {
+        private readonly ILogger _logger;
+        private readonly GetDROptions _drOptions;
+
+        public GetDataRecipientsFunction(ILoggerFactory loggerFactory, IOptions<GetDROptions> options)
+        {
+            _logger = loggerFactory.CreateLogger<GetDataRecipientsFunction>();
+            _drOptions =options.Value;
+        }
         /// <summary>
         /// Get Data Recipients Function
         /// </summary>
         /// <remarks>Gets the Data Recipients from the Register and updates the local repository</remarks>
-        [FunctionName("GetDataRecipients")]
-        public static async Task DATARECIPIENTS([TimerTrigger("%Schedule%")] TimerInfo myTimer, ILogger log, ExecutionContext context)
+
+        
+        [Function("GetDataRecipients")]
+        public async Task Run([TimerTrigger("%Schedule%")] TimerInfo myTimer)
         {
-            var dbLoggingConnString = Environment.GetEnvironmentVariable("Register_CdrAuthServer_Logging_DB_ConnectionString");
+            var dbLoggingConnString = _drOptions.Register_CdrAuthServer_Logging_DB_ConnectionString;
 
             try
             {
-                var isLocalDev = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT").Equals("Development");
-                var configBuilder = new ConfigurationBuilder().SetBasePath(context.FunctionAppDirectory);
-
-                if (isLocalDev)
-                {
-                    configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
-                }
 
                 // Updated names for the cdrauth server
-                string dataRecipientsEndpoint = Environment.GetEnvironmentVariable("Register_CdrAuthServer_MetadataUpdate_Endpoint");
-                bool ignoreServerCertificateErrors = Environment.GetEnvironmentVariable("Ignore_Server_Certificate_Errors").Equals("true", StringComparison.OrdinalIgnoreCase);
+                var dataRecipientsEndpoint = _drOptions.Register_CdrAuthServer_MetadataUpdate_Endpoint;
+                var ignoreServerCertificateErrors = _drOptions.Ignore_Server_Certificate_Errors.Equals("true", StringComparison.OrdinalIgnoreCase);
 
                 // MTLS Auth server endpoints
-                string authtokenEndpoint = Environment.GetEnvironmentVariable("Register_CdrAuthServer_Token_Endpoint");                
-                string clientCert = Environment.GetEnvironmentVariable("Register_Client_Certificate");
-                string clientCertPwd = Environment.GetEnvironmentVariable("Register_Client_Certificate_Password");                
-                string signCert = Environment.GetEnvironmentVariable("Register_Signing_Certificate");
-                string signCertPwd = Environment.GetEnvironmentVariable("Register_Signing_Certificate_Password");                
-                string clientId = Environment.GetEnvironmentVariable("Register_Client_Id");
+                var authtokenEndpoint = _drOptions.Register_CdrAuthServer_Token_Endpoint;
+                var clientCert = _drOptions.Register_Client_Certificate;
+                var clientCertPwd = _drOptions.Register_Client_Certificate_Password;
+                var signCert = _drOptions.Register_Signing_Certificate;
+                var signCertPwd = _drOptions.Register_Signing_Certificate_Password;
+                var clientId = _drOptions.Register_Client_Id;
 
                 // Setup Get access token from the auth server endpoints,
                 // Add token to the bear token call
                 // Auth Api should receive the call and authorize it before calling on
 
                 //Loading client certificates from Base64 string
-                X509Certificate2 clientCertificate = LoadCertificates(log, clientCert, clientCertPwd);
-                log.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
+                X509Certificate2 clientCertificate = LoadCertificates(_logger, clientCert, clientCertPwd);
+                _logger.LogInformation("Client certificate loaded: {Thumbprint}", clientCertificate.Thumbprint);
 
-                X509Certificate2 signCertificate = LoadCertificates(log, signCert, signCertPwd);
-                log.LogInformation("Signing certificate loaded: {thumbprint}", signCertificate.Thumbprint);
+                X509Certificate2 signCertificate = LoadCertificates(_logger, signCert, signCertPwd);
+                _logger.LogInformation("Signing certificate loaded: {Thumbprint}", signCertificate.Thumbprint);
 
-                Infrastructure.Models.Response<Token> tokenResponse = await GetAccessToken(authtokenEndpoint, clientId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors);
+                Infrastructure.Models.Response<Token> tokenResponse = await GetAccessToken(authtokenEndpoint, clientId, clientCertificate, signCertificate, _logger, ignoreServerCertificateErrors);
 
                 if (tokenResponse.IsSuccessful)
                 {
                     // Send access token as bear token request to autherization server                    
-                    (_, var respStatusCode) = await GetDataRecipients(dataRecipientsEndpoint, tokenResponse.Data.AccessToken, clientCertificate, log, ignoreServerCertificateErrors);
+                    (_, var respStatusCode) = await GetDataRecipients(dataRecipientsEndpoint, tokenResponse.Data.AccessToken, clientCertificate, _logger, ignoreServerCertificateErrors);
                     if (respStatusCode != System.Net.HttpStatusCode.OK)
                     {
                         await InsertDBLog(dbLoggingConnString, "Error", "GetDataRecipients", $"DR StatusCode: {respStatusCode}");
                     }
                 }
-                else 
-                {                    
+                else
+                {
                     await InsertDBLog(dbLoggingConnString, $"Unable to get the Access Token for {clientId}", "GetDataRecipients", $"StatusCode: {tokenResponse.StatusCode}");
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -101,7 +104,7 @@ namespace CdrAuthServer.GetDataRecipients
         /// Get Access Token
         /// </summary>
         /// <returns>JWT</returns>
-        private static async Task<Infrastructure.Models.Response<Token>> GetAccessToken(
+        private async Task<Infrastructure.Models.Response<Token>> GetAccessToken(
             string tokenEndpoint,
             string clientId,
             X509Certificate2 clientCertificate,
@@ -109,8 +112,6 @@ namespace CdrAuthServer.GetDataRecipients
             ILogger log,
             bool ignoreServerCertificateErrors = false)
         {
-            var dbLoggingConnString = Environment.GetEnvironmentVariable("Register_CdrAuthServer_Logging_DB_ConnectionString");
-
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
 
@@ -124,8 +125,8 @@ namespace CdrAuthServer.GetDataRecipients
                 signingCertificate,
                 clientId,
                 clientId,
-                scope: Constants.Scopes.CDR_AUTHSERVER,
-                grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
+                scope: Constants.Scopes.AdminMetadataUpdate,
+                grantType: Domain.Constants.GrantTypes.ClientCredentials);
 
                 var body = await response.Content.ReadAsStringAsync();
 
@@ -141,7 +142,7 @@ namespace CdrAuthServer.GetDataRecipients
                 }
                 else
                 {
-                    await InsertDBLog(dbLoggingConnString, $"Failed to get access token for client {clientId}- {body}", "Error", "SendPrivateKeyJwtRequest");
+                    await InsertDBLog(_drOptions.Register_CdrAuthServer_Logging_DB_ConnectionString, $"Failed to get access token for client {clientId}- {body}", "Error", "SendPrivateKeyJwtRequest");
                     tokenResponse.Message = body;
                 }
 
@@ -149,7 +150,7 @@ namespace CdrAuthServer.GetDataRecipients
             }
             catch(Exception ex)
             {
-                await InsertDBLog(dbLoggingConnString, "Error", "Exception", "GetAccessToken", ex);
+                await InsertDBLog(_drOptions.Register_CdrAuthServer_Logging_DB_ConnectionString, "Error", "Exception", "GetAccessToken", ex);
                 log.LogError(ex, "Caught exception in GetAccessToken");
             }
 
@@ -164,14 +165,13 @@ namespace CdrAuthServer.GetDataRecipients
         /// Get the list of Data Recipients from the Register
         /// </summary>
         /// <returns>Raw data</returns>
-        private static async Task<(string, System.Net.HttpStatusCode)> GetDataRecipients(
+        private async Task<(string, System.Net.HttpStatusCode)> GetDataRecipients(
             string dataRecipientsEndpoint,
             string accessToken,
             X509Certificate2 clientCertificate,            
             ILogger log,
             bool ignoreServerCertificateErrors = false)
         {
-            var data = string.Empty;            
             var client = GetHttpClient(clientCertificate:clientCertificate,
                 accessToken:accessToken,
                 ignoreServerCertificateErrors: ignoreServerCertificateErrors);
@@ -182,13 +182,13 @@ namespace CdrAuthServer.GetDataRecipients
             HttpContent content = new StringContent(payload, Encoding.UTF8, "application/json");
             
             var result = await client.PostAsync(dataRecipientsEndpoint, content);            
-            data = result.Content.ReadAsStringAsync().Result;            
+            var data = result.Content.ReadAsStringAsync().Result;            
             log.LogInformation("Register response: {statusCode} - {body}", result.StatusCode, data);
 
             return (data, result.StatusCode);
         }
 
-        private static HttpClient GetHttpClient(
+        private HttpClient GetHttpClient(
             X509Certificate2 clientCertificate = null,
             string accessToken = null,            
             bool ignoreServerCertificateErrors = false)
@@ -200,9 +200,6 @@ namespace CdrAuthServer.GetDataRecipients
             {
                 clientHandler.ClientCertificates.Add(clientCertificate);
             }
-
-            string xvVersion = Environment.GetEnvironmentVariable("Register_CdrAuthServer_MetadataUpdate_XV");
-            string xminvVersion = Environment.GetEnvironmentVariable("Register_CdrAuthServer_MetadataUpdate_XMINV");
 
             if (ignoreServerCertificateErrors)
             {
@@ -216,15 +213,15 @@ namespace CdrAuthServer.GetDataRecipients
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             // Add the x-v header to the request from configurations
-            if (!string.IsNullOrEmpty(xvVersion))
+            if (!string.IsNullOrEmpty(_drOptions.Register_CdrAuthServer_MetadataUpdate_XV))
             {
-                client.DefaultRequestHeaders.Add("x-v", xvVersion);
+                client.DefaultRequestHeaders.Add("x-v", _drOptions.Register_CdrAuthServer_MetadataUpdate_XV);
             }
 
             // Add the x-min-v header to the request from configurations
-            if (!string.IsNullOrEmpty(xminvVersion))
+            if (!string.IsNullOrEmpty(_drOptions.Register_CdrAuthServer_MetadataUpdate_XMINV))
             {
-                client.DefaultRequestHeaders.Add("x-min-v", xminvVersion);
+                client.DefaultRequestHeaders.Add("x-min-v", _drOptions.Register_CdrAuthServer_MetadataUpdate_XMINV);
             }
 
             return client;

@@ -8,7 +8,7 @@ namespace CdrAuthServer.Models
     public class AuthorizeRedirectRequest
     {
         [JsonProperty("authorize_request")]
-        public AuthorizeRequest AuthorizeRequest { get; set; } = null;
+        public AuthorizeRequest? AuthorizeRequest { get; set; } = null;
 
         [JsonProperty("return_url")]
         public string ReturnUrl { get; set; } = string.Empty;

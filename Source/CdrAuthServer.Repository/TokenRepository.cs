@@ -6,9 +6,9 @@
 
     public class TokenRepository : ITokenRepository
     {
-        private readonly CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext;
+        private readonly CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext;
 
-        public TokenRepository(CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext)
+        public TokenRepository(CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext)
         {
             this.cdrAuthServervDatabaseContext = cdrAuthServervDatabaseContext;
         }

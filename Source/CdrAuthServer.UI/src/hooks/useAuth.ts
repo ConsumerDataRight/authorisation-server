@@ -2,12 +2,12 @@ import settings from "../settings"
 import jwt, { JwtPayload } from "jsonwebtoken";
 import jwktopem from "jwk-to-pem";
 import { JwksResponse } from "../models/Common";
-import { CommonState, CommonStateModel, LoginParams } from "../state/Common.state";
 import jose from "node-jose";
-import { useRecoilState } from "recoil";
+import { useCommonContext } from "../context/CommonContext";
+import { LoginParams } from "../@types/CommonContextType";
 
 export function useAuth() {
-    const [_, setCommonState] = useRecoilState(CommonState);
+    const {commonState, setCommonState} = useCommonContext();
 
     const validateToken = async (token: string): Promise<LoginParams | null> => {
         try {
@@ -23,14 +23,11 @@ export function useAuth() {
                 return null;
             }
             const jwksResponse = await fetch(jwksUri).then((r) => {
-                console.log(r);
                 return r.json();
             }).catch((e) => {
-                setCommonState((currentValue: CommonStateModel) => {
-                    return {
-                        ...currentValue,
-                        errors: [{ title: "Token Validation Failed", code: "No JWKS", detail: "Failed to get JWKS from the Authentication Server." }]
-                    } as CommonStateModel;
+                setCommonState( {
+                    ...commonState,
+                    errors: [{ title: "Token Validation Failed", code: "No JWKS", detail: "Failed to get JWKS from the Authentication Server." }]
                 });
                 return null;
             });

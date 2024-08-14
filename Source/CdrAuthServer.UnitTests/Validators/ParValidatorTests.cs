@@ -16,17 +16,17 @@ namespace CdrAuthServer.UnitTests.Validators
 {
     public class ParValidatorTest : BaseTest
     {
-        private Mock<ILogger<ParValidator>> logger;        
-        private Mock<IClientService> clientService;
+        private Mock<ILogger<ParValidator>> logger = null!;        
+        private Mock<IClientService> clientService = null!;
 
-        private Mock<IJwtValidator> jwtValidator;
-        private Mock<IRequestObjectValidator> requestObjectValidator;
+        private Mock<IJwtValidator> jwtValidator = null!;
+        private Mock<IRequestObjectValidator> requestObjectValidator = null!;
 
-        private IConfiguration configuration;
+        private IConfiguration configuration = null!;
         
-        private IParValidator parValidator;
+        private ParValidator parValidator = null!;
 
-        public Client client { get; private set; }
+        public Client client { get; private set; } = null!;
         private (ValidationResult, JwtSecurityToken) mockJwtValidatorResult;
 
         [SetUp]
@@ -46,9 +46,9 @@ namespace CdrAuthServer.UnitTests.Validators
             parValidator = new ParValidator(logger.Object, jwtValidator.Object, requestObjectValidator.Object, clientService.Object);
         }
         
-        [TestCase("par_request_client_id_missing", "", "", false, "request is not a well-formed JWT", ErrorCodes.InvalidRequest)]
-        [TestCase("par_request_client_invalid_jwt", "foo", "", false, "", ErrorCodes.InvalidRequestObject)]
-        [TestCase("par_request_client_jwt_validator", "foo", "", false, "", ErrorCodes.InvalidRequestObject)]        
+        [TestCase("par_request_client_id_missing", "", "", false, "request is not a well-formed JWT", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("par_request_client_invalid_jwt", "foo", "", false, "", ErrorCodes.Generic.InvalidRequestObject)]
+        [TestCase("par_request_client_jwt_validator", "foo", "", false, "", ErrorCodes.Generic.InvalidRequestObject)]        
         public async Task Validate_Par_Request_InvalidClient_Test(string testCaseType, string client_id, string requestObject, 
                                                                 bool isvalid,
                                                                 string expectErrorDescription,  
@@ -68,7 +68,7 @@ namespace CdrAuthServer.UnitTests.Validators
                 
                 var audiences = new List<string>() { "https://localhost:8081", "https://localhost:8082/connect/token" };
                 var validAlgos = new List<string>() { "PS256", "ES256" };                
-                ValidationResult validationResult = new ValidationResult(isvalid);
+                ValidationResult validationResult = new(isvalid);
                 
                 mockJwtValidatorResult = (validationResult, GetJwt());                
                 jwtValidator.Setup(x => x.Validate(requestObject, client, JwtValidationContext.request, configOptions, audiences, validAlgos)).ReturnsAsync(mockJwtValidatorResult);
@@ -81,7 +81,7 @@ namespace CdrAuthServer.UnitTests.Validators
             Assert.IsNotNull(result);
             Assert.AreEqual(result.Item1.IsValid, isvalid);            
             Assert.AreEqual(result.Item1.Error, expectedError);            
-            Assert.IsTrue(result.Item1.ErrorDescription.Contains(expectErrorDescription));
+            Assert.IsTrue(result.Item1.ErrorDescription?.Contains(expectErrorDescription));
         }
 
         private void GetClient(string client_id)

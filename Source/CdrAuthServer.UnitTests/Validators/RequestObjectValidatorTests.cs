@@ -17,13 +17,13 @@ namespace CdrAuthServer.UnitTests.Validators
 {
     public class RequestObjectValidatorTest : BaseTest
     {
-        private Mock<ILogger<RequestObjectValidator>> logger;        
-        private Mock<IClientService> clientService;
-        private Mock<IGrantService> grantService;
+        private Mock<ILogger<RequestObjectValidator>> logger = null!;        
+        private Mock<IClientService> clientService = null!;
+        private Mock<IGrantService> grantService = null!;
 
-        private IConfiguration configuration;
+        private IConfiguration configuration = null!;
         
-        private IRequestObjectValidator requestObjectValidator;
+        private RequestObjectValidator requestObjectValidator = null!;
 
         [SetUp]
         public void Setup()
@@ -41,13 +41,13 @@ namespace CdrAuthServer.UnitTests.Validators
             requestObjectValidator = new RequestObjectValidator(logger.Object, clientService.Object, grantService.Object);
         }
         
-        [TestCase("missing_client_id","foo", false, "client_id is missing", ErrorCodes.InvalidRequest)]        
-        [TestCase("jwt_test_case1", "foo", false, "client_id does not match client_id in request object JWT", ErrorCodes.UnauthorizedClient)]        
-        [TestCase("jwt_test_case2", "foo", false, "redirect_uri missing from request object JWT", ErrorCodes.InvalidRequestObject)]
-        [TestCase("jwt_test_case3", "foo", false, "Invalid redirect_uri", ErrorCodes.InvalidRequest)]
-        [TestCase("jwt_test_case4", "foo", false, "Invalid redirect_uri for client", ErrorCodes.InvalidRequest)]
-        [TestCase("jwt_test_redirect_uri_match", "foo", false, "Invalid request - nbf is missing", ErrorCodes.InvalidRequestObject)]
-        [TestCase("jwt_test_redirect_uri_match_with_nbf", "foo", false, "response_type is missing", ErrorCodes.InvalidRequest)]
+        [TestCase("missing_client_id","foo", false, "client_id is missing", ErrorCodes.Generic.InvalidRequest)]        
+        [TestCase("jwt_test_case1", "foo", false, "client_id does not match client_id in request object JWT", ErrorCodes.Generic.UnauthorizedClient)]        
+        [TestCase("jwt_test_case2", "foo", false, "redirect_uri missing from request object JWT", ErrorCodes.Generic.InvalidRequestObject)]
+        [TestCase("jwt_test_case3", "foo", false, "Invalid redirect_uri", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("jwt_test_case4", "foo", false, "Invalid redirect_uri for client", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("jwt_test_redirect_uri_match", "foo", false, "Invalid request - nbf is missing", ErrorCodes.Generic.InvalidRequestObject)]
+        [TestCase("jwt_test_redirect_uri_match_with_nbf", "foo", false, "response_type is missing", ErrorCodes.Generic.InvalidRequest)]
         public async Task Validate_RequestObject_InvalidClient_Test(
             string testCaseType, 
             string client_id,  
@@ -98,7 +98,7 @@ namespace CdrAuthServer.UnitTests.Validators
             Assert.IsNotNull(result);
             Assert.AreEqual(isvalid, result.Item1.IsValid);            
             Assert.AreEqual(expectedError, result.Item1.Error);            
-            Assert.IsTrue(result.Item1.ErrorDescription.Contains(expectErrorDescription));
+            Assert.IsTrue(result.Item1.ErrorDescription?.Contains(expectErrorDescription));
         }
     }
 }

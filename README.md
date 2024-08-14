@@ -1,7 +1,8 @@
 ![Consumer Data Right Logo](./Assets/cdr-logo.png?raw=true) 
 
-[![Consumer Data Standards v1.22.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.22.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)
-[![Conformance Test Suite 4.3.1](https://img.shields.io/badge/Conformance%20Test%20Suite-v4.3.1-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders)
+[![Consumer Data Standards v1.31.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.31.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)
+[![Conformance Test Suite Data Holders 5.0.0](https://img.shields.io/badge/Conformance%20Test%20Suite%20Data%20Holders-v5.0.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders)
+[![Conformance Test Suite Data Recipients 4.3.0](https://img.shields.io/badge/Conformance%20Test%20Suite%20Data%20Recipients-v4.3.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients)
 [![FAPI 1.0 Advanced Profile](https://img.shields.io/badge/FAPI%201.0-orange.svg)](https://openid.net/specs/openid-financial-api-part-2-1_0.html)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -16,14 +17,16 @@ The project is used in the Participant Tooling Authorisation Server, providing t
 ## Authorisation Server - Alignment
 The Authorisation Server:
 
--   aligns to  [v1.22.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  of the  [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  in particular  [FAPI 1.0 Migration Phase 4](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.22.0/#introduction)  with backwards compatbility to Migration Phase 2 and 3;
--   has passed v4.3.1 of the  [Conformance Test Suite for Data Holders](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders); and
+-   aligns to  [v1.31.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  of the  [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  in particular  [FAPI 1.0 Migration Phase 4](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  with backwards compatibility to Migration Phase 2 and 3;
+-   has passed v5.0.0 of the  [Conformance Test Suite for Data Holders](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders); 
+-   has passed v4.3.0 of the  [Conformance Test Suite for Data Recipients](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients);
+and
 -   is certified with the [FAPI 1.0 Advanced Profile](https://openid.net/specs/openid-financial-api-part-2-1_0.html)  .
 
 Note: Consumer Data Standards FAPI 1.0 Migration Phase 1 is no longer supported.
 
 ### Financial Grade API (FAPI) 1.0 Advanced Profile Certification
-[<img src="http://openid.net/wordpress-content/uploads/2016/04/oid-l-certification-mark-l-rgb-150dpi-90mm-300x157.png" height='157' width='300' alt="Authorisation Server - OpenID Certification Mark"/>](http://openid.net/wordpress-content/uploads/2016/04/oid-l-certification-mark-l-rgb-150dpi-90mm-300x157.png)
+![Authorisation Server - OpenID Certification Mark](http://openid.net/wordpress-content/uploads/2016/04/oid-l-certification-mark-l-rgb-150dpi-90mm-300x157.png)
 
 The Authorisation Server is certified by [OpenID](https://openid.net/connect/) using OpenID FAPI conformance testing. Testing was completed and passed using: 
  - FAPI 1.0 Advanced Test Plan; using
@@ -33,7 +36,7 @@ The Authorisation Server is certified by [OpenID](https://openid.net/connect/) u
 Full test results for the Authorisation Server can be seen on the [OpenID website](https://www.certification.openid.net/plan-detail.html?plan=BGnDgdFgYro9d&public=true).
 Certification for the Authorisation Server can be seen under the Australia CDR profile section on the [OpenID website](https://openid.net/certification/#FAPI_OPs)
 
-[<img src="./Assets/authorisation-server-fapi-certification.png?raw=true" alt="Authorisation Server - FAPI Certification"/>](./Assets/authorisation-server-fapi-certification.png?raw=true)
+![Authorisation Server - FAPI Certification](./Assets/authorisation-server-fapi-certification.png?raw=true)
 
 ## Getting Started
 The Authorisation Server can be used for providing authentication to the Banking and Energy [Mock Data Holders](https://github.com/ConsumerDataRight/mock-data-holder). You can swap out any of the Mock Data Holders and [Mock Data Recipient](https://github.com/ConsumerDataRight/mock-data-recipient) solutions with a solution of your own.
@@ -69,7 +72,14 @@ To get help on launching the solution in a container, see the [help guide](./Hel
 
 #### Try it out
 
-Once the Authorisation Server container is running, you can use the provided [Authorisation Server Postman API collection](./Postman/README.md) to try it out.
+The OpenID Connect Discovery document for Authorisation Server can be viewed by accessing:
+```
+https://localhost:8001/.well-known/openid-configuration
+```
+Since the Authorisation Server is an embedded component of the [Banking and Energy Mock Data Holder](https://github.com/ConsumerDataRight/mock-data-holder) solutions, the Authorisation Server's functionality can be further explored by using the Mock CDR Ecosystem.
+The [Mock Data Recipient](https://github.com/ConsumerDataRight/mock-data-recipient) has been built as a test harness to demonstrate the interactions between the Register and Mock Data Holders with an embedded Authorisation Server.
+The Mock Data Recipient can be used to perform a Dynamic Client Registration, create Consent Arrangements and explore Mock Data Holder API's.
+The provided [help guide](https://github.com/ConsumerDataRight/mock-data-recipient/blob/main/Help/container/HELP.md) will assist in setting up the Mock CDR Ecosystem in Docker.
 
 #### Certificate Management
 
@@ -105,13 +115,13 @@ To get help on launching the solution in a container, see the [help guide](./Hel
 
 ## Authorisation Server - Architecture
 The following diagram outlines the high level architecture of the Authorisation Server
-[<img src="./Assets/authorisation-server-architecture.png?raw=true" alt="Authorisation Server - Architecture"/>](./Assets/authorisation-server-architecture.png?raw=true)
+![Authorisation Server - Architecture](./Assets/authorisation-server-architecture.png?raw=true)
 
 The following diagram illustrates the docker container for the Authorisation Server
-[<img src="./Assets/authorisation-server-docker-container.png?raw=true" alt="Authorisation Server - Docker Container"/>](./Assets/authorisation-server-docker-container.png?raw=true)
+![Authorisation Server - Docker Container](./Assets/authorisation-server-docker-container.png?raw=true)
 
 The following diagram illustrates the high level features for the Authorisation Server
-[<img src="./Assets/authorisation-server-visual-studio.png?raw=true" alt="Authorisation Server - Features"/>](./Assets/authorisation-server-visual-studio.png?raw=true)
+![Authorisation Server - Features](./Assets/authorisation-server-visual-studio.png?raw=true)
 
 ## Authorisation Server - Components
 The Authorisation Server contains the following components:
@@ -138,7 +148,7 @@ The Authorisation Server contains the following components:
 
 ## Technology Stack
 The following technologies have been used to build the Authorisation Server:
-- The source code has been written in `C#` using the `.Net 6` framework.
+- The source code has been written in `C#` using the `.Net 8` framework.
 - The mTLS Gateway has been implemented using `Ocelot`.
 - The Repository utilises a `SQL` instance.
 - `xUnit` is the framework used for writing and running tests.
@@ -222,10 +232,6 @@ The information below lists the customisation required for each endpoint:
 - This is a custom endpoint for CDS.
 
 # Testing
-A collection of API requests has been made available in [Postman](https://www.postman.com/) in order to test the Authorisation Server
-(when integrated with the Banking or Energy [Mock Data Holders](https://github.com/ConsumerDataRight/mock-data-holder) solutions) and view the expected interactions. 
-See the [Mock Data Holder Postman](https://github.com/ConsumerDataRight/mock-data-holder/blob/main/Postman/Banking/README.md) and [Mock Data Holder Energy Postman](https://github.com/ConsumerDataRight/mock-data-holder/blob/main/Postman/Energy/README.md) documentation for more information.
-
 Automated tests have been created as part of this solution. See the [Test Automation Execution Guide](./Help/testing/HELP.md) documentation for more information.
 
 # Contribute

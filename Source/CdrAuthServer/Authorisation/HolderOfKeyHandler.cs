@@ -44,7 +44,7 @@ namespace CdrAuthServer.Authorisation
                     return Task.CompletedTask;
                 }
 
-                requestHeaderClientCertThumprint = headerThumbprints.First();
+                requestHeaderClientCertThumprint = headerThumbprints[0];
             }
 
             if (string.IsNullOrWhiteSpace(requestHeaderClientCertThumprint))

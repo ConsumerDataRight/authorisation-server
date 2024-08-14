@@ -1,9 +1,8 @@
-import { useRecoilState } from "recoil";
 import { AlertTypeEnum, ErrorListModel } from "../models/Common";
-import { CommonState, CommonStateModel } from "../state/Common.state";
+import { useCommonContext } from "../context/CommonContext";
 
 export function useAlert() {
-    const [commonState, setCommonState] = useRecoilState<CommonStateModel>(CommonState);
+    const {commonState, setCommonState} = useCommonContext();
 
     const createAlert = (message: string, type: AlertTypeEnum = AlertTypeEnum.Success, title: string | undefined = undefined, subTitle: string | undefined = undefined): void => {
         setCommonState({ ...commonState, alert: { isOpen: true, message: message, type: type, title: title, subTitle: subTitle } });
