@@ -14,7 +14,7 @@ ENV ASPNETCORE_ENVIRONMENT=Release
 ###############################################################################
 # Build CdrAuthServer API layer
 ###############################################################################
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ./ .
 
