@@ -5,17 +5,17 @@ import { Controller, useForm } from "react-hook-form";
 import { LoginInputModel } from "../models/LoginModels";
 import * as Yup from 'yup';
 import { useData } from '../hooks/useData';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { LoginState } from "../state/Login.state";
 import settings from "../settings";
-import { DataHolderName, DataRecipientName } from "../state/Common.state";
+import { useCommonContext } from "../context/CommonContext";
+import { useLoginContext } from "../context/LoginContext";
 
 export function LoginForm({ customerId }: { customerId: string }) {
+    const {commonState} = useCommonContext();
+    const {loginState, setLoginState} = useLoginContext();
     const { getCustomerByLoginId, submitCancelConsentRequest } = useData();
-    const [loginState, setLoginState] = useRecoilState(LoginState);
     const defaultUserIds = settings.DEFAULT_USER_NAME_TEXT ?? "";
-    const dataRecipientName = useRecoilValue(DataRecipientName);
-    const dataHolderName = useRecoilValue(DataHolderName);
+    const dataRecipientName = commonState.dataRecipient?.BrandName;
+    const dataHolderName = commonState.dataHolder?.BrandName;
 
     const defaultFormValues: LoginInputModel = {
         customerId: "",
@@ -39,7 +39,6 @@ export function LoginForm({ customerId }: { customerId: string }) {
     }, [customerId]);
 
     const onSubmit = async (data: LoginInputModel) => {
-        //clearErrors();
         // Validate customer id
         const customer = await getCustomerByLoginId(data.customerId);
         if (customer === null) {
@@ -47,8 +46,7 @@ export function LoginForm({ customerId }: { customerId: string }) {
             setError('customerId', { type: 'custom', message: 'Invalid Customer ID' });
             return;
         }
-
-        setLoginState({ ...loginState, customerId: customer.LoginId, customer: customer });
+        setLoginState({ ...loginState, customerId: customer.LoginId, customer: customer, otp: loginState?.otp ?? '' });
     }
 
     const cancelRequest = () => {
@@ -90,6 +88,7 @@ export function LoginForm({ customerId }: { customerId: string }) {
                                 error={errors.customerId ? true : false}
                                 helperText={errors.customerId?.message}
                                 inputProps={{ tabIndex: 1 }}
+                                id="customerId"
                             />}
                         />
                     </Grid>

@@ -29,7 +29,7 @@ namespace CdrAuthServer.Services
             var cachedJwks = RetrieveFromCache(jwksUri);
             if (cachedJwks != null)
             {
-                _logger.LogInformation("{jwksUri} - cache hit. Data: {cachedJwks}", jwksUri, cachedJwks);
+                _logger.LogInformation("{JwksUri} - cache hit. Data: {CachedJwks}", jwksUri, cachedJwks);
                 return cachedJwks;
             }
 
@@ -44,12 +44,12 @@ namespace CdrAuthServer.Services
             // Check the jwks to see if the given kid is included in the set.
             if (jwks.Keys.Any(k => k.Kid == kid))
             {
-                _logger.LogInformation("Matching kid ({kid}) was found in jwks", kid);
+                _logger.LogInformation("Matching kid ({Kid}) was found in jwks", kid);
                 return jwks;
             }
 
             // Not included, so refresh the jwks.
-            _logger.LogInformation("Matching kid ({kid}) was not found in jwks.  Refreshing jwks...", kid);
+            _logger.LogInformation("Matching kid ({Kid}) was not found in jwks.  Refreshing jwks...", kid);
             return await RefreshJwks(jwksUri);
         }
 
@@ -58,18 +58,18 @@ namespace CdrAuthServer.Services
             HttpResponseMessage httpResponse;
             try
             {
-                _logger.LogInformation("Refreshing the jwks from {jwksUri}", jwksUri);
+                _logger.LogInformation("Refreshing the jwks from {JwksUri}", jwksUri);
                 httpResponse = await _httpClient.GetAsync(jwksUri);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred retrieving JWKS from {jwksUri}", jwksUri);
+                _logger.LogError(ex, "An error occurred retrieving JWKS from {JwksUri}", jwksUri);
                 throw new JwksException($"An error occurred retrieving JWKS from {jwksUri} - {ex.Message}");
             }
 
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                _logger.LogError("{jwksUri} returned 404.", jwksUri);
+                _logger.LogError("{JwksUri} returned 404.", jwksUri);
                 throw new JwksException($"{jwksUri} returned 404.");
             }
             else if (!httpResponse.IsSuccessStatusCode)

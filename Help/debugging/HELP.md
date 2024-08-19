@@ -30,7 +30,12 @@ Authentication: Windows Authentication
 ```
 ## MS Visual Studio
 
-### Start the Mock Data Holder
+### Start the Authorisation Server
+
+There are two Visual Studio solution files that are available for use:
+- CdrAuthServer.sln - This is the default solution file that is used primarily for running and debugging the Authorisation Server projects.
+- CdrAuthServer_Shared.sln - In addition to the Authorisation Server projects, this solution file also opens the [Mock Solutions Test Automation](https://github.com/ConsumerDataRight/mock-solution-test-automation) project. This is useful when wanting to debug or step through source code used in Mock Solution Test Automation project. Further information can be found in [Authorisation Server Test Automation Execution Guide](../testing/HELP.md)
+
 To launch the application using MS Visual Studio, the following projects need to be started:
 ```
 CdrAuthServer 

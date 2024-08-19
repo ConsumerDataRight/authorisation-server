@@ -3,19 +3,18 @@ import { OpenInNew } from "@mui/icons-material";
 import { Box, Button, Grid, Link, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useEffect, useState } from "react";
-import { useRecoilValue } from "recoil";
 import ClusterList from "../components/ClusterList";
 import { PageLayout } from "../components/PageLayout";
 import { useData } from "../hooks/useData";
 import settings from "../settings";
-import { CommonState, DataHolderName, DataRecipientName, SharingDuration } from "../state/Common.state";
+import { useCommonContext } from "../context/CommonContext";
 
 export default function Confirmation() {
-    const dataRecipientName = useRecoilValue(DataRecipientName);
-    const dataHolderName = useRecoilValue(DataHolderName);
+    const { commonState } = useCommonContext();
+    const dataRecipientName = commonState.dataRecipient?.BrandName;
+    const dataHolderName = commonState.dataHolder?.BrandName;
+    const sharingDuration = commonState.inputParams?.sharing_duration!;
     const cdrPolicyLink = settings.CDR_POLICY_LINK ?? "";
-    const commonState = useRecoilValue(CommonState);
-    const sharingDuration = useRecoilValue(SharingDuration);
     const [consentDays, setConsentDays] = useState<number>(0);
     const [isConsentOneoff, setIsConsentOneOff] = useState<boolean>(false);
     const { submitConsentRequest, submitCancelConsentRequest } = useData();

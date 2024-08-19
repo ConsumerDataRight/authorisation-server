@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CdrAuthServer.Repository.Migrations
 {
-    [DbContext(typeof(CdrAuthServervDatabaseContext))]
+    [DbContext(typeof(CdrAuthServerDatabaseContext))]
     [Migration("20221006235046_V001-InitialCreate")]
     partial class V001InitialCreate
     {

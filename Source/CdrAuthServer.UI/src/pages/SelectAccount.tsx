@@ -4,25 +4,25 @@ import { Dialog, DialogActions, DialogContent, Box, Button, Checkbox, Grid, Icon
 import { grey } from "@mui/material/colors";
 import { Stack } from "@mui/system";
 import { useState } from "react";
-import { useHistory } from "react-router-dom";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useNavigate } from "react-router-dom";
 import { AccountInfo } from "../components/AccountInfo";
 import { PageLayout } from "../components/PageLayout";
 import { useData } from "../hooks/useData";
 import { AccountModel } from "../models/DataModels";
-import { DataRecipientName } from "../state/Common.state";
-import { ConsentState } from "../state/Consent.state";
-import { LoginState } from "../state/Login.state";
 import settings from '../settings';
+import { useCommonContext } from '../context/CommonContext';
+import { useLoginContext} from '../context/LoginContext';
+import { useConsentContext } from '../context/ConsentContext'; 
 
 
 export default function SelectAccount() {
-    const dataRecipientName = useRecoilValue(DataRecipientName);
-    const loginState = useRecoilValue(LoginState);
+    const { loginState } = useLoginContext();
+    const { commonState } = useCommonContext();
+    const { consentState, setConsentState } = useConsentContext();
+    const dataRecipientName = commonState.dataRecipient?.BrandName;
     const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
     const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-    const [consentState, setConsentState] = useRecoilState(ConsentState);
-    const history = useHistory();
+    const navigate = useNavigate();
     const { submitCancelConsentRequest } = useData();
     const cdrFaqLink = settings.CDR_FAQ_LINK ?? "#";
 
@@ -63,7 +63,7 @@ export default function SelectAccount() {
         // Save the consent related data.
         setConsentState({ ...consentState, accountIds: selectedAccountIds });
 
-        history.push('/ui/confirmation');
+        navigate('/ui/confirmation');
     }
 
     const cancelRequest = () => {

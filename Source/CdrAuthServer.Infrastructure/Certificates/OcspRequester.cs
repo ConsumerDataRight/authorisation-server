@@ -46,11 +46,11 @@ namespace CdrAuthServer.Infrastructure.Certificates
             var ocspRequest = BuildOcspRequest(ConvertSerialNumber(serialNumber), intCaFile);
             var url = $"{_ocspResponderUrl.TrimEnd('/')}/{Convert.ToBase64String(ocspRequest)}";
 
-            _logger.LogInformation("OCSP Request: {url}", url);
+            _logger.LogInformation("OCSP Request: {Url}", url);
 
             var response = await _httpClient.GetAsync(url);
 
-            _logger.LogInformation("OCSP Response: {statusCode}", response.StatusCode);
+            _logger.LogInformation("OCSP Response: {StatusCode}", response.StatusCode);
 
             // Error response.
             if (!response.IsSuccessStatusCode)
@@ -70,7 +70,7 @@ namespace CdrAuthServer.Infrastructure.Certificates
 
             var revokedStatus = ocspResponse.Responses[0].GetCertStatus() as RevokedStatus;
 
-            _logger.LogInformation("OCSP Response revocation status = {revokedStatus}", revokedStatus?.RevocationReason);
+            _logger.LogInformation("OCSP Response revocation status = {RevokedStatus}", revokedStatus?.RevocationReason);
 
             return (revokedStatus == null ? OcspResult.Good : OcspResult.Revoked);
         }

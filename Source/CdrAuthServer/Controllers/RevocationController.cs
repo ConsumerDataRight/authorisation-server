@@ -1,14 +1,8 @@
 ﻿using CdrAuthServer.Extensions;
-using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -32,6 +26,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/revocation")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         public async Task<ActionResult> RevokeToken(
@@ -44,7 +39,7 @@ namespace CdrAuthServer.Controllers
             var refreshTokenGrant = await _grantService.Get(GrantTypes.RefreshToken, token, clientId);
             if (refreshTokenGrant != null)
             {
-                _logger.LogInformation("Revoked the refresh token by removing the refresh token grant for clientId:{id}", clientId);
+                _logger.LogInformation("Revoked the refresh token by removing the refresh token grant for clientId:{Id}", clientId);
                 // Revoke the refresh token by removing the refresh token grant.
                 await _grantService.Delete(clientId, GrantTypes.RefreshToken, token);
                 return Ok();
@@ -61,14 +56,14 @@ namespace CdrAuthServer.Controllers
                 {
                     return Ok();
                 }
-                
+
                 var securityToken = securityTokenHandler.ReadJwtToken(token);
                 if (securityToken != null)
                 {
                     var clientIdFromAccessToken = securityToken.Claims.GetClaimValue(ClaimNames.ClientId);
 
-                    _logger.LogDebug("Incoming client id: {clientId}", clientId);
-                    _logger.LogDebug("Access token client id: {clientId}", clientIdFromAccessToken);
+                    _logger.LogDebug("Incoming client id: {ClientId}", clientId);
+                    _logger.LogDebug("Access token client id: {ClientId}", clientIdFromAccessToken);
 
                     if (clientId != null && clientId.Equals(clientIdFromAccessToken, StringComparison.OrdinalIgnoreCase))
                     {

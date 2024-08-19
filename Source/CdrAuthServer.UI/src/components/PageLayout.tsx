@@ -1,11 +1,9 @@
 import { Container, Grid, Typography, Alert, AlertTitle } from "@mui/material";
-import { useRecoilValue } from 'recoil';
-import { DataHolderName } from "../state/Common.state";
-import { CommonState } from "../state/Common.state";
+import { useCommonContext } from "../context/CommonContext";
 
 export function PageLayout({ children }: { children: any }) {
-    const dataHolderName = useRecoilValue(DataHolderName);
-    const commonState = useRecoilValue(CommonState);
+    const {commonState} = useCommonContext();
+    const dataHolderName = commonState.dataHolder?.BrandName;
 
     return (
         <Container maxWidth={'xs'}>

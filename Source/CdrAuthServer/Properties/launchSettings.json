@@ -15,7 +15,7 @@
       "launchUrl": "https://localhost:8001/.well-known/openid-configuration",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "true",
         "CdrAuthServer:BaseUri": "https://localhost:8001",
         "CdrAuthServer:SecureBaseUri": "https://localhost:8002",
         "CdrAuthServer:Issuer": "https://localhost:8001",
@@ -35,7 +35,7 @@
       "launchUrl": "https://localhost:8101/.well-known/openid-configuration",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "false",
+        "CdrAuthServer:CdrRegister:CheckSoftwareProductStatus": "true",
         "CdrAuthServer:BaseUri": "https://localhost:8101",
         "CdrAuthServer:SecureBaseUri": "https://localhost:8102",
         "CdrAuthServer:Issuer": "https://localhost:8101",

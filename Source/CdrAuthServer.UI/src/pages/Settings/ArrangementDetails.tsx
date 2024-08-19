@@ -2,20 +2,13 @@ import { CheckCircle, ChevronRight, Close } from "@mui/icons-material";
 import { Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { InternalLayout } from "../../components/InternalLayout";
-import { useHistory, Link as RouterLink } from "react-router-dom";
-import { AccountInfo } from "../../components/AccountInfo";
+import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
 
 export default function ArrangementDetails() {
-    const history = useHistory();
     const [stopSharingOpen, setStopSharingOpen] = useState(false);
 
-    const gotoAccountDetails = () => {
-        history.push('/ui/account-list');
-    }
-
     const onStopSharing = () => {
-
     }
 
     return (
@@ -174,7 +167,6 @@ export default function ArrangementDetails() {
             </Dialog>
         </InternalLayout >
     )
-
 }
 
 {/* TODO: body2 font size should be a bit smaller, override dialog to show at the bottom */ }

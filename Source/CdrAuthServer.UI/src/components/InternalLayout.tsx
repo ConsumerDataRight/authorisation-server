@@ -2,18 +2,15 @@ import { ArrowBack, Home, Settings } from "@mui/icons-material";
 import { AppBar, BottomNavigation, BottomNavigationAction, Button, Container, Grid, Link, Paper, Toolbar, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useState } from "react";
-import { useRecoilValue } from 'recoil';
-import { DataHolderName } from "../state/Common.state";
 import { Link as RouterLink } from "react-router-dom";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export function InternalLayout({ children, selectedMenu, pageTitle="" }: { children: any, selectedMenu: string, pageTitle:string }) {
-    const dataHolderName = useRecoilValue(DataHolderName);
     const [selectedPage, setSelectedPage] = useState(selectedMenu);
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const goBack = () => {
-        history.goBack();
+        navigate(-1);
     }
 
     return (
@@ -44,7 +41,6 @@ export function InternalLayout({ children, selectedMenu, pageTitle="" }: { child
                 <BottomNavigation showLabels
                     value={selectedPage}
                     onChange={(event, newValue) => {
-                        console.log(newValue);
                         setSelectedPage(newValue);
                     }}
                 >

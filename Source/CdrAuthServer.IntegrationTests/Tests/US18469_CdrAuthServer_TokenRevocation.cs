@@ -73,7 +73,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         // Call authorise/token endpoints to create access and refresh tokens
-        private async Task<(string accessToken, string refreshToken)> CreateTokens(string clientId = null,
+        private async Task<(string accessToken, string refreshToken)> CreateTokens(string? clientId = null,
             int sharingDuration = Constants.AuthServer.SharingDuration)
         {
             if (clientId == null)

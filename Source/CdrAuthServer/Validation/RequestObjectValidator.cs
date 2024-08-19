@@ -1,11 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CdrAuthServer.Configuration;
+using CdrAuthServer.Domain.Extensions;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Infrastructure.Comparers;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using Newtonsoft.Json;
 using static CdrAuthServer.Domain.Constants;
+using static CdrAuthServer.Infrastructure.Constants;
 
 namespace CdrAuthServer.Validation
 {

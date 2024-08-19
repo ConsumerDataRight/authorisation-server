@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <IsPackable>false</IsPackable>
-		<Version>1.1.1</Version>
-		<AssemblyVersion>1.1.1</AssemblyVersion>
-		<FileVersion>1.1.1</FileVersion>
+		<TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+		<Version>$(Version)</Version>
+		<FileVersion>$(Version)</FileVersion>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+        <IsPackable>false</IsPackable>		
 		<Configurations>Debug;Release;Shared</Configurations>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -29,27 +29,32 @@
 		</When>
 		<Otherwise>
 			<ItemGroup>
-				<PackageReference Include="ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation" Version="1.0.0" />
+				<PackageReference Include="ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation" Version="2.0.0" />
 			</ItemGroup>
 		</Otherwise>
 	</Choose>
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.9" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.9" />
-        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.7" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="2.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="coverlet.collector" Version="3.1.2">
+        <PackageReference Include="coverlet.collector" Version="6.0.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
 
-        <PackageReference Include="Xunit.Combinatorial" Version="1.5.25" />
+        <PackageReference Include="Xunit.Combinatorial" Version="1.6.24" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\CdrAuthServer.Domain\CdrAuthServer.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>

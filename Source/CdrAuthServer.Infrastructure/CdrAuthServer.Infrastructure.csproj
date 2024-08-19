@@ -1,23 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+	<TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+	<Version>$(Version)</Version>
+	<FileVersion>$(Version)</FileVersion>
+	<AssemblyVersion>$(Version)</AssemblyVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<Version>1.1.1</Version>
-	<AssemblyVersion>1.1.1</AssemblyVersion>
-	<FileVersion>1.1.1</FileVersion>
+    <Nullable>enable</Nullable>	  
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="11.0.1" />
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
-	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.23.1" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.6.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.6.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.6.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.6.2" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.6.3" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CdrAuthServer.Domain\CdrAuthServer.Domain.csproj" />
   </ItemGroup>
 
 </Project>

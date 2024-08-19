@@ -42,17 +42,17 @@
 
             if (grant == null)
             {
-                logger.LogError("Grant not found for key:{key}", key);
+                logger.LogError("Grant not found for key:{Key}", key);
                 return null;
             }
             if (grant.GrantType != grantType)
             {
-                logger.LogError("Grant not found doesn't match for:{key}", key);
+                logger.LogError("Grant not found doesn't match for:{Key}", key);
                 return null;
             }
             if (!string.IsNullOrEmpty(clientId) && grant.ClientId != clientId)
             {
-                logger.LogError("Grant not found doesn't match with clientId:{key}", clientId);
+                logger.LogError("Grant not found doesn't match with clientId:{Key}", clientId);
                 return null;
             }
 
@@ -81,7 +81,7 @@
             var domain = mapper.Map<Domain.Entities.Grant>(grant);
 
             var entity = await grantRepository.Create(domain);
-            logger.LogInformation("Grant created with key:{key}", entity?.Key);
+            logger.LogInformation("Grant created with key:{Key}", entity?.Key);
 
             return mapper.Map<Grant>(entity);
         }
@@ -91,7 +91,7 @@
             var domain = mapper.Map<Domain.Entities.Grant>(grant);
             var entity = await grantRepository.Update(domain);
 
-            logger.LogInformation("Grant updated for, key:{key}", entity?.Key);
+            logger.LogInformation("Grant updated for, key:{Key}", entity?.Key);
             return mapper.Map<Grant>(entity);
         }
 
@@ -107,7 +107,7 @@
             if (grant != null)
             {
                 await grantRepository.Delete(key);
-                logger.LogInformation("Grant deleted with, key:{key}", grant?.Key);
+                logger.LogInformation("Grant deleted with, key:{Key}", grant?.Key);
             }
         }
     }

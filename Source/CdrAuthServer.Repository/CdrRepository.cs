@@ -8,10 +8,10 @@
 
     public class CdrRepository : ICdrRepository
     {
-        private readonly CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext;
+        private readonly CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext;
         private readonly IMapper mapper;
 
-        public CdrRepository(CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper)
+        public CdrRepository(CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper)
         {
             this.cdrAuthServervDatabaseContext = cdrAuthServervDatabaseContext;
             this.mapper = mapper;
@@ -31,8 +31,8 @@
             using (var transaction = cdrAuthServervDatabaseContext.Database.BeginTransaction())
             {                
                 // Bulk insert the new data recipient software products.
-                cdrAuthServervDatabaseContext.SoftwareProducts.AddRange(newSoftwareProductList);
-                cdrAuthServervDatabaseContext.SaveChanges();
+                await cdrAuthServervDatabaseContext.SoftwareProducts.AddRangeAsync(newSoftwareProductList);
+                await cdrAuthServervDatabaseContext.SaveChangesAsync();
 
                 // Commit the transaction.
                 transaction.Commit();                
@@ -40,20 +40,18 @@
         }
 
         public async Task PurgeDataRecipients()
-        {            
-            using (var transaction = cdrAuthServervDatabaseContext.Database.BeginTransaction())
-            {
-                // Remove the existing data recipients software products.
-                var existingSoftwareProducts = await cdrAuthServervDatabaseContext.SoftwareProducts.AsNoTracking().Where(sp => sp.SoftwareProductId != "cdr-register").ToListAsync();
+        {
+            using var transaction = cdrAuthServervDatabaseContext.Database.BeginTransaction();
+            // Remove the existing data recipients software products.
+            var existingSoftwareProducts = await cdrAuthServervDatabaseContext.SoftwareProducts.AsNoTracking().Where(sp => sp.SoftwareProductId != "cdr-register").ToListAsync();
 
-                if (existingSoftwareProducts.Any())
-                {
-                    cdrAuthServervDatabaseContext.RemoveRange(existingSoftwareProducts);
-                    cdrAuthServervDatabaseContext.SaveChanges();
-                }
-                // Commit the transaction.
-                transaction.Commit();
+            if (existingSoftwareProducts.Count > 0)
+            {
+                cdrAuthServervDatabaseContext.RemoveRange(existingSoftwareProducts);
+                await cdrAuthServervDatabaseContext.SaveChangesAsync();
             }
+            // Commit the transaction.
+            transaction.Commit();
         }
         
     }

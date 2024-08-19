@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CdrAuthServer.Repository.Migrations
 {
-    [DbContext(typeof(CdrAuthServervDatabaseContext))]
+    [DbContext(typeof(CdrAuthServerDatabaseContext))]
     [Migration("20221205002235_V002-CreateLogEventsDrService")]
     partial class V002CreateLogEventsDrService
     {

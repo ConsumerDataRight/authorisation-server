@@ -280,7 +280,7 @@ namespace CdrAuthServer.IntegrationTests
             var response = await _cdrArrangementRevocationService.SendRequest(cdrArrangementId: cdrArrangementId);
 
             var expectedError = new InvalidArrangementException(cdrArrangementId);
-            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError));
+            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError, string.Empty));
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -328,7 +328,7 @@ namespace CdrAuthServer.IntegrationTests
 
             // Arrange - Get authcode and thus create a CDR arrangement for ADDITIONAL_SOFTWAREPRODUCT_ID client
             await ArrangeAdditionalDataRecipient();
-            string additionalClientId = _options.LastRegisteredClientId;
+            string additionalClientId = _options.LastRegisteredClientId ?? "";
 
             var requestUri = await _dataHolderParService.GetRequestUri(
                 scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
@@ -346,8 +346,8 @@ namespace CdrAuthServer.IntegrationTests
            .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
            .WithClientId(additionalClientId)
            .WithScope(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS)
-           .WithCertificateFilename(Constants.Certificates.CertificateFilename)
-           .WithCertificatePassword(Constants.Certificates.CertificatePassword)
+           .WithCertificateFilename(Constants.Certificates.AdditionalJwksCertificateFilename)
+           .WithCertificatePassword(Constants.Certificates.AdditionalCertificatePassword)
            .WithRequestUri(requestUri)
            .BuildAsync();
 
@@ -363,7 +363,7 @@ namespace CdrAuthServer.IntegrationTests
             ))?.CdrArrangementId;
 
             var expectedError = new InvalidArrangementException(additional_cdrArrangementId);
-            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError));
+            var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError, string.Empty));
 
             // Act - Have original registered client attempt to revoke CDR arrangement created by ADDITIONAL_SOFTWAREPRODUCT_ID client
             var response = await _cdrArrangementRevocationService.SendRequest(clientId: originalRegisteredClientId, cdrArrangementId: additional_cdrArrangementId);

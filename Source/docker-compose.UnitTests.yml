@@ -1,7 +1,5 @@
 # Docker compose to run unit tests in the build pipeline
 
-version: '3.8'
-
 services:
   cdr-auth-server-unit-tests:
     container_name: cdr-auth-server-unit-tests
@@ -9,6 +7,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.unit-tests
+      args:
+        FEED_URI: ${FEED_URI}
+        FEED_ACCESSTOKEN: ${FEED_ACCESSTOKEN}
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
     volumes:

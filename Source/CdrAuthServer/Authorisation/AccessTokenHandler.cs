@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CdrAuthServer.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -27,21 +28,24 @@ namespace CdrAuthServer.Authorisation
             }
 
             // Check if the access token has been revoked.
-            _logger.LogInformation($"{nameof(AccessTokenHandler)}.{nameof(HandleRequirementAsync)} - Checking the access token...");
+            _logger.LogInformation("{AccessTokenHandler}.{HandleRequirementAsync} - Checking the access token...", nameof(AccessTokenHandler), nameof(HandleRequirementAsync));
 
             // Call the Mock Data Holder's idp to introspect the access token.
             var success = await CheckAccessToken();
 
-            if (success is true)
+            if (_httpContextAccessor.HttpContext != null)
             {
-                _httpContextAccessor.HttpContext.Items["ValidAccessToken"] = true;
-                context.Succeed(requirement);
-            }
-            else
-            {
-                _logger.LogError($"{nameof(AccessTokenHandler)}.{nameof(HandleRequirementAsync)} check failed.");
-                _httpContextAccessor.HttpContext.Items["ValidAccessToken"] = false;
-                context.Fail(new AuthorizationFailureReason(this, "Access token is not valid"));
+                if (success is true)
+                {
+                    _httpContextAccessor.HttpContext.Items["ValidAccessToken"] = true;
+                    context.Succeed(requirement);
+                }
+                else
+                {
+                    _logger.LogError("{AccessTokenHandler}.{HandleRequirementAsync} check failed.", nameof(AccessTokenHandler), nameof(HandleRequirementAsync));
+                    _httpContextAccessor.HttpContext.Items["ValidAccessToken"] = false;
+                    context.Fail(new AuthorizationFailureReason(this, "Access token is not valid"));
+                }
             }
         }
 
@@ -50,13 +54,13 @@ namespace CdrAuthServer.Authorisation
             // Get the Authorization header value.
             if (_httpContextAccessor.HttpContext?.Request.Headers.TryGetValue("Authorization", out StringValues authHeader) is not true)
             {
-                _logger.LogError($"Authorization header not found on HTTP request.");
+                _logger.LogError("Authorization header not found on HTTP request.");
                 return false;
             }
 
             if (!authHeader.ToString().StartsWith("Bearer "))
             {
-                _logger.LogError($"Authorization header does not contain Bearer token.");
+                _logger.LogError("Authorization header does not contain Bearer token.");
                 return false;
             }
 
@@ -64,15 +68,11 @@ namespace CdrAuthServer.Authorisation
             var accessToken = authHeader.ToString().Replace("Bearer ", "");
             var endpoint = _config["AccessTokenIntrospectionEndpoint"];
 
-            var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (a, b, c, d) => true
-            };
-            var httpClient = new HttpClient(handler);
+            var httpClient = new HttpClient(HttpHelper.CreateHttpClientHandler(_config));
 
             var formFields = new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("token", accessToken)
+                new("token", accessToken)
             };
 
             var response = await httpClient.PostAsync(endpoint, new FormUrlEncodedContent(formFields));

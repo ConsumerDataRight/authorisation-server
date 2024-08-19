@@ -86,5 +86,8 @@ namespace CdrAuthServer.Configuration
         public const string scopesProfileAll = "all";
         public const string scopesProfileBanking = "banking";
         public const string scopesProfileEnergy = "energy";
+
+        public bool EnableServerCertificateValidation { get; set; } = false;
+
     }
 }

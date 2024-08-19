@@ -12,6 +12,7 @@
         public const string ClockSkewSeconds = "CdrAuthServer:ClockSkewSeconds";
         public const string AcrValuesSupported = "CdrAuthServer:AcrValuesSupported";
         public const string ClaimsSupported = "CdrAuthServer:ClaimsSupported";
+        public const string IsServerCertificateValidationEnabled = "CdrAuthServer:EnableServerCertificateValidation";
         public const string CodeChallengeMethodsSupported = "CdrAuthServer:CodeChallengeMethodsSupported";
         public const string GrantTypesSupported = "CdrAuthServer:GrantTypesSupported";
         public const string ResponseModesSupported = "CdrAuthServer:ResponseModesSupported";

@@ -30,9 +30,9 @@ namespace CdrAuthServer.Models
 
         public object? GetDataItem(string dataItemKey)
         {
-            if (this.Data.ContainsKey(dataItemKey))
+            if (Data.TryGetValue(dataItemKey, out var value))
             {
-                return this.Data[dataItemKey];
+                return value;
             }
 
             return null;

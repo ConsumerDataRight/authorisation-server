@@ -50,7 +50,7 @@ namespace CdrAuthServer.Extensions
             var param = new SubPermanenceParameters()
             {
                 SoftwareProductId = client.SoftwareId,
-                SectorIdentifierUri = client.SectorIdentifierUri
+                SectorIdentifierUri = client.SectorIdentifierUri ?? ""
             };
 
             return idPermanenceManager.DecryptSub(subject, param);

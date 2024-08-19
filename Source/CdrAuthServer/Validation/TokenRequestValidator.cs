@@ -65,7 +65,7 @@ namespace CdrAuthServer.Validation
             }
 
             // Check software product status (if configured).
-            if (configOptions.CdrRegister.CheckSoftwareProductStatus)
+            if (configOptions.CdrRegister!= null && configOptions.CdrRegister.CheckSoftwareProductStatus)
             {
                 var softwareProduct = await _cdrService.GetSoftwareProduct(client.SoftwareId);
                 if (softwareProduct == null)
@@ -158,11 +158,8 @@ namespace CdrAuthServer.Validation
 
         private static string CreatePkceChallenge(string codeVerifier)
         {
-            using (var sha256 = SHA256.Create())
-            {
-                var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
-                return Base64UrlEncoder.Encode(challengeBytes);
-            }
+            var challengeBytes = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
+            return Base64UrlEncoder.Encode(challengeBytes);
         }
     }
 }

@@ -1,14 +1,14 @@
 ﻿using CdrAuthServer.Configuration;
 using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Certificates;
-using System.Linq;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.X509Certificates;
 
 namespace CdrAuthServer.Extensions
 {
     public static class ConfigExtensions
     {
-        private static IConfiguration _config;
+        private static IConfiguration? _config;
         private static ConfigurationOptions _configurationOptions;
 
         public static ConfigurationOptions GetConfigurationOptions(this IConfiguration config, HttpContext? context = null)
@@ -64,10 +64,10 @@ namespace CdrAuthServer.Extensions
             _configurationOptions.PushedAuthorizationEndpoint = SetDefault(_configurationOptions.PushedAuthorizationEndpoint, $"{secureBaseUri}/connect/par");
 
             _configurationOptions.DefaultAcrValue = SetDefault(_configurationOptions.DefaultAcrValue, "urn:cds.au:cdr:2");
-            _configurationOptions.AcrValuesSupported = SetDefault(_configurationOptions.AcrValuesSupported, new string[] {
+            _configurationOptions.AcrValuesSupported = SetDefault(_configurationOptions.AcrValuesSupported, [
                 "urn:cds.au:cdr:2"
-            });
-            _configurationOptions.ClaimsSupported = SetDefault(_configurationOptions.ClaimsSupported, new string[] {
+            ]);
+            _configurationOptions.ClaimsSupported = SetDefault(_configurationOptions.ClaimsSupported, [
                 "name",
                 "given_name",
                 "family_name",
@@ -81,71 +81,71 @@ namespace CdrAuthServer.Extensions
                 "nonce",
                 "auth_time",
                 "updated_at",
-            });
-            _configurationOptions.CodeChallengeMethodsSupported = SetDefault(_configurationOptions.CodeChallengeMethodsSupported, new string[] {
+            ]);
+            _configurationOptions.CodeChallengeMethodsSupported = SetDefault(_configurationOptions.CodeChallengeMethodsSupported, [
                 "S256"
-            });
-            _configurationOptions.GrantTypesSupported = SetDefault(_configurationOptions.GrantTypesSupported, new string[] {
+            ]);
+            _configurationOptions.GrantTypesSupported = SetDefault(_configurationOptions.GrantTypesSupported, [
                 "authorization_code",
                 "refresh_token",
                 "client_credentials"
-            });
+            ]);
             var scopesSupported = _configurationOptions.ScopesSupported;
             if (_configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileBanking)
             {
-                scopesSupported = scopesSupported.Union(_configurationOptions.BankingScopesSupported).ToList();
+                scopesSupported = scopesSupported!.Union(_configurationOptions.BankingScopesSupported!).ToList();
             }
             if (_configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileEnergy)
             {
-                scopesSupported = scopesSupported.Union(_configurationOptions.EnergyScopesSupported).ToList();
+                scopesSupported = scopesSupported!.Union(_configurationOptions.EnergyScopesSupported!).ToList();
             }
-            _configurationOptions.ScopesSupported = SetDefault(scopesSupported, new string[] {
+            _configurationOptions.ScopesSupported = SetDefault(scopesSupported, [
                 "openid",
                 "profile",
                 "cdr:registration"
-            });
-            _configurationOptions.ResponseModesSupported = SetDefault(_configurationOptions.ResponseModesSupported, new string[] {
+            ]);
+            _configurationOptions.ResponseModesSupported = SetDefault(_configurationOptions.ResponseModesSupported, [
                 "fragment",
                 "form_post",
                 "jwt",
                 "form_post.jwt",
                 "fragment.jwt",
                 "query.jwt",
-            });
-            _configurationOptions.ResponseTypesSupported = SetDefault(_configurationOptions.ResponseTypesSupported, new string[] {
+            ]);
+            _configurationOptions.ResponseTypesSupported = SetDefault(_configurationOptions.ResponseTypesSupported, [
                 "code",
                 "code id_token"
-            });
-            _configurationOptions.SubjectTypesSupported = SetDefault(_configurationOptions.SubjectTypesSupported, new string[] {
+            ]);
+            _configurationOptions.SubjectTypesSupported = SetDefault(_configurationOptions.SubjectTypesSupported, [
                 "pairwise"
-            });
-            _configurationOptions.RequestObjectSigningAlgValuesSupported = SetDefault(_configurationOptions.RequestObjectSigningAlgValuesSupported, new string[] {
-                "PS256",
-                "ES256"
-            });
-            _configurationOptions.TokenEndpointAuthMethodsSupported = SetDefault(_configurationOptions.TokenEndpointAuthMethodsSupported, new string[] {
+            ]);
+            _configurationOptions.RequestObjectSigningAlgValuesSupported = SetDefault(_configurationOptions.RequestObjectSigningAlgValuesSupported, [
+                SecurityAlgorithms.RsaSsaPssSha256,
+                SecurityAlgorithms.EcdsaSha256
+            ]);
+            _configurationOptions.TokenEndpointAuthMethodsSupported = SetDefault(_configurationOptions.TokenEndpointAuthMethodsSupported, [
                 "private_key_jwt",
-            });
-            _configurationOptions.TokenEndpointAuthSigningAlgValuesSupported = SetDefault(_configurationOptions.TokenEndpointAuthSigningAlgValuesSupported, new string[] {
-                "PS256",
-                "ES256"
-            });
-            _configurationOptions.IdTokenSigningAlgValuesSupported = SetDefault(_configurationOptions.IdTokenSigningAlgValuesSupported, new string[] {
-                "PS256",
-                "ES256"
-            });
-            _configurationOptions.IdTokenEncryptionAlgValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionAlgValuesSupported, new string[] {
+            ]);
+            _configurationOptions.TokenEndpointAuthSigningAlgValuesSupported = SetDefault(_configurationOptions.TokenEndpointAuthSigningAlgValuesSupported, [
+                SecurityAlgorithms.RsaSsaPssSha256,
+                SecurityAlgorithms.EcdsaSha256
+            ]);
+            _configurationOptions.IdTokenSigningAlgValuesSupported = SetDefault(_configurationOptions.IdTokenSigningAlgValuesSupported, [
+                SecurityAlgorithms.RsaSsaPssSha256,
+                SecurityAlgorithms.EcdsaSha256
+            ]);
+            _configurationOptions.IdTokenEncryptionAlgValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionAlgValuesSupported, [
                 "RSA-OAEP",
                 "RSA-OAEP-256"
-            });
-            _configurationOptions.IdTokenEncryptionEncValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionEncValuesSupported, new string[] {
+            ]);
+            _configurationOptions.IdTokenEncryptionEncValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionEncValuesSupported, [
                 "A128CBC-HS256",
                 "A256GCM"
-            });
-            _configurationOptions.AuthorizationSigningAlgValuesSupported = SetDefault(_configurationOptions.AuthorizationSigningAlgValuesSupported, new string[] {
-                "PS256",
-                "ES256"
-            });
+            ]);
+            _configurationOptions.AuthorizationSigningAlgValuesSupported = SetDefault(_configurationOptions.AuthorizationSigningAlgValuesSupported, [
+                SecurityAlgorithms.RsaSsaPssSha256,
+                SecurityAlgorithms.EcdsaSha256
+            ]);
             _configurationOptions.AuthorizationEncryptionAlgValuesSupported = SetDefault(_configurationOptions.AuthorizationEncryptionAlgValuesSupported, 
                 "RSA-OAEP,RSA-OAEP-256");
             _configurationOptions.AuthorizationEncryptionEncValuesSupported = SetDefault(_configurationOptions.AuthorizationEncryptionEncValuesSupported, 
@@ -193,7 +193,7 @@ namespace CdrAuthServer.Extensions
 
         private static bool SetDefault(bool? option, bool defaultValue)
         {
-            if (!option.HasValue || option.Value == false)
+            if (!option.HasValue || !option.Value)
             {
                 return defaultValue;
             }
@@ -203,7 +203,7 @@ namespace CdrAuthServer.Extensions
 
         private static IList<string> SetDefault(IList<string>? option, string[] defaultValues)
         {
-            if (option == null || !option.Any())
+            if (option == null || option.Count == 0)
             {
                 return defaultValues;
             }

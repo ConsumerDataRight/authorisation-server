@@ -18,11 +18,11 @@ namespace CdrAuthServer.UnitTests.Validators
     {        
         private const string RESPONSETYPE = "code id_token";
         private ILogger<AuthorizeRequestValidator> logger;
-        private IConfiguration configuration;
-        private Mock<IClientService> clientService;
-        private Mock<IGrantService> grantService;
-        private Mock<ICdrService> cdrService;
-        private IAuthorizeRequestValidator autherizeRequestValidator;
+        private IConfiguration configuration = null!;
+        private Mock<IClientService> clientService = null!;
+        private Mock<IGrantService> grantService = null!;
+        private Mock<ICdrService> cdrService = null!;
+        private AuthorizeRequestValidator autherizeRequestValidator = null!;
         
         [SetUp]
         public void Setup()
@@ -43,22 +43,22 @@ namespace CdrAuthServer.UnitTests.Validators
                                                                       cdrService.Object);
         }
 
-        [TestCase("", "", RESPONSETYPE, "", "", "client_id is missing", ErrorCodes.InvalidRequest)]        
-        [TestCase("foo", "", RESPONSETYPE, "", "", "Invalid client_id", ErrorCodes.InvalidRequest)]
-        [TestCase("fooClient", "", RESPONSETYPE, "", "", "request_uri is missing", ErrorCodes.InvalidRequest)]
-        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "Invalid request_uri", ErrorCodes.InvalidRequest)]        
-        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "request_uri has expired", ErrorCodes.InvalidRequestUri)]
-        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "request_uri has already been used", ErrorCodes.InvalidRequestUri)]
-        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "client_id does not match request_uri client_id", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "Invalid redirect_uri for client", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", "", "", "", "response_type is missing", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", "foo", "", "", "response_type is not supported", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "response_type does not match request_uri response_type", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "scope is missing", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "openid scope is missing", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "foo", "response_mode is not supported", ErrorCodes.InvalidRequest)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "form_post", "Software product not found", ErrorCodes.InvalidClient)]
-        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "form_post", "Software product status is INACTIVE", ErrorCodes.AdrStatusNotActive)]        
+        [TestCase("", "", RESPONSETYPE, "", "", "client_id is missing", ErrorCodes.Generic.InvalidRequest)]        
+        [TestCase("foo", "", RESPONSETYPE, "", "", "Invalid client_id", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("fooClient", "", RESPONSETYPE, "", "", "request_uri is missing", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "Invalid request_uri", ErrorCodes.Generic.InvalidRequest)]        
+        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "request_uri has expired", ErrorCodes.Generic.InvalidRequestUri)]
+        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "request_uri has already been used", ErrorCodes.Generic.InvalidRequestUri)]
+        [TestCase("fooClient", "https://server/uri", RESPONSETYPE, "", "", "client_id does not match request_uri client_id", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "Invalid redirect_uri for client", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", "", "", "", "response_type is missing", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", "foo", "", "", "response_type is not supported", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "response_type does not match request_uri response_type", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "scope is missing", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "", "", "openid scope is missing", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "foo", "response_mode is not supported", ErrorCodes.Generic.InvalidRequest)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "form_post", "Software product not found", ErrorCodes.Generic.InvalidClient)]
+        [TestCase("78273140-cfa2-4073-b248-0eb41940e4c3", "https://server/uri", RESPONSETYPE, "openid scope", "form_post", "Software product status is INACTIVE", ErrorCodes.Cds.AdrStatusNotActive)]        
         public async Task Should_Return_InvalidRequest_With_ErrorCodes(
             string client_id, 
             string request_uri, 
@@ -142,48 +142,48 @@ namespace CdrAuthServer.UnitTests.Validators
                     if (String.Equals("client_id does not match request_uri client_id", expectedErrorDescription) ||
                         String.Equals("Invalid redirect_uri for client", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "http://server/redirecturi1", "http://server/redirecturi2" };
+                        client.RedirectUris = ["http://server/redirecturi1", "http://server/redirecturi2"];
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10); 
                         requestUriGrant.Request = requestObjectJson;                        
                     }
                     if (String.Equals("response_type is missing", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("code id_token", "");                        
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;                        
                     }
                     if (String.Equals("response_type is not supported", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("code id_token", "foo");
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;                        
                     }
                     if (String.Equals("response_type does not match request_uri response_type", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("code id_token", "code");
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;                        
                     }
                     if (String.Equals("scope is missing", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("openid profile", "");
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;
                     }
                     if (String.Equals("openid scope is missing", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("openid profile", "profile");
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;
                     }
                     if (String.Equals("response_mode is not supported", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestObjectJson = requestObjectJson.Replace("form_post", "foo");
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;
@@ -191,14 +191,14 @@ namespace CdrAuthServer.UnitTests.Validators
 
                     if (String.Equals("Software product not found", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };                        
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];                        
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;
                     }
 
                     if (String.Equals("Software product status is INACTIVE", expectedErrorDescription))
                     {
-                        client.RedirectUris = new string[] { "https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2" };
+                        client.RedirectUris = ["https://dr.dev.cdrsandbox.gov.au/consent/callback", "http://server/redirecturi2"];
                         requestUriGrant.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
                         requestUriGrant.Request = requestObjectJson;
 
@@ -222,7 +222,7 @@ namespace CdrAuthServer.UnitTests.Validators
             Assert.IsNotNull(result);
             Assert.AreEqual(false, result.IsValid);
             Assert.AreEqual(expectedError, result.Error);
-            Assert.IsTrue(result.ErrorDescription.Contains(expectedErrorDescription));            
+            Assert.IsTrue(result.ErrorDescription?.Contains(expectedErrorDescription));            
         }
     }
 }

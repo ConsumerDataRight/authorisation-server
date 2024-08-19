@@ -1,10 +1,10 @@
 ﻿using CdrAuthServer.Authorisation;
 using CdrAuthServer.Extensions;
-using CdrAuthServer.Models;
+using CdrAuthServer.Infrastructure.Attributes;
+using CdrAuthServer.Infrastructure.Authorisation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
 
 namespace CdrAuthServer.Controllers
 {
@@ -29,25 +29,20 @@ namespace CdrAuthServer.Controllers
         [HttpGet]
         [Route("resource/cds-au/v1/common/customer")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.GetCustomerBasic)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.GetCustomerBasic)]
+        [ApiVersion("1")]
+        [ReturnXV("1")]
         public IActionResult GetCustomer()
         {
             _logger.LogInformation("Request received to /resource/cds-au/v1/common/customer");
 
             if (_config.GetValue<bool>("CdrAuthServer:ValidateResourceEndpoint", true))
-            {                
+            {
                 // Add validation for the resource endpoint.                
-                var (isValidVersion, versionError, versionErrorStatusCode) = HttpContext.Request.Headers.ValidateVersion();
-                if (!isValidVersion)
-                {
-                    _logger.LogError("Version validation failed - {@versionError}", versionError);
-                    return new JsonResult(versionError) { StatusCode = versionErrorStatusCode ?? 400 };
-                }
-
                 var (isValidAuthDate, authDateError, authDateStatusCode) = HttpContext.Request.Headers.ValidateAuthDate();
                 if (!isValidAuthDate)
                 {
-                    _logger.LogError("ValidateAuthDate failed - {@authDateError}", authDateError);
+                    _logger.LogError("ValidateAuthDate failed - {@AuthDateError}", authDateError);
                     return new JsonResult(authDateError) { StatusCode = authDateStatusCode ?? 400 };
                 }
             }
@@ -81,7 +76,6 @@ namespace CdrAuthServer.Controllers
                 xFapiInterationId = Request.Headers["x-fapi-interaction-id"].ToString();
             }
             Response.Headers.Add("x-fapi-interaction-id", xFapiInterationId);
-            Response.Headers.Add("x-v", "1");
             return Content(body, "application/json");
         }
 
@@ -90,27 +84,22 @@ namespace CdrAuthServer.Controllers
         [HttpGet]
         [Route("resource/cds-au/v1/{industry}/accounts")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [PolicyAuthorize(AuthorisationPolicy.GetBankingAccounts)]
+        [PolicyAuthorize(AuthServerAuthorisationPolicyAttribute.GetBankingAccounts)]
+        [ApiVersion("1")]
+        [ReturnXV("1")]
         public IActionResult GetAccounts(string industry)
         {
-            _logger.LogInformation("Request received to /resource/cds-au/v1/{industry}/accounts", industry);
+            _logger.LogInformation("Request received to /resource/cds-au/v1/{Industry}/accounts", industry);
 
             if (_config.GetValue<bool>("CdrAuthServer:ValidateResourceEndpoint", true))
             {
                 //
                 // Add validation for the resource endpoint.
                 //
-                var (isValidVersion, versionError, versionErrorStatusCode) = HttpContext.Request.Headers.ValidateVersion();
-                if (!isValidVersion)
-                {
-                    _logger.LogError("Version validation failed - {@versionError}", versionError);
-                    return new JsonResult(versionError) { StatusCode = versionErrorStatusCode ?? 400 };
-                }
-
                 var (isValidAuthDate, authDateError, authDateStatusCode) = HttpContext.Request.Headers.ValidateAuthDate();
                 if (!isValidAuthDate)
                 {
-                    _logger.LogError("ValidateAuthDate failed - {@authDateError}", authDateError);
+                    _logger.LogError("ValidateAuthDate failed - {@AuthDateError}", authDateError);
                     return new JsonResult(authDateError) { StatusCode = authDateStatusCode ?? 400 };
                 }
             }
@@ -132,7 +121,6 @@ namespace CdrAuthServer.Controllers
                 xFapiInterationId = Request.Headers["x-fapi-interaction-id"].ToString();
             }
             Response.Headers.Add("x-fapi-interaction-id", xFapiInterationId);
-            Response.Headers.Add("x-v", "1");
             return Content(body, "application/json");
         }
     }

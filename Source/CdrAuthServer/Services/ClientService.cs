@@ -48,7 +48,7 @@
             var entity = _mapper.Map<Domain.Entities.Client>(client);
             var entityClient = await _clientRepository.Create(entity);
 
-            _logger.LogInformation("Create client with id:{id}", entityClient?.ClientId);
+            _logger.LogInformation("Create client with id:{Id}", entityClient?.ClientId);
             return _mapper.Map<Client>(entityClient);
         }
 
@@ -57,27 +57,27 @@
             var entity = _mapper.Map<Domain.Entities.Client>(client);
             var entityClient = await _clientRepository.Update(entity);
 
-            _logger.LogInformation("updated the client repository for client:{id}", entityClient?.ClientId);
+            _logger.LogInformation("updated the client repository for client:{Id}", entityClient?.ClientId);
             return _mapper.Map<Client>(entityClient);
         }
 
         public async Task Delete(string clientId)
         {
             await _clientRepository.Delete(clientId);
-            _logger.LogInformation("deleted client with id:{id}", clientId);
+            _logger.LogInformation("deleted client with id:{Id}", clientId);
         }
 
         public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetJwks(Client client)
         {
             if (string.IsNullOrEmpty(client.JwksUri))
             {
-                _logger.LogError("JwksUri:{uri} is null or empty", client.JwksUri);
+                _logger.LogError("JwksUri:{Uri} is null or empty", client.JwksUri);
                 throw new ClientMetadataException(ClaimNames.JwksUri);
             }
 
             if (!Uri.IsWellFormedUriString(client.JwksUri, UriKind.Absolute))
             {
-                _logger.LogError("JwksUri:{uri} is not a valid absolute URI", client.JwksUri);
+                _logger.LogError("JwksUri:{Uri} is not a valid absolute URI", client.JwksUri);
                 throw new ClientMetadataException(ClaimNames.JwksUri, "Not a valid absolute URI");
             }
 

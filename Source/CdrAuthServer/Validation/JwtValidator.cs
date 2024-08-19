@@ -1,10 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using CdrAuthServer.Configuration;
+﻿using CdrAuthServer.Configuration;
 using CdrAuthServer.Exceptions;
-using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Validation
@@ -88,12 +87,12 @@ namespace CdrAuthServer.Validation
             }
             catch (JwksException jwksException)
             {
-                _logger.LogError(jwksException, "Invalid {context} - jwks error", context);
+                _logger.LogError(jwksException, "Invalid {Context} - jwks error", context);
                 return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWKS_ERROR, context.ToString()), null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Invalid {context} - token validation error", context);
+                _logger.LogError(ex, "Invalid {Context} - token validation error", context);
                 return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_VALIDATION_ERROR, context.ToString()), null);
             }
         }

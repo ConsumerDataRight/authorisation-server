@@ -38,6 +38,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/introspect")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         public async Task<JsonResult> Introspect([FromForm] string token)
@@ -45,7 +46,7 @@ namespace CdrAuthServer.Controllers
             // Check that refresh token is present
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogError("token is empty or null - {token}", token);
+                _logger.LogError("token is empty or null - {Token}", token);
                 return new JsonResult(new Introspection
                 {
                     IsActive = false,
@@ -55,7 +56,7 @@ namespace CdrAuthServer.Controllers
             // Check if the refresh token has been revoked.
             if (await _tokenService.IsTokenBlacklisted(token))
             {
-                _logger.LogError("token is blacklisted - {token}", token);
+                _logger.LogError("token is blacklisted - {Token}", token);
                 return new JsonResult(new Introspection
                 {
                     IsActive = false,
@@ -63,7 +64,7 @@ namespace CdrAuthServer.Controllers
             }
 
             // Get the refresh token
-            if ((await _grantService.Get(GrantTypes.RefreshToken, token, User.Identity?.Name)) is RefreshTokenGrant grant && grant.IsExpired == false)
+            if ((await _grantService.Get(GrantTypes.RefreshToken, token, User.Identity?.Name)) is RefreshTokenGrant grant && !grant.IsExpired)
             {
                 return new JsonResult(new Introspection
                 {
@@ -74,7 +75,7 @@ namespace CdrAuthServer.Controllers
                 });
             }
 
-            _logger.LogError("get refesh token failed - {token}", token);
+            _logger.LogError("get refesh token failed - {Token}", token);
             return new JsonResult(new Introspection
             {
                 IsActive = false,
@@ -95,13 +96,14 @@ namespace CdrAuthServer.Controllers
         /// </remarks>
         [HttpPost]
         [Route("connect/introspect-internal")]
+        [ApiVersionNeutral]
         [Consumes("application/x-www-form-urlencoded")]
         public async Task<IActionResult> IntrospectInternal([Required, FromForm] string token)
         {
             // Check if the token has been revoked - this will work for a revoked refresh token.
             if (string.IsNullOrEmpty(token) || await _tokenService.IsTokenBlacklisted(token))
             {
-                _logger.LogError("token is nullorempty or blacklisted - {token}", token);
+                _logger.LogError("token is nullorempty or blacklisted - {Token}", token);
                 return new JsonResult(new Introspection
                 {
                     IsActive = false,
@@ -119,7 +121,7 @@ namespace CdrAuthServer.Controllers
                 var jti = securityToken.Claims.GetClaimValue(ClaimNames.JwtId);
                 if (!string.IsNullOrEmpty(jti) && await _tokenService.IsTokenBlacklisted(jti))
                 {
-                    _logger.LogError("access token jti is blacklisted - {jti}", jti);
+                    _logger.LogError("access token jti is blacklisted - {Jti}", jti);
                     return new JsonResult(new Introspection
                     {
                         IsActive = false,
@@ -130,7 +132,7 @@ namespace CdrAuthServer.Controllers
                 var authCode = securityToken.Claims.GetClaimValue(ClaimNames.AuthorizationCode);
                 if (!string.IsNullOrEmpty(authCode) && await _tokenService.IsTokenBlacklisted($"{clientIdFromAccessToken}::{authCode}"))
                 {
-                    _logger.LogError("access token auth code is blacklisted - {authCode}", authCode);
+                    _logger.LogError("access token auth code is blacklisted - {AuthCode}", authCode);
                     return new JsonResult(new Introspection
                     {
                         IsActive = false,
@@ -168,7 +170,7 @@ namespace CdrAuthServer.Controllers
                     var arrangement = await _grantService.Get(GrantTypes.CdrArrangement, cdrArrangementId, clientIdFromAccessToken) as CdrArrangementGrant;
                     if (arrangement == null)
                     {
-                        _logger.LogError("arrangement was not found: {cdrArrangementId}", cdrArrangementId);
+                        _logger.LogError("arrangement was not found: {CdrArrangementId}", cdrArrangementId);
                         return new JsonResult(new Introspection
                         {
                             IsActive = false
@@ -177,7 +179,7 @@ namespace CdrAuthServer.Controllers
 
                     if (!string.IsNullOrEmpty(cdrArrangementVersion) && !arrangement.Version.ToString().Equals(cdrArrangementVersion))
                     {
-                        _logger.LogError("arrangement version ({arrangement.Version}) does not match arrangement version in the access token: {cdrArrangementVersion}", arrangement.Version, cdrArrangementVersion);
+                        _logger.LogError("arrangement version ({Version}) does not match arrangement version in the access token: {CdrArrangementVersion}", arrangement.Version, cdrArrangementVersion);
                         return new JsonResult(new Introspection
                         {
                             IsActive = false

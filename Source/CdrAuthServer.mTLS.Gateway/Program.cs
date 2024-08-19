@@ -105,12 +105,12 @@ var pipelineConfiguration = new OcelotPipelineConfiguration
         // The thumbprint and common name from the client certificate are extracted and added as headers for the downstream services.
         if (clientCert != null)
         {
-            httpContext.Request.Headers.Add(HttpHeaders.ClientCertificateThumbprint, clientCert.Thumbprint);
-            httpContext.Request.Headers.Add(HttpHeaders.ClientCertificateCommonName, clientCert.GetNameInfo(X509NameType.SimpleName, false));
+            httpContext.Request.Headers[HttpHeaders.ClientCertificateThumbprint] = clientCert.Thumbprint;
+            httpContext.Request.Headers[HttpHeaders.ClientCertificateCommonName] = clientCert.GetNameInfo(X509NameType.SimpleName, false);
         }
 
         // Send through the original host name to the backend service.
-        httpContext.Request.Headers.Add(HttpHeaders.ForwardedHost, httpContext.Request.Host.ToString());
+        httpContext.Request.Headers[HttpHeaders.ForwardedHost] = httpContext.Request.Host.ToString();
 
         await next.Invoke();
     }

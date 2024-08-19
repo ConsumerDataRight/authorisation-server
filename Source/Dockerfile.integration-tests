@@ -1,6 +1,6 @@
 # Dockerfile for running integration tests
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 EXPOSE 9999
 EXPOSE 9998
@@ -10,6 +10,8 @@ EXPOSE 9996
 # Default ASPNETCORE_ENVIRONMENT to Release
 ENV ASPNETCORE_ENVIRONMENT=Release
 
+RUN curl -L https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh  | sh
+
 # Copy source
 COPY . ./
 
@@ -18,8 +20,12 @@ RUN dotnet dev-certs https
 
 # Run tests
 WORKDIR /src/CdrAuthServer.IntegrationTests
+ARG FEED_ACCESSTOKEN
+ARG FEED_URI
+ENV VSS_NUGET_EXTERNAL_FEED_ENDPOINTS="{\"endpointCredentials\": [{\"endpoint\":\"${FEED_URI}\", \"username\":\"docker\", \"password\":\"${FEED_ACCESSTOKEN}\"}]}"
+RUN echo $VSS_NUGET_EXTERNAL_FEED_ENDPOINTS
 
-# RUN dotnet build
+RUN dotnet restore
 RUN dotnet build --configuration Release
 
-ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]
+ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "--results-directory", "/testresults"]

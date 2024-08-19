@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CdrAuthServer.Repository.Migrations
 {
-    [DbContext(typeof(CdrAuthServervDatabaseContext))]
+    [DbContext(typeof(CdrAuthServerDatabaseContext))]
     [Migration("20230209050525_V005-AddSoftwareProductForCDR-Register")]
     partial class V005AddSoftwareProductForCDRRegister
     {

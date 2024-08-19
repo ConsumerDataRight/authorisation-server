@@ -89,7 +89,7 @@ namespace CdrAuthServer.Validation
             if (!clientAssertionResult.IsValid)
             {
                 _logger.LogError("clientAssertion failed with error - {ErrorDescription}", clientAssertionResult.ErrorDescription);
-                return (ValidationResult.Fail(ErrorCodes.InvalidClient, clientAssertionResult.ErrorDescription), null);
+                return (ValidationResult.Fail(ErrorCodes.Generic.InvalidClient, clientAssertionResult.ErrorDescription), null);
             }
 
             // If client id was provided, then make sure it matches the client id in the client assertion.

@@ -15,15 +15,15 @@ namespace CdrAuthServer.UnitTests.Validators
 {
     public class ClientRegistrationValidatorTests : BaseTest
     {
-        private Mock<ILogger<ClientRegistrationValidator>> logger;
-        private Mock<IJwksService> jwksService;
-        private IConfiguration configuration;
-        private Mock<IHttpContextAccessor> httpContext;
+        private Mock<ILogger<ClientRegistrationValidator>> logger = null!;
+        private Mock<IJwksService> jwksService = null!;
+        private IConfiguration configuration = null!;
+        private Mock<IHttpContextAccessor> httpContext = null!;
 
 
-        public SoftwareProduct softwareProduct { get; private set; }
+        public SoftwareProduct softwareProduct { get; private set; } = null!;
 
-        private IClientRegistrationValidator clientRegistrationValidator;
+        private IClientRegistrationValidator? clientRegistrationValidator = null;
 
         [SetUp]
         public void Setup()
@@ -40,8 +40,8 @@ namespace CdrAuthServer.UnitTests.Validators
                  .Build();
 
             softwareProduct = new SoftwareProduct();
-            softwareProduct.SoftwareProductId = configuration[SOFTWARE_PRODUCT_ID_KEY];
-            softwareProduct.BrandId = configuration[BRAND_ID_KEY];
+            softwareProduct.SoftwareProductId = configuration[SOFTWARE_PRODUCT_ID_KEY] ?? "";
+            softwareProduct.BrandId = configuration[BRAND_ID_KEY] ?? "";
 
             clientRegistrationValidator = new ClientRegistrationValidator(configuration, logger.Object, jwksService.Object, httpContext.Object);
         }
@@ -49,18 +49,18 @@ namespace CdrAuthServer.UnitTests.Validators
 
         //TODO
         // Assert - Validate SSA Signature        
-        [TestCase("empty_client_registration", false, "Registration request is empty", ErrorCodes.InvalidClientMetadata)]
-        [TestCase("SSA_validation_without_SS", false, "The software_statement is empty or invalid", ErrorCodes.InvalidSoftwareStatement)]
-        [TestCase("SSA_validation_with_SS", false, "Could not load SSA JWKS from Register endpoint: "+ JWKS_URI, ErrorCodes.InvalidSoftwareStatement)]
-        [TestCase("SSA_validation_with_SS_and_Null_JWKS", false, "Could not load SSA JWKS from Register endpoint: "+ JWKS_URI, ErrorCodes.InvalidSoftwareStatement)]
-        [TestCase("SSA_validation_with_SS_and_JWKS", false, "SSA validation failed.", ErrorCodes.InvalidSoftwareStatement)]        
+        [TestCase("empty_client_registration", false, "Registration request is empty", ErrorCodes.Generic.InvalidClientMetadata)]
+        [TestCase("SSA_validation_without_SS", false, "The software_statement is empty or invalid", ErrorCodes.Generic.InvalidSoftwareStatement)]
+        [TestCase("SSA_validation_with_SS", false, "Could not load SSA JWKS from Register endpoint: "+ JWKS_URI, ErrorCodes.Generic.InvalidSoftwareStatement)]
+        [TestCase("SSA_validation_with_SS_and_Null_JWKS", false, "Could not load SSA JWKS from Register endpoint: "+ JWKS_URI, ErrorCodes.Generic.InvalidSoftwareStatement)]
+        [TestCase("SSA_validation_with_SS_and_JWKS", false, "SSA validation failed.", ErrorCodes.Generic.InvalidSoftwareStatement)]        
         public async Task Validate_ClientRegistrationRequest_InvalidClient_Test(string testCaseType, bool isvalid, 
                                                                                 string expectErrorDescription,  
                                                                                 string expectedError) 
         {
             //Arrange
             var configOptions = this.configuration.GetConfigurationOptions();
-            ClientRegistrationRequest clientRegistrationRequest = null;
+            ClientRegistrationRequest? clientRegistrationRequest = null;
 
             if (String.Equals("empty_client_registration", testCaseType))
             {
@@ -76,7 +76,7 @@ namespace CdrAuthServer.UnitTests.Validators
                 //SoftwareStatementJwt is readonly
                 //clientRegistrationRequest.SoftwareStatementJwt;
 
-                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt);
+                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt ?? "");
                 _ = softwareStatement.ValidFrom;
                 _ = softwareStatement.ValidTo;
                 clientRegistrationRequest.SoftwareStatement = softwareStatement;                
@@ -84,7 +84,7 @@ namespace CdrAuthServer.UnitTests.Validators
             if (String.Equals("SSA_validation_with_SS_and_Null_JWKS", testCaseType))
             {
                 clientRegistrationRequest = new ClientRegistrationRequest(GetJwtToken(requireSS: true));                
-                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt);
+                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt ?? "");
                 _ = softwareStatement.ValidFrom;
                 _ = softwareStatement.ValidTo;
                 clientRegistrationRequest.SoftwareStatement = softwareStatement;
@@ -95,7 +95,7 @@ namespace CdrAuthServer.UnitTests.Validators
             if (String.Equals("SSA_validation_with_SS_and_JWKS", testCaseType))
             {
                 clientRegistrationRequest = new ClientRegistrationRequest(GetJwtToken(requireSS: true));
-                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt);
+                var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt ?? "");
                 _ = softwareStatement.ValidFrom;
                 _ = softwareStatement.ValidTo;
                 clientRegistrationRequest.SoftwareStatement = softwareStatement;
@@ -113,7 +113,7 @@ namespace CdrAuthServer.UnitTests.Validators
             Assert.IsNotNull(result);
             Assert.AreEqual(result.IsValid, isvalid);
             Assert.AreEqual(result.Error, expectedError);            
-            Assert.IsTrue(result.ErrorDescription.Contains(expectErrorDescription));
+            Assert.IsTrue(result.ErrorDescription?.Contains(expectErrorDescription));
         }
     }
 }

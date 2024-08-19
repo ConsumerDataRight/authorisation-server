@@ -1,5 +1,6 @@
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
@@ -12,7 +13,9 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
 using Serilog;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Web;
 using Xunit;
 using Xunit.DependencyInjection;
 
@@ -22,8 +25,10 @@ namespace CdrAuthServer.E2ETests
     {
         public US39327_CdrAuthServer_E2ETests(
             IOptions<TestAutomationOptions> options,
+            IOptions<TestAutomationAuthServerOptions> authServerOptions,
             ISqlQueryService sqlQueryService,
             IDataHolderParService dataHolderParService,
+            IDataHolderTokenService dataHolderTokenService,
             IDataHolderRegisterService dataHolderRegisterService,
             IDataHolderAccessTokenCache dataHolderAccessTokenCache,
             IApiServiceDirector apiServiceDirector,
@@ -33,8 +38,10 @@ namespace CdrAuthServer.E2ETests
             )
         {
             _options = options.Value ?? throw new ArgumentNullException(nameof(options));
+            _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
             _sqlQueryService = sqlQueryService ?? throw new ArgumentNullException(nameof(sqlQueryService));
             _dataHolderParService = dataHolderParService ?? throw new ArgumentNullException(nameof(dataHolderParService));
+            _dataHolderTokenService = dataHolderTokenService ?? throw new ArgumentNullException(nameof(dataHolderTokenService));
             _dataHolderRegisterService = dataHolderRegisterService ?? throw new ArgumentNullException(nameof(dataHolderRegisterService));
             _dataHolderAccessTokenCache = dataHolderAccessTokenCache ?? throw new ArgumentNullException(nameof(dataHolderAccessTokenCache));
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
@@ -47,8 +54,10 @@ namespace CdrAuthServer.E2ETests
         public const string DEFAULT_OPT = "000789";
 
         private readonly TestAutomationOptions _options;
+        private readonly TestAutomationAuthServerOptions _authServerOptions;
         private readonly ISqlQueryService _sqlQueryService;
         private readonly IDataHolderParService _dataHolderParService;
+        private readonly IDataHolderTokenService _dataHolderTokenService;
         private readonly IDataHolderRegisterService _dataHolderRegisterService;
         private readonly IDataHolderAccessTokenCache _dataHolderAccessTokenCache;
         private readonly IApiServiceDirector _apiServiceDirector;
@@ -103,10 +112,71 @@ namespace CdrAuthServer.E2ETests
         }
 
         [Fact]
+        public async Task AC01_Authorize_CodeFlow_ShouldRespondWith_AuthCodeAndIdToken()
+        {
+
+            // Arrange
+            Uri authRedirect = await Authorise(
+                ResponseType.Code, // ie Code flow
+                ResponseMode.Jwt,
+                _options.SCOPE);
+            var authRedirectLeftPart = authRedirect.GetLeftPart(UriPartial.Authority) + "/ui";
+
+            _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(AC01_Authorize_CodeFlow_ShouldRespondWith_AuthCodeAndIdToken)}");
+
+            var page = await _browserContext.NewPageAsync();
+
+            await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
+
+            // Username
+            AuthenticateLoginPage authenticateLoginPage = new(page);
+            await authenticateLoginPage.EnterCustomerId(CUSTOMERID_BANKING);
+            await authenticateLoginPage.ClickContinue();
+
+            // OTP
+            OneTimePasswordPage oneTimePasswordPage = new(page);
+            await oneTimePasswordPage.EnterOtp(DEFAULT_OPT);
+            await oneTimePasswordPage.ClickContinue();
+
+            // Select accounts
+            SelectAccountsPage selectAccountsPage = new(page);
+            await selectAccountsPage.SelectAccounts("Personal Loan");
+            await selectAccountsPage.ClickContinue();
+
+            // Confirmation - Click authorise and check callback response
+            ConfirmAccountSharingPage confirmAccountSharingPage = new(page);
+            string? authorisationCode = await CodeFlow_HandleCallback(page: page, setup: async (page) =>
+            {
+                await confirmAccountSharingPage.ClickAuthorise();
+            });
+
+            using (new AssertionScope(BaseTestAssertionStrategy))
+            {
+                authorisationCode.Should().NotBeNullOrEmpty();
+
+                // Confirm Authorisation code can be exchanged for an Id token
+                var responseMessage = await _dataHolderTokenService.SendRequest(authorisationCode);
+
+                responseMessage.StatusCode.Should().Be(HttpStatusCode.OK);
+                ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Assertions.AssertHasContentTypeApplicationJson(responseMessage.Content);
+
+                var tokenResponse = await _dataHolderTokenService.DeserializeResponse(responseMessage);
+                tokenResponse.Should().NotBeNull();
+                tokenResponse?.TokenType.Should().Be("Bearer");
+                tokenResponse?.ExpiresIn.Should().Be(_authServerOptions.ACCESSTOKENLIFETIMESECONDS);
+                tokenResponse?.CdrArrangementId.Should().NotBeNullOrEmpty();
+                tokenResponse?.AccessToken.Should().NotBeNullOrEmpty();
+                tokenResponse?.IdToken.Should().NotBeNullOrEmpty();
+                tokenResponse?.RefreshToken.Should().NotBeNullOrEmpty();
+
+            }
+        }
+
+        [Fact]
         public async Task ACX02_Cancel_Otp_And_Verify_Callback()
         {
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX02_Cancel_Otp_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
@@ -129,7 +199,7 @@ namespace CdrAuthServer.E2ETests
         public async Task ACX03_Cancel_Select_Accounts_And_Verify_Callback()
         {
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX03_Cancel_Select_Accounts_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
@@ -156,7 +226,7 @@ namespace CdrAuthServer.E2ETests
         public async Task ACX04_Deny_Account_Confirmation_And_Verify_Callback()
         {
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX04_Deny_Account_Confirmation_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
@@ -398,7 +468,7 @@ namespace CdrAuthServer.E2ETests
 
             var clientId = _options.LastRegisteredClientId;
 
-            var requestUri = await _dataHolderParService.GetRequestUri(clientId: clientId, responseMode: responseMode, scope: scope);
+            var requestUri = await _dataHolderParService.GetRequestUri(clientId: clientId, responseType: responseType, responseMode: responseMode, scope: scope);
 
             var queryString = new Dictionary<string, string?>
             {
@@ -412,8 +482,6 @@ namespace CdrAuthServer.E2ETests
 
             var api = _apiServiceDirector.BuildAuthServerAuthorizeAPI(queryString);
             var response = await api.SendAsync();
-
-            var redirectlocation = response.Headers.Location;
 
             if (response.StatusCode != HttpStatusCode.Redirect)
             {
@@ -478,9 +546,45 @@ namespace CdrAuthServer.E2ETests
             }
         }
 
+        delegate Task CodeFlow_HandleCallback_Setup(IPage page);
+        private async Task<string?> CodeFlow_HandleCallback(IPage page, CodeFlow_HandleCallback_Setup setup)
+        {
+            var callback = new DataRecipientConsentCallback(_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
+            callback.Start();
+            try
+            {
+                await setup(page);
+
+                var callbackRequest = await callback.WaitForCallback();
+                using (new AssertionScope(BaseTestAssertionStrategy))
+                {
+                    callbackRequest.Should().NotBeNull();
+                    callbackRequest?.received.Should().BeTrue();
+
+                    var queryValues = HttpUtility.ParseQueryString(callbackRequest?.queryString ?? throw new NullReferenceException());
+
+                    // Check query has "response" param
+                    var encodedJwt = queryValues["response"];
+
+                    // Check claims of decode jwt
+                    var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
+
+                    jwt.Claim("code").Should().NotBeNull();
+                    return (jwt.Claim("code").Value);
+
+                }
+            }
+            finally
+            {
+                await callback.Stop();
+            }
+        }
+
         delegate Task CancelAction();
         private async Task AssertCancelCallback(CancelAction cancelAction)
         {
+
+            var expectedError = new UserCancelledException();
 
             var callback = new DataRecipientConsentCallback(_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
             callback.Start();
@@ -494,14 +598,17 @@ namespace CdrAuthServer.E2ETests
                 {
                     callbackRequest.Should().NotBeNull();
                     callbackRequest?.received.Should().BeTrue();
-                    callbackRequest?.method.Should().Be(HttpMethod.Post);
-                    callbackRequest?.body.Should().NotBeNullOrEmpty();
 
-                    var body = QueryHelpers.ParseQuery(callbackRequest?.body);
-                    string? error = body["error"];
-                    string? errorDescription = body["error_description"];
-                    error.Should().Be("access_denied");
-                    errorDescription.Should().Be("ERR-AUTH-009: User cancelled the authorisation flow");
+                    var queryValues = HttpUtility.ParseQueryString(callbackRequest?.queryString ?? throw new NullReferenceException());
+
+                    // Check query has "response" param
+                    var encodedJwt = queryValues["response"];
+
+                    // Check claims of decode jwt
+                    var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);                 
+                    jwt.Claim("error").Value.Should().Be(expectedError.Error);
+                    jwt.Claim("error_description").Value.Should().Be(expectedError.ErrorDescription);
+
                 }
             }
             finally

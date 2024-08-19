@@ -51,7 +51,7 @@ namespace CdrAuthServer.Services
 
                 if (customer == null)
                 {
-                    _logger.LogInformation("Customer not found with id '{loginUserId}'", subjectId);
+                    _logger.LogInformation("Customer not found with id '{LoginUserId}'", subjectId);
                     return userInfo;
                 }
 
