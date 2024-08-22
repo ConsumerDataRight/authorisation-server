@@ -11,11 +11,11 @@
 
     public class ClientRepository : IClientRepository
     {
-        private readonly CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext;
+        private readonly CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext;
         private readonly IMapper mapper;
         private readonly ILogger<ClientRepository> logger;
 
-        public ClientRepository(CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper, ILogger<ClientRepository> logger)
+        public ClientRepository(CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper, ILogger<ClientRepository> logger)
         {
             this.cdrAuthServervDatabaseContext = cdrAuthServervDatabaseContext;
             this.mapper = mapper;

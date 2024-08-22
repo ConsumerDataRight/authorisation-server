@@ -105,13 +105,13 @@ namespace CdrAuthServer.Models
         /// Gets an array of OAuth 2.0 grant type strings that the client can use at the token endpoint.
         /// </summary>
         [Display(Name = "grant_types")]
-        public IEnumerable<string> GrantTypes => Claims.Where(x => x.Type == ClientMetadata.GrantTypes).Select(x => x.Value);
+        public IEnumerable<string> GrantTypes => Claims.Where(x => x.Type == ClientMetadata.ClientMetaDataGrantTypes).Select(x => x.Value);
 
         /// <summary>
         /// Gets an array of the OAuth 2.0 response type strings that the client can use at the authorization endpoint.
         /// </summary>
         [Display(Name = "response_types")]
-        public IEnumerable<string> ResponseTypes => Claims.Where(x => x.Type == ClientMetadata.ResponseTypes).Select(x => x.Value);
+        public IEnumerable<string> ResponseTypes => Claims.Where(x => x.Type == ClientMetadata.ClientMetaDataResponseTypes).Select(x => x.Value);
 
         /// <summary>
         /// Gets the kind of the application. The only supported application type will be 'web'.

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CdrAuthServer.Repository.Migrations
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "S1192:Define a constant instead of using this literal 'nvarchar(50)' 5 times", Justification = "Auto-generated migration file.")]
     public partial class V002CreateLogEventsDrService : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

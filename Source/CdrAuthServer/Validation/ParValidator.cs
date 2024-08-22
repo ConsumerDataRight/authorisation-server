@@ -34,7 +34,7 @@ namespace CdrAuthServer.Validation
             var tokenHandler = new JwtSecurityTokenHandler();
             if (!tokenHandler.CanReadToken(requestObject))
             {
-                _logger.LogError("request is not a well-formed JWT - {@requestObject}", requestObject);
+                _logger.LogError("request is not a well-formed JWT - {@RequestObject}", requestObject);
                 return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.PAR_REQUEST_IS_NOT_WELL_FORMED_JWT), null);
             }
 
@@ -49,8 +49,8 @@ namespace CdrAuthServer.Validation
 
             if (validationResult == null || !validationResult.IsValid)
             {
-                _logger.LogError("request validation failed with error {@validationResult.ErrorDescription}", validationResult);
-                return (ValidationResult.Fail(ErrorCodes.InvalidRequestObject, $"{validationResult?.ErrorDescription}"), null);
+                _logger.LogError("request validation failed with error {@ErrorDescription}", validationResult);
+                return (ValidationResult.Fail(ErrorCodes.Generic.InvalidRequestObject, $"{validationResult?.ErrorDescription}"), null);
             }
 
             // Perform additional validation on the request jwt.

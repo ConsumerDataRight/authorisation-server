@@ -1,18 +1,28 @@
 # Build pipeline v2 (Containerised)
 
+schedules:
+- cron: '0 3 * * 0'
+  displayName: 'Run at 3:00 AM every Sunday (UTC)'
+  always: true
+  branches:
+    include:
+    - develop
+
 trigger:
   - develop  
   - main  
 
-variables:  
-  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: 
-    mockRegisterContainerTag: main
+variables:
+- group: artifacts
+- name: baseSourceDirectory
+  value: $(Build.SourcesDirectory)/Source
+- name: mockRegisterContainerTag
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+      value: main
   ${{ elseif contains(variables['Build.SourceBranch'], 'releases/') }}:
-    mockRegisterContainerTag: $(MockRegisterReleaseContainerTag)
+      value: $(MockRegisterReleaseContainerTag)
   ${{ else }}:
-    mockRegisterContainerTag: develop
-    
-  baseSourceDirectory: $(Build.SourcesDirectory)/Source
+      value: develop
 
 pool:
   vmImage: ubuntu-latest
@@ -30,13 +40,13 @@ jobs:
         displayName: Update Obligation date
         inputs:
           targetType: 'inline'
-          script: |      
+          script: |     
             $AuthServerObligationDate = "$(ObligationDate)"
             if (-not [string]::IsNullOrWhiteSpace( $AuthServerObligationDate )) {
               Write-Host "##vso[task.setvariable variable=ObligationDateTag]$AuthServerObligationDate"
             }
             else {
-              Write-Host "##vso[task.setvariable variable=ObligationDateTag]22-4"        
+              Write-Host "##vso[task.setvariable variable=ObligationDateTag]23-3"        
             }
 
       # Set release version variables for release tags
@@ -59,27 +69,29 @@ jobs:
       # Build images
       ###################################################################################################
 
+      #!DF: This image is not used anywhere, so don't build.
       # Build cdr-auth-server
-      - task: Docker@2
-        displayName: Build cdr-auth-server image
-        inputs:
-          command: build
-          Dockerfile: $(baseSourceDirectory)/Dockerfile
-          buildContext: $(baseSourceDirectory)
-          repository: cdr-auth-server
-          tags: latest
+      # - task: Docker@2
+      #   displayName: Build cdr-auth-server image
+      #   inputs:
+      #     command: build
+      #     Dockerfile: $(baseSourceDirectory)/Dockerfile
+      #     buildContext: $(baseSourceDirectory)
+      #     repository: cdr-auth-server
+      #     tags: latest
 
-      # Build cdr-auth-server (Standalone)
-      - task: Docker@2
-        displayName: Build cdr-auth-server-standalone image
-        inputs:
-          command: build
-          Dockerfile: $(baseSourceDirectory)/Dockerfile.standalone
-          buildContext: $(baseSourceDirectory)
-          repository: cdr-auth-server-standalone
-          tags: latest
+      ###################################################################################################
+      # Unit tests 
+      ###################################################################################################
+
+      # Authenticate to the Azure DevOps artifacts feed. The VSS_NUGET_ACCESSTOKEN environment variable is set from this task.
+      - task: NuGetAuthenticate@1
+        displayName: 'Authenticate to NuGet'
 
       # Build cdr-auth-server-unit-tests
+      # Pass in two build arguments:
+      # 1. FEED_ACCESSTOKEN = VSS_NUGET_ACCESSTOKEN
+      # 2. FEED_URI = Azure DevOps Artifacts Repository URI sourced from 'artifacts' variable group.
       - task: Docker@2
         displayName: Build cdr-auth-server-unit-tests image
         inputs:
@@ -88,26 +100,38 @@ jobs:
           buildContext: $(baseSourceDirectory)
           repository: cdr-auth-server-unit-tests
           tags: latest
+          arguments: '--build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN) --build-arg FEED_URI=$(azdo_artifact_feed_uri)'
 
-      # Build cdr-auth-server-integration-tests
-      - task: Docker@2
-        displayName: Build cdr-auth-server-integration-tests image
-        inputs:
-          command: build
-          Dockerfile: $(baseSourceDirectory)/Dockerfile.integration-tests
-          buildContext: $(baseSourceDirectory)
-          repository: cdr-auth-server-integration-tests
-          tags: latest
+      # Run cdr-auth-server-unit-tests
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.UnitTests.yml up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
+        displayName: 'Unit Tests - Up'  
+        condition: always()
+      
+      # Remove unit tests      
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.UnitTests.yml down 
+        displayName: 'Unit Tests - Down' 
+        condition: always() 
 
-      # Build cdr-auth-server-e2e-tests
-      - task: Docker@2
-        displayName: Build cdr-auth-server-e2e-tests image
-        inputs:
-          command: build
-          Dockerfile: $(baseSourceDirectory)/Dockerfile.e2e-tests
-          buildContext: $(baseSourceDirectory)
-          repository: cdr-auth-server-e2e-tests
-          tags: latest
+      # Publish cdr-auth-server unit tests results
+      - publish: $(baseSourceDirectory)/_temp/cdr-auth-server-unit-tests/testresults
+        displayName: Publish cdr-auth-server unit tests
+        condition: always()
+        artifact:  Unit tests
+
+      # Remove the cdr-auth-server-unit-tests container image.
+      - script: |
+          echo "Docker images before delete:"
+          docker image ls
+          docker system df
+          echo "Delete image:"
+          docker image rm cdr-auth-server-unit-tests -f
+          echo "Docker images after delete:"
+          docker image ls
+          docker system df
+        displayName: 'Remove cdr-auth-server-unit-tests container image' 
+        condition: always() 
 
       ###################################################################################################
       # Login to ACR and pull mock solution containers 
@@ -137,53 +161,36 @@ jobs:
             docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag)
             docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag) mock-register:latest
 
-      # List docker images
-      - task: Docker@2
-        displayName: List Docker images
-        condition: always()
-        inputs:
-          command: images
-
       ###################################################################################################
-      # Unit tests 
+      # Build Standalone container 
       ###################################################################################################
 
-      # Run cdr-auth-server-unit-tests
-      - task: DockerCompose@0
-        displayName: Unit Tests - Up
+      - task: Bash@3
+        displayName: Build cdr-auth-server-standalone image
         inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
-          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
-      
-      # Remove unit tests
-      - task: DockerCompose@0
-        displayName: Unit Tests - Down
-        condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
-          dockerComposeCommand: down
-
-      # Publish cdr-auth-server unit tests results
-      - publish: $(baseSourceDirectory)/_temp/cdr-auth-server-unit-tests/testresults
-        displayName: Publish cdr-auth-server unit tests
-        condition: always()
-        artifact:  Unit tests
+          targetType: inline
+          script: |
+            docker build $(baseSourceDirectory) -f $(baseSourceDirectory)/Dockerfile.standalone -t cdr-auth-server-standalone:latest
+            docker image ls
 
       ###################################################################################################
       # Integration tests
       ###################################################################################################
 
-      # Run Integration tests (Standalone)
-      - task: DockerCompose@0
-        displayName: Integration Tests (Standalone) - Up
-        condition: always()
+      # Build cdr-auth-server-integration-tests
+      - task: Bash@3
+        displayName: Build cdr-auth-server-integration-tests image
         inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml
-          # dockerComposeFile: ./Source/docker-compose.IntegrationTests.Standalone.yml
-          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+          targetType: inline
+          script: |
+            docker build $(baseSourceDirectory) -f $(baseSourceDirectory)/Dockerfile.integration-tests -t cdr-auth-server-integration-tests:latest --build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN) --build-arg FEED_URI=$(azdo_artifact_feed_uri)
+            docker image ls
+
+      # Run Integration tests (Standalone)
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+        displayName: 'Integration Tests (Standalone) - Up'  
+        condition: always()
 
       # Output Docker Logs
       - script: |
@@ -193,14 +200,10 @@ jobs:
         condition: always()
 
       # Remove Integration tests (Standalone)
-      - task: DockerCompose@0
-        displayName: Integration Tests (Standalone) - Down
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml down 
+        displayName: 'Integration Tests (Standalone) - Down' 
         condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml
-          # dockerComposeFile: ./Source/docker-compose.IntegrationTests.Standalone.yml
-          dockerComposeCommand: down
 
       # Run trx formatter to output .MD and .CSV
       - script: |
@@ -228,21 +231,17 @@ jobs:
           testRunTitle: "cdr-auth-server-integration-tests-standalone" # Optional
           publishRunAttachments: true # Optional
 
-
       ###################################################################################################
       # Integration tests - JARM Encryption On
       ###################################################################################################
 
       # Run Integration tests (Standalone)
-      - task: DockerCompose@0
-        displayName: Integration Tests (Standalone) JARM Encryption On - Up
+      - script: |          
+          docker compose --file $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+        displayName: 'Integration Tests (Standalone) JARM Encryption On - Up'  
         condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml
-          dockerComposeFileArgs: |
-            USE_JARM_ENCRYPTION=true
-          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+        env:
+          USE_JARM_ENCRYPTION: 'true'
 
       # Output Docker Logs
       - script: |
@@ -252,13 +251,10 @@ jobs:
         condition: always()
 
       # Remove Integration tests (Standalone)
-      - task: DockerCompose@0
-        displayName: Integration Tests (Standalone) JARM Encryption On - Down
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml down 
+        displayName: 'Integration Tests (Standalone) JARM Encryption On - Down' 
         condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.Standalone.yml
-          dockerComposeCommand: down
 
       # Run trx formatter to output .MD and .CSV
       - script: |
@@ -286,19 +282,35 @@ jobs:
           testRunTitle: "cdr-auth-server-integration-tests-standalone-jarm-encryption-on" # Optional
           publishRunAttachments: true # Optional
 
+      # Remove the cdr-auth-server-integration-tests container image.
+      - script: |
+          echo "Docker images before delete:"
+          docker image ls
+          echo "Delete image:"
+          docker image rm cdr-auth-server-integration-tests -f
+          echo "Docker images after delete:"
+          docker image ls
+          docker system df
+        displayName: 'Remove cdr-auth-server-integration-tests container image' 
+        condition: always() 
 
-      ###################################################################################################
-      # E2E tests
-      ###################################################################################################
+      # ###################################################################################################
+      # # E2E tests
+      # ###################################################################################################
+
+      - task: Bash@3
+        displayName: Build cdr-auth-server-e2e-tests image
+        inputs:
+          targetType: inline
+          script: |
+            docker build $(baseSourceDirectory) -f $(baseSourceDirectory)/Dockerfile.e2e-tests -t cdr-auth-server-e2e-tests:latest --build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN) --build-arg FEED_URI=$(azdo_artifact_feed_uri)
+            docker image ls
 
       # Run E2E tests (Standalone)
-      - task: DockerCompose@0
-        displayName: E2E Tests (Standalone) - Up
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.E2ETests.Standalone.yml up --abort-on-container-exit --exit-code-from cdr-auth-server-e2e-tests
+        displayName: 'E2E Tests (Standalone) - Up'  
         condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.Standalone.yml
-          dockerComposeCommand: up --abort-on-container-exit --exit-code-from cdr-auth-server-e2e-tests
 
       # Output Docker Logs
       - script: |
@@ -307,14 +319,11 @@ jobs:
         displayName: 'Output Docker Logs'  
         condition: always()
 
-      # Remove E2E tests (Standalone)
-      - task: DockerCompose@0
-        displayName: E2E Tests (Standalone) - Down
+      # Remove E2E tests (Standalone) 
+      - script: |
+          docker compose --file $(baseSourceDirectory)/docker-compose.E2ETests.Standalone.yml down 
+        displayName: 'E2E Tests (Standalone) - Down' 
         condition: always()
-        inputs:
-          action: Run a Docker Compose command
-          dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.Standalone.yml
-          dockerComposeCommand: down
 
       # Run trx formatter to output .MD and .CSV
       - script: |
@@ -342,6 +351,28 @@ jobs:
           mergeTestResults: true # Optional
           testRunTitle: "cdr-auth-server-E2E-tests-standalone" # Optional
           publishRunAttachments: true # Optional
+
+      ###################################################################################################
+      # Remove images and clear build cache
+      ###################################################################################################
+
+      - script: |
+          echo "Docker images before delete:"
+          docker image ls
+
+          echo "Clear docker build cache"
+          docker builder prune -a -f
+
+          echo "Delete images:"
+          docker image rm cdr-auth-server-e2e-tests -f
+          docker image rm mcr.microsoft.com/mssql/server:2022-latest -f
+          docker image rm mock-register  -f
+
+          echo "Docker images after delete:"
+          docker image ls
+          docker system df
+        displayName: 'Remove container images that are no longer needed' 
+        condition: always() 
 
       ###################################################################################################
       # Publish images
@@ -375,18 +406,18 @@ jobs:
       ###################################################################################################
 
       - task: UseDotNet@2
-        displayName: "Use .NET 6 sdk"
+        displayName: "Use .NET 8 sdk"
         condition: always()
         inputs:
           packageType: sdk
-          version: "6.0.x"
+          version: "8.0.x"
           performMultiLevelLookup: true
 
       - task: CmdLine@2
         displayName: "Install dotnet-ef"
         condition: always()
         inputs:
-          script: "dotnet tool install --version 7.0.13 --global dotnet-ef"
+          script: "dotnet tool install --version 8.0.4 --global dotnet-ef"
 
       - task: CmdLine@2
         displayName: "Check dotnet-ef version"
@@ -396,8 +427,8 @@ jobs:
 
       - script: |
           cd $(baseSourceDirectory)/CdrAuthServer.Repository
-          dotnet ef migrations bundle --context CdrAuthServervDatabaseContext --verbose --self-contained
-          ls
+          dotnet ef migrations bundle --context CdrAuthServerDatabaseContext --verbose --self-contained
+          ls -l
         displayName: "Run EF Migrations bundle"
         condition: always()
       
@@ -418,7 +449,8 @@ jobs:
         inputs:
           PathtoPublish: '$(build.artifactstagingdirectory)/Database Migration Scripts'
           ArtifactName: 'Database Migration Scripts'
-          publishLocation: 'Container'          
+          publishLocation: 'Container'      
+    
       ###################################################################################################
       # Tag images and push to ACR
       ###################################################################################################

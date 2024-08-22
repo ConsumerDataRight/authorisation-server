@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace CdrAuthServer.Models
 {
@@ -77,7 +76,7 @@ namespace CdrAuthServer.Models
         public bool Essential { get; set; }
 
         [JsonProperty(PropertyName = "values")]
-        public string[] Values { get; set; }
+        public string[] Values { get; set; } = [];
 
         [JsonProperty(PropertyName = "value")]
         public string Value { get; set; } = string.Empty;

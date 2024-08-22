@@ -1,10 +1,8 @@
-﻿using CdrAuthServer.Configuration;
-using CdrAuthServer.Extensions;
+﻿using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -32,6 +30,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("connect/token")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion(true)]
         [Consumes("application/x-www-form-urlencoded")]
@@ -47,7 +46,7 @@ namespace CdrAuthServer.Controllers
             var validationResult = await _tokenRequestValidator.Validate(clientId, tokenRequest, configOptions);
             if (!validationResult.IsValid)
             {
-                _logger.LogInformation("Validation failed - {@validationResult}", validationResult);
+                _logger.LogInformation("Validation failed - {@ValidationResult}", validationResult);
                 return new JsonResult(new Error(validationResult.Error, validationResult.ErrorDescription)) { StatusCode = validationResult.StatusCode ?? 400 };
             }
 
@@ -63,7 +62,7 @@ namespace CdrAuthServer.Controllers
 
             if (tokenResponse.Error != null)
             {
-                _logger.LogError("IssueTokens failed - {@error}", tokenResponse.Error);
+                _logger.LogError("IssueTokens failed - {@Error}", tokenResponse.Error);
                 return BadRequest(tokenResponse.Error);
             }
 

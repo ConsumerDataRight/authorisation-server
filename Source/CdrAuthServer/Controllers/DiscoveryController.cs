@@ -16,7 +16,9 @@ namespace CdrAuthServer.Controllers
             _configuration = configuration;
         }
 
+        [HttpGet]
         [Route(".well-known/openid-configuration")]
+        [ApiVersionNeutral]
         public JsonResult GetDiscoveryDocument()
         {
             var configOptions = _configuration.GetConfigurationOptions(this.HttpContext);

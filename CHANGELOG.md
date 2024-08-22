@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2024-08-16
+ 
+### Changed
+- Updated NuGet packages
+
+## [2.0.0] - 2024-06-12
+ 
+### Changed
+- Migrated from .Net 6 to .Net 8
+- Migrated docker compose from v1 to v2
+
+### Added
+- Added SSL Server Validation configuration capability 
+
+### Removed
+- Postman files have been removed
+
+## [1.2.0] - 2024-03-13
+ 
+### Changed
+- Updated Nuget package references.
+- Updated automated tests to use ACF as default instead of Hybrid Flow.
+- Added cleanup of arrangement data in Authorisation Server for Data Holder to Data Recipient initiated revocation 
+
+### Fixed
+- Updated error handling when encryption key missing for a client
+
+ 
+## [1.1.2] - 2024-02-14
+ 
+### Changed
+- Updated the message body for arrangement revocation request to MDR to include request and response details
+- Replaced Recoil with React Hooks useContext to provide state management within the UI
+- Updated node image version to 20 for docker build 
+ 
 ## [1.1.1] - 2023-11-29
 
 ### Changed

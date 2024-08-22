@@ -1,22 +1,41 @@
 # Dockerfile for running GetDataRecipients for integration testing
+# Use .Net 8 to build function app
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
-FROM mcr.microsoft.com/azure-functions/dotnet:4-dotnet6-core-tools AS build
+# Setup Crediential Provider to allow access to Azure Artifact Feed for accessing Nuget Package
+RUN curl -L https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh  | sh
+ARG FEED_ACCESSTOKEN
+ARG FEED_URI
+ENV VSS_NUGET_EXTERNAL_FEED_ENDPOINTS="{\"endpointCredentials\": [{\"endpoint\":\"${FEED_URI}\", \"username\":\"docker\", \"password\":\"${FEED_ACCESSTOKEN}\"}]}"
+RUN echo $VSS_NUGET_EXTERNAL_FEED_ENDPOINTS
 
+# Copy Source and build for integration tests
 COPY . /src
-
 WORKDIR /src/CdrAuthServer.GetDataRecipients
+ARG BUILD_CONFIGURATION=Release 
+RUN dotnet restore
+RUN dotnet build /p:DefineConstants="INTEGRATION_TESTS"  -c $BUILD_CONFIGURATION
 
-RUN sudo cp ./Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
+# Use .Net 8 isolated image to host function app
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0 AS final
 
+# Copy required files from build stage
+COPY --from=build /src/CdrAuthServer.GetDataRecipients/bin/Release/net8.0/. /home/site/wwwroot
+COPY --from=build /src/CdrAuthServer.GetDataRecipients/local.settings.json /azure-functions-host/local.settings.json
+COPY --from=build /src/CdrAuthServer.GetDataRecipients/appsettings.docker.json /azure-functions-host/appsettings.docker.json
+COPY --from=build /src/CdrAuthServer.GetDataRecipients/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
+
+# Install CA certificate
+RUN apt-get update && apt-get install -y sudo && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 RUN sudo update-ca-certificates
-
-# We are building for integration tests
-RUN dotnet build /p:DefineConstants="INTEGRATION_TESTS"
 
 ENV AZURE_FUNCTIONS_ENVIRONMENT=Development
 
 # We only want the INTEGRATIONTESTS_DATARECIPIENTS function to load, since the integration tests will be triggering DATARECIPIENTS directly (and not relying on a timer trigger)
 # also don't rebuild but tell func where to find output from previous build above
-ENTRYPOINT ["func", "start", "--functions", "INTEGRATIONTESTS_DATARECIPIENTS", "--no-build", "--prefix", "bin/Debug/net6.0"]
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot
+ENV DOTNET_ENVIRONMENT=Development
+ENV ASPNETCORE_ENVIRONMENT=Development
 
-# ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENV ASPNETCORE_URLS=http://+:7074
+ENV Schedule="0-59 * * * *"

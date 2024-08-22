@@ -2,9 +2,10 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
-
 namespace CdrAuthServer.Repository.Migrations
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "S1192:Define a constant instead of using this literal 'nvarchar(450)' 5 times", Justification = "Auto-generated migration file.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "CA1861:Prefer 'static readonly' fields over constant array arguments if the called method is called repeatedly and is not mutating the passed array", Justification = "Auto-generated migration file.")]
     public partial class V001InitialCreate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

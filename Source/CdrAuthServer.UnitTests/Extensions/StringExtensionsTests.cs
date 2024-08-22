@@ -1,3 +1,4 @@
+using CdrAuthServer.Domain.Extensions;
 using CdrAuthServer.Extensions;
 using NUnit.Framework;
 

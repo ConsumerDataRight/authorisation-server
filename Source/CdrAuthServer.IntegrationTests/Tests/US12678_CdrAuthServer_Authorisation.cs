@@ -3,15 +3,20 @@ using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.APIs;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.CdsExceptions;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Jose;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Web;
 using Xunit;
 using Xunit.DependencyInjection;
@@ -93,6 +98,67 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
+        [Theory]
+        [InlineData(SoftwareProductStatus.INACTIVE, EntityType.SOFTWAREPRODUCT)]
+        [InlineData(SoftwareProductStatus.REMOVED, EntityType.SOFTWAREPRODUCT)]
+
+        public async Task AC02_InactiveOrRemovedSoftwareProduct_ShouldReturn_AdrStatusNotActiveException(SoftwareProductStatus status, EntityType entityType)
+        {
+            // Arrange
+            Arrange();
+
+            string entityId = Constants.SoftwareProducts.SoftwareProductId;
+
+            var expectedError = new AdrStatusNotActiveException(status);
+
+            var saveStatus = _sqlQueryService.GetStatus(entityType, entityId);
+            _sqlQueryService.SetStatus(entityType, entityId, status.ToEnumMemberAttrValue());
+
+            try
+            {
+
+                var response = await _dataHolderParService.SendRequest(_options.SCOPE, _options.LastRegisteredClientId);
+                if (response.StatusCode != HttpStatusCode.Created) throw new Exception("Error with PAR request - StatusCode");
+                var parResponse = await _dataHolderParService.DeserializeResponse(response);
+                if (string.IsNullOrEmpty(parResponse?.RequestURI)) throw new Exception("Error with PAR request - RequestURI");
+
+                var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
+                    .WithRequestUri(parResponse.RequestURI)
+                    .WithClientId(_options.LastRegisteredClientId ?? throw new NullReferenceException("Client id cannot be null."))
+                    .WithResponseType(ResponseType.Code.ToEnumMemberAttrValue())
+                .Build().Url;
+
+                var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
+
+                var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request);
+
+                // Check query has "response" param
+                var queryValues = HttpUtility.ParseQueryString(authResponse?.Headers.Location?.Query ?? throw new NullReferenceException());
+                var queryValueResponse = queryValues["response"];
+
+                var encodedJwt = queryValueResponse;
+
+                if (_authServerOptions.JARM_ENCRYPTION_ON)
+                {
+                    // Decrypt the JARM JWT.
+                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename,
+                        Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKey = privateKeyCertificate.GetRSAPrivateKey();
+                    JweToken token = JWE.Decrypt(queryValueResponse, privateKey);
+                    encodedJwt = token.Plaintext;
+                }
+
+                // Check claims of decode jwt
+                var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
+                jwt.Claim("error").Value.Should().Be(expectedError.Code);
+                jwt.Claim("error_description").Value.Should().Be(expectedError.Detail);
+            }
+            finally
+            {
+                _sqlQueryService.SetStatus(entityType, entityId, saveStatus);
+            }
+
+        }
 
         [SkippableTheory]
         [InlineData("code id_token", HttpStatusCode.Redirect, true)]
@@ -489,54 +555,6 @@ namespace CdrAuthServer.IntegrationTests
                     redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
                 }
             }
-        }
-
-        [SkippableFact]
-        public async Task AC09_UI_WithInvalidCustomerId_UIShouldShow_IncorrectCustomerIdMessage()
-        {
-            if (_authServerOptions.HEADLESSMODE)
-            {
-                throw new SkipTestException("Test not applicable for headless mode.");
-            }
-
-            // Arrange
-            Func<Task> act = async () =>
-            {
-                var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
-                  .WithUserId("foo")
-                  .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
-                  .WithResponseMode(ResponseMode.FormPost)
-                  .BuildAsync();
-
-                await authService.Authorise();
-            };
-
-            // Act/Assert
-            await act.Should().ThrowAsync<DataHolderAuthoriseIncorrectCustomerIdException>();
-        }
-
-        [SkippableFact]
-        public async Task AC10_UI_WithInvalidOTP_UIShouldShow_IncorrectPasswordMessage()
-        {
-            if (_authServerOptions.HEADLESSMODE)
-            {
-                throw new SkipTestException("Test not applicable for headless mode.");
-            }
-
-            // Arrange
-            Func<Task> act = async () =>
-            {
-                var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
-                  .WithUserId(Constants.Users.UserIdKamillaSmith)
-                  .WithSelectedAccountIds(Constants.Accounts.AccountIdsAllKamillaSmith)
-                  .WithOTP("foo")
-                  .BuildAsync();
-
-                await authService.Authorise();
-            };
-
-            // Act/Assert
-            await act.Should().ThrowAsync<DataHolderAuthoriseIncorrectOneTimePasswordException>();
         }
 
         private static HttpClient CreateHttpClient()

@@ -1,4 +1,5 @@
 ﻿using CdrAuthServer.Models;
+using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Extensions
 {
@@ -6,19 +7,19 @@ namespace CdrAuthServer.Extensions
     {
         public static bool IsActive(this SoftwareProduct softwareProduct)
         {
-            return softwareProduct.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase)
-                && softwareProduct.BrandStatus.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase)
-                && softwareProduct.LegalEntityStatus.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase);
+            return softwareProduct.Status.Equals(EntityStatus.Active, StringComparison.OrdinalIgnoreCase)
+                && softwareProduct.BrandStatus.Equals(EntityStatus.Active, StringComparison.OrdinalIgnoreCase)
+                && softwareProduct.LegalEntityStatus.Equals(EntityStatus.Active, StringComparison.OrdinalIgnoreCase);
         }
 
         public static string GetStatusDescription(this SoftwareProduct softwareProduct)
         {
-            if (!softwareProduct.LegalEntityStatus.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase))
+            if (!softwareProduct.LegalEntityStatus.Equals(EntityStatus.Active, StringComparison.OrdinalIgnoreCase))
             {
                 return softwareProduct.LegalEntityStatus;
             }
 
-            if (!softwareProduct.BrandStatus.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase))
+            if (!softwareProduct.BrandStatus.Equals(EntityStatus.Active, StringComparison.OrdinalIgnoreCase))
             {
                 return softwareProduct.BrandStatus;
             }

@@ -1,4 +1,5 @@
 ﻿using CdrAuthServer.Domain;
+using CdrAuthServer.Domain.Models;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
@@ -31,6 +32,7 @@ namespace CdrAuthServer.Controllers
 
         [HttpPost]
         [Route("/connect/par")]
+        [ApiVersionNeutral]
         [ServiceFilter(typeof(ValidateMtlsAttribute))]
         [ValidateClientAssertion]
         [Consumes("application/x-www-form-urlencoded")]
@@ -47,7 +49,7 @@ namespace CdrAuthServer.Controllers
             if (string.IsNullOrEmpty(request))
             {
                 _logger.LogError("request is null or empty");
-                return new BadRequestObjectResult(CdsErrorList.MissingRequiredField("request"));
+                return new BadRequestObjectResult(new ResponseErrorList().AddMissingRequiredField("request"));
             }
 
             if (!string.IsNullOrEmpty(Request.GetFormFieldValue("request_uri")))
@@ -61,7 +63,7 @@ namespace CdrAuthServer.Controllers
             var (result, validatedRequest) = await _parValidator.Validate(clientId, request, configOptions);
             if (!result.IsValid)
             {
-                _logger.LogError("parvalidator returned error:{error} errordescription:{desc}", result.Error, result.ErrorDescription);
+                _logger.LogError("parvalidator returned error:{Error} errordescription:{Desc}", result.Error, result.ErrorDescription);
                 return new JsonResult(new Error(result.Error, result.ErrorDescription)) { StatusCode = result.StatusCode };
             }
 

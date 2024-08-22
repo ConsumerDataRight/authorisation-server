@@ -1,6 +1,5 @@
 ﻿using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
-using CdrAuthServer.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using static CdrAuthServer.Domain.Constants;
 
@@ -27,7 +26,7 @@ namespace CdrAuthServer.Authorisation
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, ScopeRequirement requirement)
         {
             // Check that authentication was successful before doing anything else
-            _logger.LogInformation("User is authenticated: {isAuthenticated}", context.User.Identity?.IsAuthenticated);
+            _logger.LogInformation("User is authenticated: {IsAuthenticated}", context.User.Identity?.IsAuthenticated);
             if (context.User.Identity?.IsAuthenticated is not true)
             {
                 return Task.CompletedTask;
@@ -49,12 +48,12 @@ namespace CdrAuthServer.Authorisation
             // The space character is used to seperate the scopes as this is in line with CDS specifications.
             string[] requiredScopes = requirement.Scope.Split(' ');
 
-            _logger.LogInformation("User scopes: {@userClaimScopes}", userClaimScopes);
-            _logger.LogInformation("Required scopes: {@requiredScopes}", requiredScopes);
+            _logger.LogInformation("User scopes: {@UserClaimScopes}", userClaimScopes);
+            _logger.LogInformation("Required scopes: {@RequiredScopes}", requiredScopes);
 
             if (userClaimScopes.Intersect(requiredScopes).Any())
             {
-                _logger.LogInformation("Required scopes found {@requiredScopes}", requiredScopes);
+                _logger.LogInformation("Required scopes found {@RequiredScopes}", requiredScopes);
                 context.Succeed(requirement);
             }
             else

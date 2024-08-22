@@ -13,11 +13,11 @@
     public class GrantRepository : IGrantRepository
     {
 
-        private readonly CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext;
+        private readonly CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext;
         private readonly IMapper mapper;
         private readonly ILogger<GrantRepository> logger;
 
-        public GrantRepository(CdrAuthServervDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper, ILogger<GrantRepository> logger)
+        public GrantRepository(CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext, IMapper mapper, ILogger<GrantRepository> logger)
         {
             this.cdrAuthServervDatabaseContext = cdrAuthServervDatabaseContext;
             this.mapper = mapper;

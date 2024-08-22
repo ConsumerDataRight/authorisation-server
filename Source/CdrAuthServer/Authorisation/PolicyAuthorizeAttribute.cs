@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Models;
+﻿using CdrAuthServer.Infrastructure.Authorisation;
+using CdrAuthServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -8,9 +9,9 @@ namespace CdrAuthServer.Authorisation
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public class PolicyAuthorizeAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
     {
-        private readonly AuthorisationPolicy policy;
+        public readonly AuthServerAuthorisationPolicyAttribute policy;
 
-        public PolicyAuthorizeAttribute(AuthorisationPolicy policy)
+        public PolicyAuthorizeAttribute(AuthServerAuthorisationPolicyAttribute policy)
         {
             this.policy = policy;
         }
@@ -18,6 +19,10 @@ namespace CdrAuthServer.Authorisation
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             var authorizationService = context.HttpContext.RequestServices.GetService(typeof(IAuthorizationService)) as IAuthorizationService;
+            if (authorizationService == null)
+            {
+                return;
+            }
             var authorizationResult = await authorizationService.AuthorizeAsync(context.HttpContext.User, policy.ToString());
 
             var logger = context.HttpContext.RequestServices.GetService(typeof(ILogger)) as ILogger;
@@ -43,7 +48,7 @@ namespace CdrAuthServer.Authorisation
             {
                 var reason = authorizationResult.Failure.FailureReasons.First(r => r.Handler.GetType() == typeof(AccessTokenHandler));
                 context.Result = new JsonResult(new Error("invalid_token", reason.Message)) { StatusCode = 401 };
-                logger?.LogError("invalid_token - {message}", reason.Message);
+                logger?.LogError("invalid_token - {Message}", reason.Message);
                 return;
             }
 

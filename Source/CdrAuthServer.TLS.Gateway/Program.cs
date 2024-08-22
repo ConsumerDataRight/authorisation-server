@@ -52,7 +52,7 @@ var pipelineConfiguration = new OcelotPipelineConfiguration
     PreErrorResponderMiddleware = async (httpContext, next) =>
     {
         // Send through the original host name to the backend service.
-        httpContext.Request.Headers.Add(HttpHeaders.ForwardedHost, httpContext.Request.Host.ToString());
+        httpContext.Request.Headers[HttpHeaders.ForwardedHost] = httpContext.Request.Host.ToString();
         await next.Invoke();
     }
 };

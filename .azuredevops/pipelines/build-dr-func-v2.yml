@@ -7,6 +7,14 @@ resources:
     name: sb-mock-register
     ref: develop
 
+schedules:
+- cron: '0 3 * * 0'
+  displayName: 'Run at 3:00 AM every Sunday (UTC)'
+  always: true
+  branches:
+    include:
+    - develop
+
 trigger:
   - develop
   - main
@@ -14,6 +22,9 @@ trigger:
   
 pool:
   vmImage: ubuntu-latest
+
+variables:
+- group: artifacts
 
 steps:
 
@@ -27,6 +38,26 @@ steps:
   ###################################################################################################
   # Build images
   ###################################################################################################
+
+  # Authenticate to the Azure DevOps artifacts feed. The VSS_NUGET_ACCESSTOKEN environment variable is set from this task.
+  - task: NuGetAuthenticate@1
+    displayName: 'Authenticate to NuGet'
+
+  # Build getdatarecipients
+  - task: Bash@3
+    displayName: Build getdatarecipients image
+    inputs:
+      targetType: inline
+      script: |
+        docker build $(Build.SourcesDirectory)/cdr-auth-server/Source -f $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.get-data-recipients -t getdatarecipients:latest --build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN) --build-arg FEED_URI=$(azdo_artifact_feed_uri)
+
+  # Build getdatarecipients-integration-tests
+  - task: Bash@3
+    displayName: Build getdatarecipients-integration-tests image
+    inputs:
+      targetType: inline
+      script: |
+        docker build $(Build.SourcesDirectory)/cdr-auth-server/Source -f $(Build.SourcesDirectory)/cdr-auth-server/Source/Dockerfile.get-data-recipients.integration-tests -t getdatarecipients-integration-tests:latest --build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN) --build-arg FEED_URI=$(azdo_artifact_feed_uri)
 
   # Build mock-register
   - task: Docker@2
@@ -48,7 +79,7 @@ steps:
       buildContext: $(Build.SourcesDirectory)/cdr-auth-server/Source
       repository: cdr-auth-server
       tags: latest
-          
+
   # List docker images
   - task: Docker@2
     displayName: List Docker images
@@ -61,23 +92,16 @@ steps:
   ###################################################################################################
 
   # Run integration tests
-  - task: DockerCompose@0
-    displayName: Integration Tests - Up
-    condition: always()
-    inputs:
-      action: Run a Docker Compose command      
-      dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.GetDataRecipients.IntegrationTests.yml
-      dockerComposeCommand: up --abort-on-container-exit --exit-code-from getdatarecipients-integration-tests
+  - script: |
+      docker compose --file $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.GetDataRecipients.IntegrationTests.yml up --abort-on-container-exit --exit-code-from getdatarecipients-integration-tests
+    displayName: 'Integration Tests - Up'  
 
   # Remove integration tests
-  - task: DockerCompose@0
-    displayName: Integration Tests - Down
-    condition: always()
-    inputs:
-      action: Run a Docker Compose command      
-      dockerComposeFile: $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.GetDataRecipients.IntegrationTests.yml
-      dockerComposeCommand: down
-
+  - script: |
+      docker compose --file $(Build.SourcesDirectory)/cdr-auth-server/Source/docker-compose.GetDataRecipients.IntegrationTests.yml down 
+    displayName: 'Integration Tests - Down' 
+    condition: always() 
+ 
   # NOTE - volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
   # # Publish mock-register logs
   # - publish: $(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/mock-register/tmp
@@ -98,14 +122,14 @@ steps:
     condition: always()
     inputs:
       command: login
-      containerRegistry: <<yourContainerRegistryName>>
+      containerRegistry: $(AcrBaseUrl)
 
   # Run trx formatter to output .MD and .CSV
   - script: |
       docker run \
         -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/getdatarecipients-integration-tests/testresults/results.trx:/app/results.trx:ro \
         -v=$(Build.SourcesDirectory)/cdr-auth-server/Source/_temp/getdatarecipients-integration-tests/testresults/formatted/:/app/out/:rw \
-        <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "CDRAuthServer-GetDataRecipients" --outputprefix "CDRAuthServer-GetDataRecipients" -o out/
+        $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CDRAuthServer-GetDataRecipients" --outputprefix "CDRAuthServer-GetDataRecipients" -o out/
     displayName: 'Run trx-formatter'  
     condition: always()   
 
@@ -132,10 +156,10 @@ steps:
   # Tests have passed, so now build/publish the azure function
 
   - task: UseDotNet@2
-    displayName: 'Install .NET 6 SDK'
+    displayName: 'Install .NET 8 SDK'
     inputs:
       packageType: 'sdk'
-      version: '6.0.x'
+      version: '8.0.x'
       performMultiLevelLookup: true
   
   - script: |

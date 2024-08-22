@@ -16,13 +16,13 @@ namespace CdrAuthServer.UnitTests.Validators
 {
     public class JwtValidatorTest : BaseTest
     {
-        private Mock<ILogger<JwtValidator>> logger;        
-        private Mock<IClientService> clientService;
-        private IConfiguration configuration;        
-        private IJwtValidator JwtValidator;
+        private Mock<ILogger<JwtValidator>> logger = null!;        
+        private Mock<IClientService> clientService = null!;
+        private IConfiguration configuration = null!;        
+        private IJwtValidator JwtValidator = null!;
         private (ValidationResult, JwtSecurityToken) mockJwtValidatorResult;
-                
-        public Client client { get; private set; }
+
+        public Client client { get; private set; } = null!;
         
 
         [SetUp]
@@ -40,7 +40,7 @@ namespace CdrAuthServer.UnitTests.Validators
         }
         
         
-        [TestCase("jwt_validator_invalid_token", "foo", "", false, "request - token validation error", ErrorCodes.InvalidClient)]        
+        [TestCase("jwt_validator_invalid_token", "foo", "", false, "request - token validation error", ErrorCodes.Generic.InvalidClient)]        
         public async Task Validate_Jwt_Validator_InvalidClient_Test(string testCaseType, string client_id, string jwt, 
                                                                 bool isvalid,
                                                                 string expectErrorDescription,  
@@ -59,17 +59,7 @@ namespace CdrAuthServer.UnitTests.Validators
                 ValidationResult validationResult = new ValidationResult(isvalid);                
                 mockJwtValidatorResult = (validationResult, GetJwt());                
             }
-            //SigningKeys covered by Integration tests
-            //if (String.Equals("jwt_validator_signingkey", testCaseType))
-            //{
-            //    jwt = GetJwtToken();
-            //    GetClient(client_id);
-            //    audiences = new List<string>() { "https://localhost:8081", "https://localhost:8082/connect/token" };
-            //    validAlgos = new List<string>() { Algorithms.Signing.PS256, Algorithms.Signing.ES256 };
-            //    ValidationResult validationResult = new ValidationResult(isvalid);
-            //    mockJwtValidatorResult = (validationResult, GetJwt());                
-            //    clientService.Setup(x => x.GetSigningKeys(client)).ReturnsAsync(mockSigningKey);
-            //}
+           
 
             //Act
             var result = await JwtValidator.Validate(jwt, client, JwtValidationContext.request, configOptions, audiences, validAlgos);
@@ -83,8 +73,10 @@ namespace CdrAuthServer.UnitTests.Validators
 
         private void GetClient(string client_id)
         {
-            client = new Client();
-            client.ClientId = client_id;
+            client = new Client
+            {
+                ClientId = client_id
+            };
             clientService.Setup(x => x.Get(client_id)).ReturnsAsync(client);
         }
     }

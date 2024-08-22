@@ -11,7 +11,6 @@ on:
       - '.github/pull_request_template.md'
       - '.github/stale.yml'
       - 'LICENSE'
-      - 'Postman/**'
   pull_request:
     branches: [ main, develop ]
     types: [opened, synchronize, reopened]
@@ -23,7 +22,6 @@ on:
       - '.github/pull_request_template.md'
       - '.github/stale.yml'
       - 'LICENSE'
-      - 'Postman/**'
     
 env:
   buildConfiguration: 'Release'
@@ -84,22 +82,22 @@ jobs:
     # Run unit tests
     - name: Run unit tests
       run: |
-        docker-compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
+        docker compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-unit-tests
 
     # Remove unit tests
     - name: Remove unit tests
       run: |
-        docker-compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' down
+        docker compose -f './authorisation-server/Source/docker-compose.UnitTests.yml' down
 
     # Run integration tests
     - name: Run integration tests
       run: |
-        docker-compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
+        docker compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' up --abort-on-container-exit --exit-code-from cdr-auth-server-integration-tests
 
     # Remove integration tests
     - name: Remove integration tests
       run: |
-        docker-compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' down
+        docker compose -f './authorisation-server/Source/docker-compose.IntegrationTests.Standalone.yml' down
 
     # Archive unit test results
     - name: Archive unit test results

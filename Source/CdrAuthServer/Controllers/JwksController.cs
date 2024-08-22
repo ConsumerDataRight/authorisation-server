@@ -29,6 +29,7 @@ namespace CdrAuthServer.Controllers
         [EnableCors("AllOrigins")]
         [HttpGet]
         [Route("/.well-known/openid-configuration/jwks")]
+        [ApiVersionNeutral]
         public async Task<JsonResult> GetJwks()
         {
             return new JsonResult(await GenerateJwks(), new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
@@ -40,14 +41,14 @@ namespace CdrAuthServer.Controllers
         /// <returns>JsonWebKeySet</returns>
         private async Task<Models.JsonWebKeySet> GenerateJwks()
         {
-            _logger.LogInformation($"{nameof(JwksController)}.{nameof(GenerateJwks)}");
+            _logger.LogInformation("{JwksController}.{GenerateJwks}", nameof(JwksController), nameof(GenerateJwks));
 
             string cacheKey = "jwks";
             var item = _cache.Get<Models.JsonWebKeySet>(cacheKey);
 
             if (item != null)
             {
-                _logger.LogInformation("Cache hit: {cacheKey}", cacheKey);
+                _logger.LogInformation("Cache hit: {CacheKey}", cacheKey);
                 return item;
             }
 
@@ -56,7 +57,7 @@ namespace CdrAuthServer.Controllers
 
             var jwks = new Models.JsonWebKeySet()
             {
-                keys = new Models.JsonWebKey[] { ps256jwk, es256jwk }
+                keys = [ps256jwk, es256jwk]
             };
 
             // Add the jwks to the cache.
@@ -86,7 +87,7 @@ namespace CdrAuthServer.Controllers
                 n = n,
                 e = e,
                 x5t = securityKey.X5t,
-                x5c = new string[] { Convert.ToBase64String(cert.RawData) }
+                x5c = [Convert.ToBase64String(cert.RawData)]
             };
             return jwk;
         }
@@ -129,7 +130,7 @@ namespace CdrAuthServer.Controllers
                     return JsonWebKeyECTypes.P521;
             };
 
-            _logger.LogError("Unsupported curve type of {curve.Oid.Value} - {curve.Oid.FriendlyName}", curve.Oid.Value, curve.Oid.FriendlyName);
+            _logger.LogError("Unsupported curve type of {Value} - {FriendlyName}", curve.Oid.Value, curve.Oid.FriendlyName);
 
             throw new InvalidOperationException($"Unsupported curve type of {curve.Oid.Value} - {curve.Oid.FriendlyName}");
         }

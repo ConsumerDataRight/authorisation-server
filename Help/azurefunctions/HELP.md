@@ -38,8 +38,8 @@ azurite --silent --location c:\azurite --debug c:\azurite\debug.log
 </div>
 
 ```
-navigate to .\authorisation-server\Source\CdrAuthServer.GetDataRecipients<br />
-func start --verbose<br />
+navigate to .\authorisation-server\Source\CdrAuthServer.GetDataRecipients
+func host start --verbose
 ```
 
 <p>3) Open the Authorisation Server in MS Visual Studio, select CdrAuthServer.GetDataRecipients as the startup project.</p>
@@ -62,5 +62,5 @@ SELECT * FROM [cdr-auth-server].[dbo].[LogEvents-DrService]
 
 <h2>To Build Azure Functions</h2>
 <div style="margin-left:18px;">
-	dotnet SDK 6.0.30x or higher is required. Latest SDK can be found from the link https://microsoft.com/net
+	dotnet SDK 8.0.10x or higher is required. Latest SDK can be found from the link https://microsoft.com/net
 <br />

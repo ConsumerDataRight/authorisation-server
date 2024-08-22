@@ -1,17 +1,16 @@
-import { CheckCircle, ChevronRight, Close, MoreHoriz } from "@mui/icons-material";
-import { Box, List, ListItem, IconButton, ListItemButton, ListItemText, Typography, SwipeableDrawer, Dialog, Button, DialogActions, DialogContent, DialogContentText, Alert } from "@mui/material";
+import { Close, MoreHoriz } from "@mui/icons-material";
+import { Box, List, ListItem, IconButton, ListItemButton, ListItemText, Typography, Dialog, Button, DialogActions, DialogContent } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AccountInfo } from "../../components/AccountInfo";
 import { InternalLayout } from "../../components/InternalLayout";
 import { AccountModel } from "../../models/DataModels";
 
 export default function AccountList() {
-    const sampleAccount: AccountModel = { AccountId: '10-1-1', DisplayName: 'Saving Account', ProductName: 'Everyday Savings Account', MaskedName:'xxx-xxx xxxxx455' };
+    const sampleAccount: AccountModel = { AccountId: '10-1-1', DisplayName: 'Saving Account', ProductName: 'Everyday Savings Account', MaskedName: 'xxx-xxx xxxxx455' };
     const [accountDetails, setAccountDetails] = useState<{ open: boolean, account?: AccountModel }>({ open: true });
 
     const showAccountDetails = (account: AccountModel) => () => {
-        console.log('clicked');
         setAccountDetails({ open: true, account: account });
     }
 

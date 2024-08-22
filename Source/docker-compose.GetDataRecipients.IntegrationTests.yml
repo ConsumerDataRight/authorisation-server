@@ -1,16 +1,15 @@
-version: '3.8'
 
 services:
   mssql:
     container_name: sql1
-    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    image: 'mcr.microsoft.com/mssql/server:2022-latest'
     ports: 
       - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Pa{}w0rd2019
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
+      test: /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" -No || exit 1
       timeout: 5s
       interval: 5s
       retries: 20     
@@ -51,6 +50,8 @@ services:
         # NOTE - "production" environment using Azure storage? not working? try development in meantime
         # target_environment: production
         target_environment: development
+        FEED_URI: ${FEED_URI}
+        FEED_ACCESSTOKEN: ${FEED_ACCESSTOKEN}
    
     environment:
       - ASPNETCORE_ENVIRONMENT=Release   
@@ -91,13 +92,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.get-data-recipients
+      args:
+        FEED_URI: ${FEED_URI}
+        FEED_ACCESSTOKEN: ${FEED_ACCESSTOKEN}
     ports:
       - "7074:7074"
     #volumes:
       # use test specific local.settings.json
       # CdrAuthServer.GetDataRecipients.IntegrationTests added
       #- ./CdrAuthServer.GetDataRecipients.IntegrationTests/local.settings.json:/src/CdrAuthServer.GetDataRecipients/bin/Debug/net6.0/local.settings.json
-    #  healthcheck: # NOTE
+    healthcheck: 
+      test: (wget --no-check-certificate --no-verbose --spider http://localhost:7074) || exit 1
+      timeout: 5s
+      interval: 5s
+      retries: 50   
     depends_on:
       azurite: 
         condition: service_started # NOTE - service healthy
@@ -111,11 +119,14 @@ services:
     image: getdatarecipients-integration-tests
     build:
       context: .
-      dockerfile: Dockerfile.get-data-recipients.integration-tests      
+      dockerfile: Dockerfile.get-data-recipients.integration-tests
+      args:
+        FEED_URI: ${FEED_URI}
+        FEED_ACCESSTOKEN: ${FEED_ACCESSTOKEN}
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
     volumes:
       - "./_temp/getdatarecipients-integration-tests/testresults:/testresults"
     depends_on:
       getdatarecipients: 
-        condition: service_started # NOTE - service healthy
+        condition: service_healthy

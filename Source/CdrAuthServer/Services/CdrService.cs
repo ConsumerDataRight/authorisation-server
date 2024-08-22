@@ -25,7 +25,7 @@ namespace CdrAuthServer.Services
 
         public async Task InsertDataRecipients(List<SoftwareProduct> softwareProducts) 
         {
-            if (softwareProducts.Any())
+            if (softwareProducts.Count > 0)
             {
                 var softwareProductList = mapper.Map<List<CdrAuthServer.Domain.Entities.SoftwareProduct>>(softwareProducts);
                 await cdrRepository.InsertDataRecipients(softwareProductList);                

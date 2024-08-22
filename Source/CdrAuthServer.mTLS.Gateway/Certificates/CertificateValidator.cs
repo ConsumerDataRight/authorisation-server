@@ -18,7 +18,7 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
 
         public void ValidateClientCertificate(X509Certificate2 clientCert)
         {
-            _logger.LogInformation($"Validating certificate within the {nameof(CertificateValidator)}");
+            _logger.LogInformation("Validating certificate within the {CertificateValidator}", nameof(CertificateValidator));
 
             if (clientCert == null)
             {
@@ -27,7 +27,7 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
 
             // Validate that the certificate has been issued by the Mock CDR CA.
             var rootCACertificate = new X509Certificate2(_config.GetValue<string>("Certificates:RootCACertificate:Location"));
-            _logger.LogDebug("Validating client certificate using: {rootCACertificate}", rootCACertificate);
+            _logger.LogDebug("Validating client certificate using: {RootCACertificate}", rootCACertificate);
 
             var ch = new X509Chain();
             ch.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -48,7 +48,7 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
 
             if (ch.ChainStatus.Any())
             {
-                _logger.LogError("An error occurred validating the client certificate: {status}", ch.ChainStatus.First().StatusInformation);
+                _logger.LogError("An error occurred validating the client certificate: {Status}", ch.ChainStatus.First().StatusInformation);
                 throw new ClientCertificateException(ch.ChainStatus.First().StatusInformation);
             }
         }

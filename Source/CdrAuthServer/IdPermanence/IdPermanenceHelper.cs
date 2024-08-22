@@ -158,7 +158,7 @@ namespace CdrAuthServer.IdPermanence
 
         public static string GetPrivateKey(IConfiguration config)
         {
-            string privateKey = config["CdrAuthServer:IdPermanence:PrivateKey"];
+            string privateKey = config["CdrAuthServer:IdPermanence:PrivateKey"] ?? "";
 
             // Private key was found, so return.
             if (!string.IsNullOrEmpty(privateKey))
