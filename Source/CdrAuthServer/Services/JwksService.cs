@@ -24,7 +24,7 @@ namespace CdrAuthServer.Services
             _cache = cache;
         }
 
-        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetJwks(Uri jwksUri)
+        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet?> GetJwks(Uri jwksUri)
         {
             var cachedJwks = RetrieveFromCache(jwksUri);
             if (cachedJwks != null)
@@ -36,13 +36,13 @@ namespace CdrAuthServer.Services
             return await RefreshJwks(jwksUri);
         }
 
-        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetJwks(Uri jwksUri, string kid)
+        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet?> GetJwks(Uri jwksUri, string kid)
         {
             // Retrieve the jwks, which could be from cache.
-            var jwks = await GetJwks(jwksUri);
+            var jwks = RetrieveFromCache(jwksUri);
 
             // Check the jwks to see if the given kid is included in the set.
-            if (jwks.Keys.Any(k => k.Kid == kid))
+            if (jwks != null && jwks.Keys.Any(k => k.Kid == kid))
             {
                 _logger.LogInformation("Matching kid ({Kid}) was found in jwks", kid);
                 return jwks;
@@ -53,7 +53,7 @@ namespace CdrAuthServer.Services
             return await RefreshJwks(jwksUri);
         }
 
-        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> RefreshJwks(Uri jwksUri)
+        private async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet?> RefreshJwks(Uri jwksUri)
         {
             HttpResponseMessage httpResponse;
             try
@@ -77,7 +77,7 @@ namespace CdrAuthServer.Services
                 var statusCode = httpResponse.StatusCode;
                 var responseContent = await httpResponse.Content.ReadAsStringAsync();
                 _logger.LogError(
-                    "{jwksUri} returned {statusCode} Content:\r\n{responseContent}",
+                    "{JwksUri} returned {StatusCode} Content:\r\n{ResponseContent}",
                     jwksUri,
                     statusCode,
                     responseContent);
@@ -85,7 +85,12 @@ namespace CdrAuthServer.Services
             }
 
             var jwks = await GetJwksFromResponse(jwksUri, httpResponse);
-            AddToCache(jwksUri, jwks);
+
+            if (jwks != null)
+            {
+                AddToCache(jwksUri, jwks);
+            }
+
             return jwks;
         }
 
@@ -95,9 +100,9 @@ namespace CdrAuthServer.Services
             {
                 return await httpResponse.Content.ReadAsJson<Microsoft.IdentityModel.Tokens.JsonWebKeySet>();
             }
-            catch
+            catch (Exception ex)
             {
-                _logger.LogError("No valid JWKS found from {jwksUri}", jwksUri);
+                _logger.LogError(ex, "No valid JWKS found from {JwksUri}", jwksUri);
                 throw new JwksException($"No valid JWKS found from {jwksUri}");
             }
         }

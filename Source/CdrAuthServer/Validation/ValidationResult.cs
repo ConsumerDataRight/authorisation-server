@@ -1,5 +1,4 @@
-﻿
-namespace CdrAuthServer.Validation
+﻿namespace CdrAuthServer.Validation
 {
     public class ValidationResult
     {

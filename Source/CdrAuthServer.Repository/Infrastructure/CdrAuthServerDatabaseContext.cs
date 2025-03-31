@@ -10,7 +10,8 @@
         {
         }
 
-        public CdrAuthServerDatabaseContext(DbContextOptions<CdrAuthServerDatabaseContext> options) : base(options)
+        public CdrAuthServerDatabaseContext(DbContextOptions<CdrAuthServerDatabaseContext> options)
+            : base(options)
         {
         }
 

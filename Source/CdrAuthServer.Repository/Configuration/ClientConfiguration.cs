@@ -12,7 +12,7 @@
 
             builder.HasMany(c => c.ClientClaims).WithOne(cc => cc.Client).HasForeignKey(c => c.ClientId).IsRequired().OnDelete(DeleteBehavior.Cascade);
 
-            //seed client
+            // seed client
             builder.HasData(
                  new Client()
                  {

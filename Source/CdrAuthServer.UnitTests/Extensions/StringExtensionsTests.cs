@@ -1,5 +1,4 @@
 using CdrAuthServer.Domain.Extensions;
-using CdrAuthServer.Extensions;
 using NUnit.Framework;
 
 namespace CdrAuthServer.UnitTests.Extensions
@@ -15,7 +14,7 @@ namespace CdrAuthServer.UnitTests.Extensions
         public void WhenValueIsNull_HasValue_ShouldReturnFalse()
         {
             // Arrange.
-            string value = null;
+            string? value = null;
             bool expected = false;
             bool actual = false;
 

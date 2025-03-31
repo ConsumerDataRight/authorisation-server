@@ -1,7 +1,8 @@
 ﻿using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
 {
@@ -39,8 +40,8 @@ namespace CdrAuthServer.Controllers
                 ClaimsSupported = configOptions.ClaimsSupported,
                 CodeChallengeMethodsSupported = configOptions.CodeChallengeMethodsSupported,
                 GrantTypesSupported = configOptions.GrantTypesSupported,
-                ScopesSupported = configOptions.ScopesSupported.Union(configOptions.ClientCredentialScopesSupported).ToList(),
-                ResponseModesSupported = configOptions.ResponseModesSupported,
+                ScopesSupported = (configOptions.ScopesSupported ?? Enumerable.Empty<string>()).Union(configOptions.ClientCredentialScopesSupported ?? Enumerable.Empty<string>()).ToList(),
+                ResponseModesSupported = [ResponseModes.Jwt],
                 ResponseTypesSupported = configOptions.ResponseTypesSupported,
                 SubjectTypesSupported = configOptions.SubjectTypesSupported,
                 RequirePushedAuthorizationRequests = true,
@@ -51,9 +52,7 @@ namespace CdrAuthServer.Controllers
                 TokenEndpointAuthMethodsSupported = configOptions.TokenEndpointAuthMethodsSupported,
                 TokenEndpointAuthSigningAlgValuesSupported = configOptions.TokenEndpointAuthSigningAlgValuesSupported,
                 IdTokenSigningAlgValuesSupported = configOptions.IdTokenSigningAlgValuesSupported,
-                IdTokenEncryptionAlgValuesSupported = configOptions.IdTokenEncryptionAlgValuesSupported,
-                IdTokenEncryptionEncValuesSupported = configOptions.IdTokenEncryptionEncValuesSupported,
-                AuthorizationSigningAlgValuesSupported  = configOptions.AuthorizationSigningAlgValuesSupported,
+                AuthorizationSigningAlgValuesSupported = configOptions.AuthorizationSigningAlgValuesSupported,
             };
 
             if (configOptions.SupportJarmEncryption)
@@ -63,7 +62,7 @@ namespace CdrAuthServer.Controllers
             }
 
             // Switch to out the "mtls_endpoint_aliases" property in the discovery document.
-            if (configOptions.UseMtlsEndpointAliases) 
+            if (configOptions.UseMtlsEndpointAliases)
             {
                 model.MtlsEndpointAliases = new Dictionary<string, string>
                 {
@@ -72,7 +71,7 @@ namespace CdrAuthServer.Controllers
                     { "introspection_endpoint", model.IntrospectionEndpoint },
                     { "pushed_authorization_request_endpoint", model.PushedAuthorizationEndpoint },
                     { "registration_endpoint", model.RegistrationEndpoint },
-                    { "userinfo_endpoint", model.UserinfoEndpoint }
+                    { "userinfo_endpoint", model.UserinfoEndpoint },
                 };
 
                 // Set the mTLS endpoints back to their TLS equivalents.
@@ -84,7 +83,7 @@ namespace CdrAuthServer.Controllers
                 model.UserinfoEndpoint = model.UserinfoEndpoint.Replace(configOptions.SecureBaseUri, configOptions.BaseUri);
             }
 
-            return new JsonResult(model);
+            return new JsonResult(model, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
         }
     }
 }

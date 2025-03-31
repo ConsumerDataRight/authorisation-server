@@ -29,7 +29,7 @@ namespace CdrAuthServer.Validation
             _validatedAuthorizationRequestObject = new AuthorizationRequestObject();
         }
 
-        public async Task<(ValidationResult, AuthorizationRequestObject?)> Validate(string clientId, JwtSecurityToken requestObject, ConfigurationOptions configOptions)
+        public async Task<(ValidationResult ValidationResult, AuthorizationRequestObject? AuthorizationRequestObject)> Validate(string clientId, JwtSecurityToken requestObject, ConfigurationOptions configOptions)
         {
             // Extract the client_id from the request object.
             if (!requestObject.Payload.TryGetValue(ClaimNames.ClientId, out var payloadClientId))
@@ -55,7 +55,7 @@ namespace CdrAuthServer.Validation
 
             if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var _))
             {
-                _logger.LogError("malformed redirect_uri: {redirectUri}", redirectUri);
+                _logger.LogError("malformed redirect_uri: {RedirectUri}", redirectUri);
                 return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_REDIRECT_URI), null);
             }
 
@@ -129,8 +129,8 @@ namespace CdrAuthServer.Validation
 
         private ValidationResult ValidateLifetime(JwtSecurityToken requestObject)
         {
-            var exp = requestObject.Payload.Exp.FromEpoch();
-            var nbf = requestObject.Payload.Nbf.FromEpoch();
+            var exp = requestObject.Payload.Expiration.FromEpoch();
+            var nbf = requestObject.Payload.NotBefore.FromEpoch();
 
             // exp claim is required.
             if (exp == null)
@@ -141,15 +141,15 @@ namespace CdrAuthServer.Validation
 
             // nbf claim is required.
             if (nbf == null)
-            {   
+            {
                 _logger.LogError("Invalid request - nbf is missing");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.NBF_MISSING);
             }
 
             // nbf cannot be after expiry
-            // expiry cannot be longer than 60 min after not before 
+            // expiry cannot be longer than 60 min after not before
             if (nbf.Value > exp.Value || (exp.Value.Subtract(nbf.Value) > TimeSpan.FromMinutes(60)))
-            {   
+            {
                 _logger.LogError("Invalid request - exp claim cannot be longer than 60 minutes after the nbf claim");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.EXPIRY_GREATER_THAN_60_AFTER_NBF);
             }
@@ -170,7 +170,7 @@ namespace CdrAuthServer.Validation
             //////////////////////////////////////////////////////////
             var responseType = requestObject.GetClaimValue(ClaimNames.ResponseType);
             if (string.IsNullOrEmpty(responseType))
-            {   
+            {
                 _logger.LogError("response_type missing from request object JWT");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.RESPONSE_TYPE_MISSING);
             }
@@ -189,13 +189,13 @@ namespace CdrAuthServer.Validation
                 .FirstOrDefault(x => comparer.Equals(x, responseType.ToString()));
 
             if (string.IsNullOrEmpty(supportedResponseType))
-            {   
+            {
                 _logger.LogError("response_type is not supported");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.RESPONSE_TYPE_NOT_SUPPORTED);
             }
 
             _validatedAuthorizationRequestObject.ResponseType = supportedResponseType;
-            _validatedAuthorizationRequestObject.GrantType = (supportedResponseType == ResponseTypes.AuthCode) ? GrantTypes.AuthCode : GrantTypes.Hybrid;
+            _validatedAuthorizationRequestObject.GrantType = GrantTypes.AuthCode;
 
             /////////////////////////////////////////////////////////////////////////////
             // validate code_challenge and code_challenge_method
@@ -211,17 +211,19 @@ namespace CdrAuthServer.Validation
             //////////////////////////////////////////////////////////
 
             // check if response_mode parameter is present and valid
-            var responseMode = requestObject.GetClaimValue(ClaimNames.ResponseMode) ?? GetDefaultResponseMode(_validatedAuthorizationRequestObject.ResponseType, configOptions);
-            if (responseMode.HasValue())
+            var responseMode = requestObject.GetClaimValue(ClaimNames.ResponseMode);
+            if (responseMode != null && responseMode.HasValue())
             {
                 if (configOptions.ResponseModesSupported?.Contains(responseMode) is not true)
-                {   
+                {
                     _logger.LogError("Invalid response_mode");
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_RESPONSE_MODE);
                 }
 
-                if (!SupportedResponseModesForResponseType[_validatedAuthorizationRequestObject.ResponseType].Contains(responseMode))
-                {   
+                if (SupportedResponseModesForResponseType.TryGetValue(_validatedAuthorizationRequestObject.ResponseType, out var validResponseType) &&
+                    validResponseType?.Length > 0 &&
+                    !validResponseType.Contains(responseMode))
+                {
                     _logger.LogError("Invalid response_mode for response_type");
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_RESPONSE_MODE_FOR_RESPONSE_TYPE);
                 }
@@ -242,8 +244,7 @@ namespace CdrAuthServer.Validation
                 // https://openid.net/specs/openid-financial-api-part-2-1_0.html#advanced-security-provisions
                 //
                 // 2. shall require
-                //    1. the response_type value code id_token, or
-                //    2. the response_type value code in conjunction with the response_mode value jwt;
+                //    a. the response_type value code in conjunction with the response_mode value jwt
                 ////////////////////////////////////////////////////////////////////////////////////////////////
                 if (_validatedAuthorizationRequestObject.ResponseType == ResponseTypes.AuthCode)
                 {
@@ -256,28 +257,33 @@ namespace CdrAuthServer.Validation
             return ValidationResult.Pass();
         }
 
-        private string GetDefaultResponseMode(string responseType, ConfigurationOptions configOptions)
+        private static string GetDefaultResponseMode(string responseType, ConfigurationOptions configOptions)
         {
             if (string.IsNullOrEmpty(responseType))
             {
-                return configOptions.ResponseModesSupported.First();
+                return configOptions.ResponseModesSupported == null ? string.Empty : configOptions.ResponseModesSupported[0];
             }
 
-            return SupportedResponseModesForResponseType[responseType].First();
+            if (SupportedResponseModesForResponseType.TryGetValue(responseType, out string[]? responseModeForResponseType) && responseModeForResponseType != null)
+            {
+                return responseModeForResponseType[0];
+            }
+
+            return configOptions.ResponseModesSupported?.Count > 0 ? configOptions.ResponseModesSupported[0] : string.Empty;
         }
 
         private ValidationResult ValidatePkceParameters(JwtSecurityToken requestObject, ConfigurationOptions configOptions)
         {
             var codeChallenge = requestObject.GetClaimValue(ClaimNames.CodeChallenge);
             if (string.IsNullOrEmpty(codeChallenge))
-            {   
+            {
                 _logger.LogError("code_challenge is missing");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CODE_CHALLENGE_MISSING);
             }
 
             if (codeChallenge.Length < ValidationRestrictions.InputLengthRestrictions.CodeChallengeMinLength ||
                 codeChallenge.Length > ValidationRestrictions.InputLengthRestrictions.CodeChallengeMaxLength)
-            {   
+            {
                 _logger.LogError("Invalid code_challenge - invalid length");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CODE_CHALLENGE_INVALID_LENGTH);
             }
@@ -290,7 +296,7 @@ namespace CdrAuthServer.Validation
             }
 
             if (configOptions.CodeChallengeMethodsSupported?.Contains(codeChallengeMethod) is not true)
-            {   
+            {
                 _logger.LogError("Unsupported code_challenge_method");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.UNSUPPORTED_CHALLENGE_METHOD);
             }
@@ -308,21 +314,21 @@ namespace CdrAuthServer.Validation
             //////////////////////////////////////////////////////////
             var scope = requestObject.GetClaimValue(ClaimNames.Scope);
             if (scope.IsNullOrEmpty())
-            {   
+            {
                 _logger.LogError("Invalid scope - scope is missing");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.SCOPE_MISSING);
             }
 
-            if (scope.Length > ValidationRestrictions.InputLengthRestrictions.ScopeMaxLength)
-            {   
+            if (scope?.Length > ValidationRestrictions.InputLengthRestrictions.ScopeMaxLength)
+            {
                 _logger.LogError("Invalid scope - scope is too long");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.SCOPE_TOO_LONG);
             }
 
-            _validatedAuthorizationRequestObject.Scope = scope;
+            _validatedAuthorizationRequestObject.Scope = scope ?? string.Empty;
 
             if (!_validatedAuthorizationRequestObject.Scopes.Contains(Scopes.OpenId))
-            {   
+            {
                 _logger.LogError("Missing openid scope");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.OPEN_ID_SCOPE_MISSING);
             }
@@ -336,11 +342,11 @@ namespace CdrAuthServer.Validation
 
             try
             {
-                _validatedAuthorizationRequestObject.Claims = JsonConvert.DeserializeObject<AuthorizeClaims>(claims) ?? new AuthorizeClaims();
+                _validatedAuthorizationRequestObject.Claims = JsonConvert.DeserializeObject<AuthorizeClaims>(claims ?? string.Empty) ?? new AuthorizeClaims();
             }
             catch (Exception ex)
-            {   
-                _logger.LogError(ex, "Invalid claims in request object - {message}", ex.Message);
+            {
+                _logger.LogError(ex, "Invalid claims in request object - {Message}", ex.Message);
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_CLAIMS);
             }
 
@@ -366,75 +372,12 @@ namespace CdrAuthServer.Validation
             //////////////////////////////////////////////////////////
             var nonce = requestObject.GetClaimValue(ClaimNames.Nonce);
             if (nonce.IsNullOrEmpty())
-            {   
+            {
                 _logger.LogError("Invalid nonce");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_NONCE);
             }
 
-            _validatedAuthorizationRequestObject.Nonce = nonce;
-
-            //////////////////////////////////////////////////////////
-            // check prompt
-            //////////////////////////////////////////////////////////
-            //var prompt = request.Raw.Get(OidcConstants.AuthorizeRequest.Prompt);
-            //if (prompt.IsPresent())
-            //{
-            //    if (SupportedPromptModes.Contains(prompt))
-            //    {
-            //        request.PromptModes = new List<string>(new string[] { prompt });
-            //    }
-            //    else
-            //    {
-            //        _logger.LogDebug("Unsupported prompt mode - ignored: {prompt}", prompt);
-            //    }
-            //}
-
-            //////////////////////////////////////////////////////////
-            // check ui locales
-            //////////////////////////////////////////////////////////
-            //var uilocalesParameter = GetParameter(request, OidcConstants.AuthorizeRequest.UiLocales, _options.InputLengthRestrictions.UiLocale);
-            //if (uilocalesParameter.Error != null)
-            //{
-            //    return uilocalesParameter.Error;
-            //}
-            //request.UiLocales = uilocalesParameter.Value;
-
-
-            //////////////////////////////////////////////////////////
-            // check max_age
-            //////////////////////////////////////////////////////////
-            //var maxAge = request.Raw.Get(OidcConstants.AuthorizeRequest.MaxAge);
-            //if (maxAge.IsPresent())
-            //{
-            //    if (!int.TryParse(maxAge, out var seconds) || seconds < 0)
-            //    {
-            //        LogError("Invalid max_age.", request);
-            //        return Invalid(request, description: "Invalid max_age");
-            //    }
-
-            //    request.MaxAge = seconds;
-            //}
-
-            //////////////////////////////////////////////////////////
-            // check login_hint
-            //////////////////////////////////////////////////////////
-            //var loginHintParameter = GetParameter(request, OidcConstants.AuthorizeRequest.LoginHint, _options.InputLengthRestrictions.LoginHint);
-            //if (loginHintParameter.Error != null)
-            //{
-            //    return loginHintParameter.Error;
-            //}
-            //request.LoginHint = loginHintParameter.Value;
-
-            //////////////////////////////////////////////////////////
-            // check acr_values
-            //////////////////////////////////////////////////////////
-            //var acrValuesParameter = GetParameter(request, OidcConstants.AuthorizeRequest.AcrValues, _options.InputLengthRestrictions.AcrValues);
-            //if (acrValuesParameter.Error != null)
-            //{
-            //    return acrValuesParameter.Error;
-            //}
-            //request.AuthenticationContextReferenceClasses = acrValuesParameter.Value.FromSpaceSeparatedString().Distinct().ToList();
-
+            _validatedAuthorizationRequestObject.Nonce = nonce ?? string.Empty;
             return ValidationResult.Pass();
         }
     }

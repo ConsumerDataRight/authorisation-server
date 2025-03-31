@@ -29,7 +29,8 @@ namespace CdrAuthServer.UnitTests.Helpers
         public async Task ServerCertificates_ValidationEnabled_ShouldValidateSslConnection(
             string certName, string certPassword, bool expected, string reason)
         {
-            await using (var mockEndpoint = new MockEndpoint("https://localhost:9990",
+            await using (var mockEndpoint = new MockEndpoint(
+                "https://localhost:9990",
                 Path.Combine(Directory.GetCurrentDirectory(), "Certificates", "MDR", certName),
                 certPassword))
             {
@@ -44,23 +45,27 @@ namespace CdrAuthServer.UnitTests.Helpers
                 {
                     Assert.ThrowsAsync<HttpRequestException>(async () => await client.GetAsync("https://localhost:9990"), reason);
                 }
+
                 await mockEndpoint.Stop();
             }
         }
     }
 
     public partial class MockEndpoint : IAsyncDisposable
-            {
+    {
         public MockEndpoint(string url, string certificatePath, string certificatePassword)
         {
             Url = url;
             CertificatePath = certificatePath;
             CertificatePassword = certificatePassword;
-            }
+        }
 
         public string Url { get; init; }
+
         private int UrlPort => new Uri(Url).Port;
+
         public string CertificatePath { get; init; }
+
         public string CertificatePassword { get; init; }
 
         private IWebHost? _host;
@@ -72,9 +77,10 @@ namespace CdrAuthServer.UnitTests.Helpers
             _host = new WebHostBuilder()
                 .UseKestrel(opts =>
         {
-                    opts.ListenAnyIP(UrlPort,
-                        opts => opts.UseHttps(new X509Certificate2(CertificatePath, CertificatePassword, X509KeyStorageFlags.Exportable)));
-                })
+            opts.ListenAnyIP(
+                UrlPort,
+                opts => opts.UseHttps(new X509Certificate2(CertificatePath, CertificatePassword, X509KeyStorageFlags.Exportable)));
+        })
                .UseStartup(_ => new MockEndpointStartup())
                .Build();
 
@@ -91,30 +97,31 @@ namespace CdrAuthServer.UnitTests.Helpers
             }
         }
 
-        bool _disposed;
+        private bool _disposed;
+
         public async ValueTask DisposeAsync()
         {
             Log.Information("Calling {FUNCTION} in {ClassName}.", nameof(DisposeAsync), nameof(MockEndpoint));
 
             if (!_disposed)
-        {
+            {
                 await Stop();
                 _disposed = true;
-        }
+            }
 
             GC.SuppressFinalize(this);
-    }
-
-        class MockEndpointStartup
-    {
-            public void Configure(IApplicationBuilder app)
-        {
-                app.UseHttpsRedirection();
-                app.UseRouting();
         }
 
-            public static void ConfigureServices(IServiceCollection services)
+        private class MockEndpointStartup
         {
+            public void Configure(IApplicationBuilder app)
+            {
+                app.UseHttpsRedirection();
+                app.UseRouting();
+            }
+
+            public static void ConfigureServices(IServiceCollection services)
+            {
                 services.AddRouting();
             }
         }

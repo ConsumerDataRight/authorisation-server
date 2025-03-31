@@ -29,14 +29,13 @@
                 var clientEntity = mapper.Map<Entities.Client>(client);
 
                 await cdrAuthServervDatabaseContext.Clients.AddAsync(clientEntity);
-                cdrAuthServervDatabaseContext.SaveChanges();
+                await cdrAuthServervDatabaseContext.SaveChangesAsync();
 
                 client.ClientId = clientEntity.ClientId.ToString();
 
                 return client;
-
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 this.logger.LogError(ex, "Create Client failed for {@Client}", client);
                 throw;
@@ -81,7 +80,7 @@
         public async Task<Client?> GetBySoftwareProductId(string softwareProductId)
         {
             var clientClaims = await cdrAuthServervDatabaseContext.ClientClaims.AsNoTracking().Include(cc => cc.Client).FirstOrDefaultAsync(cc => cc.Type == Constants.ClaimNames.SoftwareId && cc.Value == softwareProductId);
-            
+
             return mapper.Map<Client>(clientClaims?.Client);
         }
 
@@ -95,13 +94,13 @@
 
             try
             {
-                //convert the domain to entity
+                // convert the domain to entity
                 var domainToEntityClient = mapper.Map<Entities.Client>(client);
 
-                //now map entity to entity
+                // now map entity to entity
                 mapper.Map(domainToEntityClient, entity);
-                
-                //now save the changes.
+
+                // now save the changes.
                 await cdrAuthServervDatabaseContext.SaveChangesAsync();
             }
             catch (Exception ex)

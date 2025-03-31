@@ -7,8 +7,8 @@ namespace XUnit_Skippable
 {
     public class SkippableTheoryDiscoverer : IXunitTestCaseDiscoverer
     {
-        readonly IMessageSink diagnosticMessageSink;
-        readonly TheoryDiscoverer theoryDiscoverer;
+        private readonly IMessageSink diagnosticMessageSink;
+        private readonly TheoryDiscoverer theoryDiscoverer;
 
         public SkippableTheoryDiscoverer(IMessageSink diagnosticMessageSink)
         {

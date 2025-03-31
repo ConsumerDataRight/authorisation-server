@@ -7,7 +7,7 @@
             this.ClientId = Guid.NewGuid().ToString();
         }
 
-        public string ClientId { get; set; } = string.Empty;
+        public string ClientId { get; set; }
 
         public long ClientIdIssuedAt { get; set; }
 
@@ -17,6 +17,5 @@
 
         // every Client has zero or more claims (one-to-many)
         public virtual ICollection<ClientClaims>? ClientClaims { get; set; }
-
     }
 }

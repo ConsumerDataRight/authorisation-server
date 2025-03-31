@@ -5,12 +5,12 @@ namespace CdrAuthServer.Validation
 {
     public interface IClientAssertionValidator
     {
-        Task<(ValidationResult, string? clientId)> ValidateClientAssertionRequest(
+        Task<(ValidationResult Result, string? ClientId)> ValidateClientAssertionRequest(
             ClientAssertionRequest clientAssertionRequest,
             ConfigurationOptions configOptions,
             bool isTokenEndpoint);
 
-        Task<(ValidationResult, Client?)> ValidateClientAssertion(
+        Task<(ValidationResult Result, Client? Client)> ValidateClientAssertion(
             string clientAssertion,
             ConfigurationOptions configOptions,
             IList<string>? validAudiences = null);

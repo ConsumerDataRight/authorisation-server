@@ -35,7 +35,7 @@
 
             if (grant == null && grantType.Equals(GrantTypes.RefreshToken, StringComparison.Ordinal))
             {
-                // For backwards compatibility ; 
+                // For backwards compatibility
                 var hashedKey = GetHashKey(key);
                 grant = await grantRepository.Get(hashedKey);
             }
@@ -45,11 +45,13 @@
                 logger.LogError("Grant not found for key:{Key}", key);
                 return null;
             }
+
             if (grant.GrantType != grantType)
             {
                 logger.LogError("Grant not found doesn't match for:{Key}", key);
                 return null;
             }
+
             if (!string.IsNullOrEmpty(clientId) && grant.ClientId != clientId)
             {
                 logger.LogError("Grant not found doesn't match with clientId:{Key}", clientId);
@@ -66,7 +68,7 @@
 
                 GrantTypes.RequestUri => mapper.Map<RequestUriGrant>(grant),
 
-                _ => mapper.Map<Grant>(grant)
+                _ => mapper.Map<Grant>(grant),
             };
         }
 
@@ -107,7 +109,7 @@
             if (grant != null)
             {
                 await grantRepository.Delete(key);
-                logger.LogInformation("Grant deleted with, key:{Key}", grant?.Key);
+                logger.LogInformation("Grant deleted with, key:{Key}", grant.Key);
             }
         }
     }

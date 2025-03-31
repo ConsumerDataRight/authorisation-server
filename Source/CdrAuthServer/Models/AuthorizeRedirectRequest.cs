@@ -1,7 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Security.Claims;
-using System.Text;
 
 namespace CdrAuthServer.Models
 {
@@ -15,6 +12,7 @@ namespace CdrAuthServer.Models
 
         [JsonProperty("dh_brand_name")]
         public string DhBrandName { get; set; } = string.Empty;
+
         [JsonProperty("dh_brand_abn")]
         public string DhBrandAbn { get; set; } = string.Empty;
 

@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 
 namespace CdrAuthServer.Extensions
 {
@@ -15,7 +13,7 @@ namespace CdrAuthServer.Extensions
 
             if (jwt.Payload.TryGetValue(claimType, out var claimValue))
             {
-                return (claimValue == null ? null : claimValue.ToString());
+                return claimValue == null ? null : claimValue.ToString();
             }
 
             return null;

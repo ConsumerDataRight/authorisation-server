@@ -1,3 +1,7 @@
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Web;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.APIs;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
@@ -14,13 +18,9 @@ using Jose;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Web;
 using Xunit;
-using Xunit.DependencyInjection;
 using XUnit_Skippable;
+using Xunit.DependencyInjection;
 using static ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services.DataHolderAuthoriseService;
 using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
@@ -40,9 +40,9 @@ namespace CdrAuthServer.IntegrationTests
         public US12678_CdrAuthServer_Authorisation(
             IOptions<TestAutomationOptions> options,
             IOptions<TestAutomationAuthServerOptions> authServerOptions,
-           IDataHolderParService dataHolderParService,
-           IDataHolderTokenService dataHolderTokenService,
-           ISqlQueryService sqlQueryService,
+            IDataHolderParService dataHolderParService,
+            IDataHolderTokenService dataHolderTokenService,
+            ISqlQueryService sqlQueryService,
             IApiServiceDirector apiServiceDirector,
             ITestOutputHelperAccessor testOutputHelperAccessor,
             IConfiguration config)
@@ -81,11 +81,30 @@ namespace CdrAuthServer.IntegrationTests
 
             // Act
             var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
-            if (tokenResponse == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - TokenResponse is null");
-            if (tokenResponse.IdToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Id token is null");
-            if (tokenResponse.AccessToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Access token is null");
-            if (tokenResponse.RefreshToken == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Refresh token is null");
-            if (tokenResponse.CdrArrangementId == null) throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - CdrArrangementId is null");
+            if (tokenResponse == null)
+            {
+                throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - TokenResponse is null");
+            }
+
+            if (tokenResponse.IdToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Id token is null");
+            }
+
+            if (tokenResponse.AccessToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Access token is null");
+            }
+
+            if (tokenResponse.RefreshToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - Refresh token is null");
+            }
+
+            if (tokenResponse.CdrArrangementId == null)
+            {
+                throw new InvalidOperationException($"{nameof(AC01_Get_WithValidRequest_ShouldRespondWith_302Redirect_RedirectToRedirectURI_IdToken)} - CdrArrangementId is null");
+            }
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -116,11 +135,17 @@ namespace CdrAuthServer.IntegrationTests
 
             try
             {
-
                 var response = await _dataHolderParService.SendRequest(_options.SCOPE, _options.LastRegisteredClientId);
-                if (response.StatusCode != HttpStatusCode.Created) throw new Exception("Error with PAR request - StatusCode");
+                if (response.StatusCode != HttpStatusCode.Created)
+                {
+                    throw new Exception("Error with PAR request - StatusCode");
+                }
+
                 var parResponse = await _dataHolderParService.DeserializeResponse(response);
-                if (string.IsNullOrEmpty(parResponse?.RequestURI)) throw new Exception("Error with PAR request - RequestURI");
+                if (string.IsNullOrEmpty(parResponse?.RequestURI))
+                {
+                    throw new Exception("Error with PAR request - RequestURI");
+                }
 
                 var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
                     .WithRequestUri(parResponse.RequestURI)
@@ -141,7 +166,8 @@ namespace CdrAuthServer.IntegrationTests
                 if (_authServerOptions.JARM_ENCRYPTION_ON)
                 {
                     // Decrypt the JARM JWT.
-                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename,
+                    var privateKeyCertificate = new X509Certificate2(
+                        Constants.Certificates.JwtCertificateFilename,
                         Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();
                     JweToken token = JWE.Decrypt(queryValueResponse, privateKey);
@@ -157,7 +183,6 @@ namespace CdrAuthServer.IntegrationTests
             {
                 _sqlQueryService.SetStatus(entityType, entityId, saveStatus);
             }
-
         }
 
         [SkippableTheory]
@@ -205,13 +230,13 @@ namespace CdrAuthServer.IntegrationTests
                 response.StatusCode.Should().Be(expectedStatusCode);
 
                 // Check redirect path
-                var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                var redirectPath = response.Headers.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
                 // Check redirect fragment
                 if (expectedRedirectFragment != null)
                 {
-                    var redirectFragment = HttpUtility.UrlDecode(response?.Headers?.Location?.Fragment.TrimStart('#'));
+                    var redirectFragment = HttpUtility.UrlDecode(response.Headers.Location?.Fragment.TrimStart('#'));
                     redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
                 }
             }
@@ -234,7 +259,6 @@ namespace CdrAuthServer.IntegrationTests
             {
                 expectedRedirectPath = _accountLoginUrl;
             }
-
 
             // Arrange
             Arrange();
@@ -259,20 +283,16 @@ namespace CdrAuthServer.IntegrationTests
                 if (expectedRedirectPath != null)
                 {
                     // Check redirect path
-                    var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                    var redirectPath = response.Headers.Location?.GetLeftPart(UriPartial.Path);
                     redirectPath.Should().Be(expectedRedirectPath);
-                }
-
-                // Assert - Check error response
-                if (response?.StatusCode == HttpStatusCode.BadRequest)
-                {
                 }
             }
         }
 
         [SkippableTheory]
-        [InlineData(false, HttpStatusCode.Redirect)] // Successful request should redirect to the DH login URI 
-        [InlineData(true, // Additional unsupported scope should be ignored
+        [InlineData(false, HttpStatusCode.Redirect)] // Successful request should redirect to the DH login URI
+        [InlineData(
+            true, // Additional unsupported scope should be ignored
             HttpStatusCode.Redirect)]
         public async Task AC04_Get_WithInvalidScope_ShouldRespondWith_200OK_Response(bool useAdditionalScope, HttpStatusCode expectedStatusCode)
         {
@@ -367,13 +387,13 @@ namespace CdrAuthServer.IntegrationTests
                 response.StatusCode.Should().Be(expectedStatusCode);
 
                 // Check redirect path
-                var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                var redirectPath = response.Headers.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
                 // Check redirect fragment
                 if (expectedRedirectFragment != null)
                 {
-                    var redirectFragment = HttpUtility.UrlDecode(response?.Headers?.Location?.Fragment.TrimStart('#'));
+                    var redirectFragment = HttpUtility.UrlDecode(response.Headers.Location?.Fragment.TrimStart('#'));
                     redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
                 }
             }
@@ -381,7 +401,7 @@ namespace CdrAuthServer.IntegrationTests
 
         [SkippableTheory]
         [InlineData(Constants.SoftwareProducts.SoftwareProductId, HttpStatusCode.Redirect, true)]
-        [InlineData(Constants.GuidFoo, HttpStatusCode.Redirect, false)]  // Unsuccessful request should redirect back to DR
+        [InlineData(Constants.GuidFoo, HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
         public async Task AC06_Get_WithInvalidClientID_ShouldRespondWith_302Redirect_ErrorResponse(string softwareProductId, HttpStatusCode expectedStatusCode, bool useSpecificUrl)
         {
             if (_authServerOptions.HEADLESSMODE)
@@ -425,13 +445,13 @@ namespace CdrAuthServer.IntegrationTests
                 response.StatusCode.Should().Be(expectedStatusCode);
 
                 // Check redirect path
-                var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                var redirectPath = response.Headers.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
                 // Check redirect fragment
                 if (expectedRedirectFragment != null)
                 {
-                    var redirectFragment = HttpUtility.UrlDecode(response?.Headers?.Location?.Fragment.TrimStart('#'));
+                    var redirectFragment = HttpUtility.UrlDecode(response.Headers.Location?.Fragment.TrimStart('#'));
                     redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
                 }
             }
@@ -476,7 +496,7 @@ namespace CdrAuthServer.IntegrationTests
                 throw new SkipTestException("Test not applicable for headless mode.");
             }
 
-            var expectedError = new InvalidRequestException(""); //TODO: Why doesn't this use a description? Bug 64158
+            var expectedError = new InvalidRequestException(string.Empty); // TODO: Why doesn't this use a description? Bug 64158
             var expectedRedirectPath = "https://localhost:9001/foo";
 
             // Arrange
@@ -545,13 +565,13 @@ namespace CdrAuthServer.IntegrationTests
                 response.StatusCode.Should().Be(expectedStatusCode);
 
                 // Check redirect path
-                var redirectPath = response?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                var redirectPath = response.Headers.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
                 // Check redirect query
                 if (expectedRedirectFragment != null)
                 {
-                    var redirectFragment = HttpUtility.UrlDecode(response?.Headers?.Location?.Fragment.TrimStart('#'));
+                    var redirectFragment = HttpUtility.UrlDecode(response.Headers.Location?.Fragment.TrimStart('#'));
                     redirectFragment.Should().StartWith(HttpUtility.UrlDecode(expectedRedirectFragment));
                 }
             }

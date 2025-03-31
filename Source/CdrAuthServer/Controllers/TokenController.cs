@@ -47,14 +47,14 @@ namespace CdrAuthServer.Controllers
             if (!validationResult.IsValid)
             {
                 _logger.LogInformation("Validation failed - {@ValidationResult}", validationResult);
-                return new JsonResult(new Error(validationResult.Error, validationResult.ErrorDescription)) { StatusCode = validationResult.StatusCode ?? 400 };
+                return new JsonResult(new Error(validationResult.Error ?? string.Empty, validationResult.ErrorDescription)) { StatusCode = validationResult.StatusCode ?? 400 };
             }
 
             // Client Id is optional in the token request from the client but is required in the token repsonse.
             // If client Id is not provided in the request then use the client Id that was extracted from the client assertion.
-            if (string.IsNullOrEmpty(tokenRequest.client_id) && !string.IsNullOrEmpty(clientId))
+            if (string.IsNullOrEmpty(tokenRequest.Client_id) && !string.IsNullOrEmpty(clientId))
             {
-                tokenRequest.client_id = clientId;
+                tokenRequest.Client_id = clientId;
             }
 
             var cnf = GetClientCertificateThumbprint();
@@ -74,10 +74,10 @@ namespace CdrAuthServer.Controllers
             var configOptions = _config.GetConfigurationOptions(this.HttpContext);
             if (this.HttpContext.Request.Headers.TryGetValue(configOptions.ClientCertificateThumbprintHttpHeaderName, out StringValues headerThumbprints))
             {
-                return headerThumbprints.First();
+                return headerThumbprints[0] ?? string.Empty;
             }
 
-            return "";
+            return string.Empty;
         }
     }
 }

@@ -8,9 +8,9 @@ namespace CdrAuthServer
 {
     public class ErrorCatalogue
     {
-        static ErrorCatalogue? _instance;
-        private static readonly object locker = new();
+        private static readonly object Locker = new();
         private static readonly Dictionary<string, ErrorDefinition> _errorCatalogue = [];
+        private static ErrorCatalogue? _instance;
 
         public static class Categories
         {
@@ -43,7 +43,7 @@ namespace CdrAuthServer
         public const string MTLS_CERT_OCSP_FAILED = "ERR-MTLS-003";
         public const string MTLS_CERT_OCSP_ERROR = "ERR-MTLS-004";
 
-        //Auth
+        // Auth
         public const string AUTHORIZATION_HOLDER_OF_KEY_CHECK_FAILED = "ERR-AUTH-001";
         public const string AUTHORIZATION_ACCESS_TOKEN_REVOKED = "ERR-AUTH-002";
         public const string AUTHORIZATION_INSUFFICIENT_SCOPE = "ERR-AUTH-003";
@@ -54,7 +54,7 @@ namespace CdrAuthServer
         public const string REQUEST_URI_MISSING = "ERR-AUTH-008";
         public const string ACCESS_DENIED = "ERR-AUTH-009";
 
-        //Client Assertion
+        // Client Assertion
         public const string CLIENT_ASSERTION_TYPE_NOT_PROVIDED = "ERR-CLIENT_ASSERTION-002";
         public const string INVALID_CLIENT_ASSERTION_TYPE = "ERR-CLIENT_ASSERTION-003";
         public const string CLIENT_ASSERTION_CLIENT_ID_MISMATCH = "ERR-CLIENT_ASSERTION-004";
@@ -64,17 +64,16 @@ namespace CdrAuthServer
         public const string CLIENT_ASSERTION_SUBJECT_ISS_NOT_SAME_VALUE = "ERR-CLIENT_ASSERTION-008";
         public const string CLIENT_ASSERTION_MISSING_ISS_CLAIM = "ERR-CLIENT_ASSERTION-009";
 
-
-        //CDR Arrangement
+        // CDR Arrangement
         public const string INVALID_CONSENT_CDR_ARRANGEMENT = "ERR-ARR-001";
 
-        //JWT
+        // JWT
         public const string JWT_INVALID_AUDIENCE = "ERR-JWT-001";
         public const string JWT_EXPIRED = "ERR-JWT-002";
         public const string JWKS_ERROR = "ERR-JWT-003";
         public const string JWT_VALIDATION_ERROR = "ERR-JWT-004";
 
-        //DCR
+        // DCR
         public const string DUPLICATE_REGISTRATION = "ERR-DCR-001";
         public const string EMPTY_REGISTRATION_REQUEST = "ERR-DCR-002";
         public const string REGISTRATION_REQUEST_INVALID_REDIRECT_URI = "ERR-DCR-003";
@@ -83,8 +82,7 @@ namespace CdrAuthServer
         public const string SOFTWARE_STATEMENT_INVALID_OR_EMPTY = "ERR-DCR-006";
         public const string INVALID_SECTOR_IDENTIFIER_URI = "ERR-DCR-007";
 
-
-        //Token
+        // Token
         public const string REFRESH_TOKEN_EXPIRED = "ERR-TKN-001";
         public const string INVALID_REFRESH_TOKEN = "ERR-TKN-002";
         public const string REFRESH_TOKEN_MISSING = "ERR-TKN-003";
@@ -93,8 +91,7 @@ namespace CdrAuthServer
         public const string CODE_VERIFIER_IS_MISSING = "ERR-TKN-006";
         public const string INVALID_AUTHORIZATION_CODE = "ERR-TKN-007";
 
-
-        //General
+        // General
         public const string SOFTWARE_PRODUCT_NOT_FOUND = "ERR-GEN-001";
         public const string SOFTWARE_PRODUCT_STATUS_INACTIVE = "ERR-GEN-002";
         public const string SOFTWARE_PRODUCT_REMOVED = "ERR-GEN-003";
@@ -157,7 +154,7 @@ namespace CdrAuthServer
             // Authorization errors.
             AddToCatalogue(AUTHORIZATION_HOLDER_OF_KEY_CHECK_FAILED, Categories.Authorization, "invalid_token", "Holder of Key check failed", StatusCodes.Status401Unauthorized);
             AddToCatalogue(AUTHORIZATION_ACCESS_TOKEN_REVOKED, Categories.Authorization, "invalid_token", "Access Token check failed - it has been revoked", StatusCodes.Status401Unauthorized);
-            AddToCatalogue(AUTHORIZATION_INSUFFICIENT_SCOPE, Categories.Authorization, "insufficient_scope", "", StatusCodes.Status403Forbidden);
+            AddToCatalogue(AUTHORIZATION_INSUFFICIENT_SCOPE, Categories.Authorization, "insufficient_scope", string.Empty, StatusCodes.Status403Forbidden);
             AddToCatalogue(REQUEST_URI_ALREADY_USED, Categories.Authorization, ErrorCodes.Generic.InvalidRequestUri, "request_uri has already been used", StatusCodes.Status400BadRequest);
             AddToCatalogue(REQUEST_URI_CLIENT_ID_MISMATCH, Categories.Authorization, ErrorCodes.Generic.InvalidRequest, "client_id does not match request_uri client_id", StatusCodes.Status400BadRequest);
             AddToCatalogue(REQUEST_URI_EXPIRED, Categories.Authorization, ErrorCodes.Generic.InvalidRequestUri, "request_uri has expired", StatusCodes.Status400BadRequest);
@@ -173,10 +170,9 @@ namespace CdrAuthServer
             AddToCatalogue(SSA_VALIDATION_FAILED, Categories.DCR, ErrorCodes.Generic.InvalidSoftwareStatement, "SSA validation failed.", StatusCodes.Status401Unauthorized);
             AddToCatalogue(SOFTWARE_STATEMENT_INVALID_OR_EMPTY, Categories.DCR, ErrorCodes.Generic.InvalidSoftwareStatement, "The software_statement is empty or invalid", StatusCodes.Status401Unauthorized);
 
-            //Client Assertion errors
+            // Client Assertion errors
 
-
-            //token errors
+            // token errors
             AddToCatalogue(CLIENT_NOT_FOUND, Categories.Token, ErrorCodes.Generic.InvalidClient, "Client not found", StatusCodes.Status400BadRequest);
             AddToCatalogue(REFRESH_TOKEN_EXPIRED, Categories.Token, ErrorCodes.Generic.InvalidGrant, "refresh_token has expired", StatusCodes.Status400BadRequest);
             AddToCatalogue(INVALID_REFRESH_TOKEN, Categories.Token, ErrorCodes.Generic.InvalidGrant, "refresh_token is invalid", StatusCodes.Status400BadRequest);
@@ -186,16 +182,16 @@ namespace CdrAuthServer
             AddToCatalogue(CODE_VERIFIER_IS_MISSING, Categories.Token, ErrorCodes.Generic.InvalidGrant, "code_verifier is missing", StatusCodes.Status400BadRequest);
             AddToCatalogue(INVALID_AUTHORIZATION_CODE, Categories.Token, ErrorCodes.Generic.InvalidGrant, "authorization code is invalid", StatusCodes.Status400BadRequest);
 
-            //arrangement errors
+            // arrangement errors
             AddToCatalogue(INVALID_CONSENT_CDR_ARRANGEMENT, Categories.Arrangement, ErrorCodes.Cds.InvalidConsentArrangement, "Invalid Consent Arrangement", StatusCodes.Status422UnprocessableEntity);
 
-            //jwt errors
+            // jwt errors
             AddToCatalogue(JWT_INVALID_AUDIENCE, Categories.JWT, ErrorCodes.Generic.InvalidClient, @"{0} - Invalid audience", StatusCodes.Status400BadRequest);
             AddToCatalogue(JWT_EXPIRED, Categories.JWT, ErrorCodes.Generic.InvalidClient, @"{0} has expired", StatusCodes.Status400BadRequest);
             AddToCatalogue(JWKS_ERROR, Categories.JWT, ErrorCodes.Generic.InvalidClient, @"{0} - jwks error", StatusCodes.Status400BadRequest);
             AddToCatalogue(JWT_VALIDATION_ERROR, Categories.JWT, ErrorCodes.Generic.InvalidClient, @"{0} - token validation error", StatusCodes.Status400BadRequest);
 
-            //general errors
+            // general errors
             AddToCatalogue(SOFTWARE_PRODUCT_NOT_FOUND, Categories.General, ErrorCodes.Generic.InvalidClient, "Software product not found", StatusCodes.Status403Forbidden, true);
             AddToCatalogue(SOFTWARE_PRODUCT_STATUS_INACTIVE, Categories.General, ErrorCodes.Cds.AdrStatusNotActive, "Software product status is {0}", StatusCodes.Status403Forbidden, true, "ADR Status Is Not Active");
             AddToCatalogue(SOFTWARE_PRODUCT_REMOVED, Categories.General, ErrorCodes.Cds.AdrStatusNotActive, "Software product status is removed - consents cannot be revoked", StatusCodes.Status403Forbidden, true, "ADR Status Is Not Active");
@@ -260,15 +256,16 @@ namespace CdrAuthServer
         {
             if (_instance == null)
             {
-                lock (locker)
+                lock (Locker)
                 {
                     _instance ??= new ErrorCatalogue();
                 }
             }
+
             return _instance;
         }
 
-        public (Error, int) GetError(string code)
+        public static (Error Error, int StatusCode) GetError(string code)
         {
             var errorDefinition = _errorCatalogue[code];
             if (errorDefinition == null)
@@ -279,7 +276,7 @@ namespace CdrAuthServer
             return (new Error(errorDefinition.Error, errorDefinition.ErrorDescription), errorDefinition.StatusCode);
         }
 
-        public (Error, int) GetError(string code, string? context)
+        public (Error Error, int StatusCode) GetError(string code, string? context)
         {
             var errorDefinition = GetErrorDefinition(code);
             var errorDescription = errorDefinition.ErrorDescription;
@@ -310,7 +307,6 @@ namespace CdrAuthServer
             return errorDefinition;
         }
 
-       
         public int GetStatusCode(string code)
         {
             var errorDefinition = _errorCatalogue[code];
@@ -333,7 +329,7 @@ namespace CdrAuthServer
 
             if (errorDefinition.IsCdsError)
             {
-                var cdsError = new CdsError(errorDefinition.Error, errorDefinition.ErrorTitle ?? "", errorDescription);                
+                var cdsError = new CdsError(errorDefinition.Error, errorDefinition.ErrorTitle ?? string.Empty, errorDescription);
                 return new JsonResult(new ResponseErrorList(cdsError)) { StatusCode = errorDefinition.StatusCode };
             }
 
@@ -356,11 +352,17 @@ namespace CdrAuthServer
         public class ErrorDefinition
         {
             public string Category { get; private set; }
+
             public string Code { get; private set; }
+
             public string Error { get; private set; }
+
             public string ErrorDescription { get; private set; }
+
             public string? ErrorTitle { get; private set; }
+
             public int StatusCode { get; private set; }
+
             public bool IsCdsError { get; private set; } = false;
 
             public ErrorDefinition(
@@ -381,6 +383,5 @@ namespace CdrAuthServer
                 this.ErrorTitle = errorTitle;
             }
         }
-
     }
 }

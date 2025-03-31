@@ -1,11 +1,10 @@
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
 
 // #nullable enable
-
 namespace CdrAuthServer.Infrastructure
 {
     /// <summary>
@@ -16,15 +15,18 @@ namespace CdrAuthServer.Infrastructure
         public SigningCredentials SigningCredentials { get; set; }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the Pkcs8 private key from X509 certificate.
         /// </summary>
         /// <param name="certFilePath">The path to the certificate.</param>
         /// <param name="pwd">The password of the certificate.</param>
-        public PrivateKeyJwt(string certFilePath, string pwd) : this(new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable))
+        public PrivateKeyJwt(string certFilePath, string pwd)
+            : this(new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable))
         {
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the Pkcs8 private key from X509 certificate.
         /// </summary>
         /// <param name="signingCertificate">The certificate used to sign the private key jwt.</param>
@@ -34,6 +36,7 @@ namespace CdrAuthServer.Infrastructure
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the private key directly.
         /// </summary>
         /// <param name="privateKey">The path to the certificate.</param>
@@ -50,9 +53,9 @@ namespace CdrAuthServer.Infrastructure
         /// <summary>
         /// Generate the private_key_jwt using the provided private key.
         /// </summary>
-        /// <param name="issuer">The issuer of the JWT, usually set to the softwareProductId</param>
-        /// <param name="audience">The audience of the JWT, usually set to the target token endpoint</param>
-        /// <returns>A base64 encoded JWT</returns>
+        /// <param name="issuer">The issuer of the JWT, usually set to the softwareProductId.</param>
+        /// <param name="audience">The audience of the JWT, usually set to the target token endpoint.</param>
+        /// <returns>A base64 encoded JWT.</returns>
         public string Generate(
             string issuer,
             string audience,
@@ -80,7 +83,7 @@ namespace CdrAuthServer.Infrastructure
             {
                 new Claim("sub", issuer),
                 new Claim("jti", jti ?? Guid.NewGuid().ToString()),
-                new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer)
+                new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer),
             };
             var jwt = new JwtSecurityToken(issuer, audience, claims, expires: expiry, signingCredentials: this.SigningCredentials);
             var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();

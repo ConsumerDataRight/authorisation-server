@@ -60,11 +60,11 @@ namespace CdrAuthServer.Controllers
 
             var clientId = User.GetClientId();
             var configOptions = _config.GetConfigurationOptions(this.HttpContext);
-            var (result, validatedRequest) = await _parValidator.Validate(clientId, request, configOptions);
+            var (result, validatedRequest) = await _parValidator.Validate(clientId ?? string.Empty, request, configOptions);
             if (!result.IsValid)
             {
                 _logger.LogError("parvalidator returned error:{Error} errordescription:{Desc}", result.Error, result.ErrorDescription);
-                return new JsonResult(new Error(result.Error, result.ErrorDescription)) { StatusCode = result.StatusCode };
+                return new JsonResult(new Error(result.Error ?? string.Empty, result.ErrorDescription)) { StatusCode = result.StatusCode };
             }
 
             // Create the par grant.
@@ -72,10 +72,10 @@ namespace CdrAuthServer.Controllers
             {
                 GrantType = GrantTypes.RequestUri,
                 Key = $"urn:{Guid.NewGuid()}",
-                ClientId = clientId,
+                ClientId = clientId ?? string.Empty,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddSeconds(options.RequestUriExpirySeconds),
-                Request = JsonConvert.SerializeObject(validatedRequest)
+                Request = JsonConvert.SerializeObject(validatedRequest),
             };
 
             await _grantService.Create(parGrant);
@@ -88,6 +88,5 @@ namespace CdrAuthServer.Controllers
 
             return new JsonResult(parCreatedResponse) { StatusCode = 201 };
         }
-
     }
 }

@@ -4,7 +4,6 @@ namespace CdrAuthServer.Models
 {
     public class Error
     {
-
         [JsonProperty("error")]
         public string Code { get; set; }
 

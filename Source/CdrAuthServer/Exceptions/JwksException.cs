@@ -2,11 +2,13 @@
 {
     public class JwksException : Exception
     {
-        public JwksException() : base()
+        public JwksException()
+            : base()
         {
         }
 
-        public JwksException(string message) : base(message)
+        public JwksException(string message)
+            : base(message)
         {
         }
     }

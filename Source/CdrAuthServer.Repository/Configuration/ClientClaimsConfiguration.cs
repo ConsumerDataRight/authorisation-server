@@ -16,10 +16,9 @@
 
             builder.HasIndex(cc => cc.ClientId, "IX_ClientClaims_ClientId");
 
-            builder.HasData(                
-                    new ClientClaims {Id=1, Type = "SoftwareId", Value = "22222222-2222-2222-2222-222222222222", ClientId = "11111111-1111-1111-1111-111111111111" },
-                    new ClientClaims {Id=2, Type = "JwksUri",Value = "https://localhost:9001/jwks",ClientId = "11111111-1111-1111-1111-111111111111" }
-                    );
+            builder.HasData(
+                    new ClientClaims { Id = 1, Type = "SoftwareId", Value = "22222222-2222-2222-2222-222222222222", ClientId = "11111111-1111-1111-1111-111111111111" },
+                    new ClientClaims { Id = 2, Type = "JwksUri", Value = "https://localhost:9001/jwks", ClientId = "11111111-1111-1111-1111-111111111111" });
         }
     }
 }

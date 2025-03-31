@@ -1,4 +1,4 @@
-#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
+﻿#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
@@ -27,14 +27,19 @@ namespace CdrAuthServer.IntegrationTests
 
             _apiServiceDirector = apiServiceDirector ?? throw new System.ArgumentNullException(nameof(apiServiceDirector));
         }
+
         private class AC01_Expected
         {
             public class Key
             {
                 public string? kty { get; set; }
+
                 public string? use { get; set; }
+
                 public string? kid { get; set; }
+
                 public string? e { get; set; }
+
                 public string? n { get; set; }
             }
 

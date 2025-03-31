@@ -15,7 +15,7 @@ namespace CdrAuthServer.Authorisation
 
         public HolderOfKeyHandler(
             IConfiguration config,
-            IHttpContextAccessor httpContextAccessor, 
+            IHttpContextAccessor httpContextAccessor,
             ILogger<HolderOfKeyHandler> logger)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -31,10 +31,8 @@ namespace CdrAuthServer.Authorisation
                 return Task.CompletedTask;
             }
 
-            //
-            //  Check that the thumbprint of the client cert used for TLS MA is the same
-            //  as the one expected by the cnf:x5t#S256 claim in the access token 
-            //
+            // Check that the thumbprint of the client cert used for TLS MA is the same
+            // as the one expected by the cnf:x5t#S256 claim in the access token
             string? requestHeaderClientCertThumprint = null;
             if (_httpContextAccessor.HttpContext?.Request.Headers.TryGetValue(_configOptions.ClientCertificateThumbprintHttpHeaderName, out StringValues headerThumbprints) is true)
             {

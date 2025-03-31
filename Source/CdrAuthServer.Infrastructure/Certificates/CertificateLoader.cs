@@ -18,15 +18,15 @@ namespace CdrAuthServer.Infrastructure.Certificates
             switch (loadDetails.Source)
             {
                 case CertificateSource.File:
-                    return LoadCertificateFromBytes(File.ReadAllBytes(loadDetails.Location), loadDetails.Password);
+                    return LoadCertificateFromBytes(await File.ReadAllBytesAsync(loadDetails.Location), loadDetails.Password);
 
                 case CertificateSource.Url:
-                    return LoadCertificateFromBytes((await DownloadData(loadDetails.Location)), loadDetails.Password);
+                    return LoadCertificateFromBytes(await DownloadData(loadDetails.Location), loadDetails.Password);
 
                 case CertificateSource.Raw:
                     return LoadCertificateFromBytes(Convert.FromBase64String(loadDetails.Content), loadDetails.Password);
 
-                case CertificateSource.KeyVault:                    
+                case CertificateSource.KeyVault:
                     throw new NotImplementedException();
 
                 default:
@@ -44,7 +44,7 @@ namespace CdrAuthServer.Infrastructure.Certificates
             return new X509Certificate2(certBytes, password, X509KeyStorageFlags.Exportable);
         }
 
-        private async static Task<byte[]> DownloadData(string url)
+        private static async Task<byte[]> DownloadData(string url)
         {
             using (var http = new HttpClient())
             {

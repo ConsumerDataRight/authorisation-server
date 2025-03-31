@@ -2,21 +2,27 @@
 {
     public class CdrApiEndpointVersionOptions
     {
-        public readonly string Path;
-        public readonly bool IsVersioned;
-        public readonly bool IsXVHeaderMandatory;
-        public readonly int? CurrentMinVersion;
-        public readonly int? CurrentMaxVersion;
-        public readonly int? MinVerForResponseErrorListV2; //any supported versions earlier than this number will use ResponseErrorList (v1) as per the CDS standards. Potentially everything uses ResponseErrorListv2 now
+        public string Path { get; }
+
+        public bool IsVersioned { get; }
+
+        public bool IsXVHeaderMandatory { get; }
+
+        public int? CurrentMinVersion { get; }
+
+        public int? CurrentMaxVersion { get; }
+
+        public int? MinVerForResponseErrorListV2 { get; }// any supported versions earlier than this number will use ResponseErrorList (v1) as per the CDS standards. Potentially everything uses ResponseErrorListv2 now
 
         /// <summary>
-        /// Constructs an option set where multiple versions of the endpoint are supported
+        /// Initializes a new instance of the <see cref="CdrApiEndpointVersionOptions"/> class.
+        /// option set where multiple versions of the endpoint are supported.
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="isXvMandatory"></param>
-        /// <param name="minVersion"></param>
-        /// <param name="maxVersion"></param>
-        /// <param name="minVersionForErrorListV2"></param>
+        /// <param name="path">Path of API endpoints.</param>
+        /// <param name="isXvMandatory">Options to specifiy Xv is mandatory.</param>
+        /// <param name="minVersion">minVersion of the API.</param>
+        /// <param name="maxVersion">maxVersion of the API.</param>
+        /// <param name="minVersionForErrorListV2">minVersionForErrorListV2.</param>
         public CdrApiEndpointVersionOptions(string path, bool isXvMandatory, int minVersion, int maxVersion, int minVersionForErrorListV2)
         {
             Path = path;
@@ -28,11 +34,12 @@
         }
 
         /// <summary>
-        /// Constructs an option set where only one version of the endpoint is supported
+        /// Initializes a new instance of the <see cref="CdrApiEndpointVersionOptions"/> class.
+        /// Constructs an option set where only one version of the endpoint is supported.
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="isXvMandatory"></param>
-        /// <param name="version"></param>
+        /// <param name="path">Path of API endpoints.</param>
+        /// <param name="isXvMandatory">Options to specifiy Xv is mandatory.</param>
+        /// <param name="version">Version of the API.</param>
         public CdrApiEndpointVersionOptions(string path, bool isXvMandatory, int version)
         {
             Path = path;
@@ -44,9 +51,10 @@
         }
 
         /// <summary>
-        /// Constructs an option set where the endpoint is unversioned
+        /// Initializes a new instance of the <see cref="CdrApiEndpointVersionOptions"/> class.
+        /// Constructs an option set where the endpoint is unversioned.
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path"> Path of API endpoints.</param>
         public CdrApiEndpointVersionOptions(string path)
         {
             Path = path;

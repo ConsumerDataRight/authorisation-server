@@ -11,6 +11,8 @@ RUN echo $VSS_NUGET_EXTERNAL_FEED_ENDPOINTS
 
 # Copy Source and build for integration tests
 COPY . /src
+COPY ./Directory.Build.props /src/Directory.Build.props
+COPY ./.editorconfig /src/.editorconfig
 WORKDIR /src/CdrAuthServer.GetDataRecipients
 ARG BUILD_CONFIGURATION=Release 
 RUN dotnet restore

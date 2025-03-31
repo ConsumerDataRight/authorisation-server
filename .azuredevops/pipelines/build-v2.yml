@@ -194,8 +194,8 @@ jobs:
 
       # Output Docker Logs
       - script: |
-          docker logs mock-register
-          docker logs cdr-auth-server-standalone
+          docker logs mock-register-cdr-auth-server-integration-tests
+          docker logs cdr-auth-server-standalone-integration-tests
         displayName: 'Output Docker Logs'  
         condition: always()
 
@@ -245,8 +245,8 @@ jobs:
 
       # Output Docker Logs
       - script: |
-          docker logs mock-register
-          docker logs cdr-auth-server-standalone
+          docker logs mock-register-cdr-auth-server-integration-tests
+          docker logs cdr-auth-server-standalone-integration-tests
         displayName: 'Output Docker Logs'  
         condition: always()
 
@@ -314,8 +314,8 @@ jobs:
 
       # Output Docker Logs
       - script: |
-          docker logs mock-register
-          docker logs cdr-auth-server-standalone
+          docker logs mock-register-cdr-auth-server-e2e-tests
+          docker logs cdr-auth-server-standalone-e2e-tests
         displayName: 'Output Docker Logs'  
         condition: always()
 

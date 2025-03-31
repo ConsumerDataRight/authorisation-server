@@ -23,19 +23,18 @@ namespace CdrAuthServer.Services
             return mapper.Map<SoftwareProduct>(entity);
         }
 
-        public async Task InsertDataRecipients(List<SoftwareProduct> softwareProducts) 
+        public async Task InsertDataRecipients(List<SoftwareProduct> softwareProducts)
         {
             if (softwareProducts.Count > 0)
             {
                 var softwareProductList = mapper.Map<List<CdrAuthServer.Domain.Entities.SoftwareProduct>>(softwareProducts);
-                await cdrRepository.InsertDataRecipients(softwareProductList);                
-            }            
+                await cdrRepository.InsertDataRecipients(softwareProductList);
+            }
         }
 
         public async Task PurgeDataRecipients()
-        {            
-          await cdrRepository.PurgeDataRecipients();            
+        {
+            await cdrRepository.PurgeDataRecipients();
         }
-        
     }
 }

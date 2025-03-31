@@ -1,13 +1,13 @@
-﻿using CdrAuthServer.Configuration;
+﻿using System.Security.Claims;
+using System.Text;
+using System.Web;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
-using System.Text;
-using System.Web;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -50,15 +50,16 @@ namespace CdrAuthServer.Controllers
             if (!validationResult.IsValid)
             {
                 _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
-                return await CallbackErrorResponse(validationResult, authRequest.client_id, configOptions);
+                return await CallbackErrorResponse(validationResult, authRequest.Client_id, configOptions);
             }
 
             // Retrieve the request uri grant, this has already been validated in the validator.
-            if (await _grantService.Get(GrantTypes.RequestUri, authRequest.request_uri, authRequest.client_id) is not RequestUriGrant requestUriGrant)
+            if (await _grantService.Get(GrantTypes.RequestUri, authRequest.Request_uri, authRequest.Client_id) is not RequestUriGrant requestUriGrant)
             {
-                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authRequest.request_uri, authRequest.client_id);
+                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authRequest.Request_uri, authRequest.Client_id);
                 throw new InvalidOperationException($"requestUriGrant is null or not found");
             }
+
             requestUriGrant.UsedAt = DateTime.UtcNow;
             await _grantService.Update(requestUriGrant);
 
@@ -66,7 +67,7 @@ namespace CdrAuthServer.Controllers
             {
                 if (configOptions.HeadlessModeRequiresConfirmation)
                 {
-                    return OutputAuthConfirmation($"{configOptions.BaseUri}{configOptions.BasePath}/connect/authorize-confirm", authRequest.request_uri, authRequest.client_id);
+                    return OutputAuthConfirmation($"{configOptions.BaseUri}{configOptions.BasePath}/connect/authorize-confirm", authRequest.Request_uri, authRequest.Client_id);
                 }
 
                 var user = new HeadlessModeUser();
@@ -74,10 +75,10 @@ namespace CdrAuthServer.Controllers
             }
 
             // Create params to redirect to the auth UI
-            var client = await _clientService.Get(authRequest.client_id);
+            var client = await _clientService.Get(authRequest.Client_id);
 
-            //get sharing_duration
-            var parRequestData = JsonConvert.DeserializeObject<AuthorizationRequestObject>(requestUriGrant.Data["request"] as string);
+            // get sharing_duration
+            var parRequestData = JsonConvert.DeserializeObject<AuthorizationRequestObject>(requestUriGrant.Data["request"] as string ?? string.Empty);
 
             var authorizeRedirectRequest = new AuthorizeRedirectRequest
             {
@@ -89,12 +90,12 @@ namespace CdrAuthServer.Controllers
                 Otp = configOptions.AutoFillOtp,
                 AuthorizeRequest = authRequest,
                 Scope = validationResult.ValidatedAuthorizationRequestObject.Scope,
-                SharingDuration = parRequestData?.Claims.SharingDuration
+                SharingDuration = parRequestData?.Claims.SharingDuration,
             };
             var jwtToken = await _tokenService.CreateToken(
                new List<Claim>()
                {
-                  new Claim("login_params", JsonConvert.SerializeObject(authorizeRedirectRequest))
+                  new Claim("login_params", JsonConvert.SerializeObject(authorizeRedirectRequest)),
                },
                client?.ClientId ?? string.Empty,
                TokenTypes.Jwt,
@@ -115,20 +116,20 @@ namespace CdrAuthServer.Controllers
             if (!validationResult.IsValid)
             {
                 _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
-                return await CallbackErrorResponse(validationResult, authCallbackRequest.client_id, configOptions);
+                return await CallbackErrorResponse(validationResult, authCallbackRequest.Client_id, configOptions);
             }
 
             // Retrieve the request uri grant, this has already been validated in the validator.
-            if (await _grantService.Get(GrantTypes.RequestUri, authCallbackRequest.request_uri, authCallbackRequest.client_id) is not RequestUriGrant requestUriGrant)
+            if (await _grantService.Get(GrantTypes.RequestUri, authCallbackRequest.Request_uri, authCallbackRequest.Client_id) is not RequestUriGrant)
             {
-                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authCallbackRequest.request_uri, authCallbackRequest.client_id);
+                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found", authCallbackRequest.Request_uri, authCallbackRequest.Client_id);
                 throw new InvalidOperationException($"requestUriGrant is null or not found");
             }
 
             return await ProcessAuthResponse(
                 validationResult.ValidatedAuthorizationRequestObject,
-                authCallbackRequest.subject_id,
-                authCallbackRequest.account_ids.Split(','),
+                authCallbackRequest.Subject_id,
+                authCallbackRequest.Account_ids.Split(','),
                 configOptions);
         }
 
@@ -151,23 +152,24 @@ namespace CdrAuthServer.Controllers
 
             var authRequest = new AuthorizeRequest()
             {
-                client_id = clientId,
-                request_uri = requestUri,
+                Client_id = clientId,
+                Request_uri = requestUri,
             };
             var validationResult = await _authorizeRequestValidator.Validate(authRequest, configOptions, false);
             if (!validationResult.IsValid)
             {
                 _logger.LogInformation("Authorization failed {@ValidationResult}", validationResult);
-                return await CallbackErrorResponse(validationResult, authRequest.client_id, configOptions);
+                return await CallbackErrorResponse(validationResult, authRequest.Client_id, configOptions);
             }
 
             // Retrieve the request uri grant, this has already been validated in the validator.
             var grant = await _grantService.Get(GrantTypes.RequestUri, requestUri, clientId) as RequestUriGrant;
             if (grant == null)
             {
-                _logger.LogError("requestUriGrant for request_uri:{Uri} for client:{Id} not found",
-                    requestUri.Replace(Environment.NewLine, ""),
-                    clientId.Replace(Environment.NewLine, ""));
+                _logger.LogError(
+                    "requestUriGrant for request_uri:{Uri} for client:{Id} not found",
+                    requestUri.Replace(Environment.NewLine, string.Empty),
+                    clientId.Replace(Environment.NewLine, string.Empty));
                 throw new InvalidOperationException("requestUriGrant is null or not found");
             }
 
@@ -210,28 +212,14 @@ namespace CdrAuthServer.Controllers
                 Key = Guid.NewGuid().ToString(),
                 Scope = FilterScopes(authRequestObject.Scope, configOptions),
                 SubjectId = subjectId,
-                AccountIdDelimitedList = String.Join(',', accountIds)
+                AccountIdDelimitedList = string.Join(',', accountIds),
             };
             await _grantService.Create(grant);
 
             _logger.LogInformation("created AuthorizationCodeGrant for client:{Id} subjectid:{Subid}", authRequestObject.ClientId, subjectId);
             string? idToken = null;
 
-            // If using hybrid flow then we need to generate an id_token to return from authorisation endpoint.
-            if (authRequestObject.ResponseType == ResponseTypes.Hybrid)
-            {
-                idToken = await _tokenService.IssueIdToken(
-                    authRequestObject.ClientId,
-                    subjectId,
-                    configOptions,
-                    true,
-                    state: authRequestObject.State,
-                    nonce: authRequestObject.Nonce,
-                    authCode: grant.Key);
-                _logger.LogInformation("created Id token for client:{Id} subjectid:{Subid}", authRequestObject.ClientId, subjectId);
-            }
-
-            var client = await _clientService.Get(authRequestObject.ClientId);
+            var client = await _clientService.Get(authRequestObject.ClientId) ?? throw new InvalidDataException("client not found");
             return await CallbackResponse(authRequestObject, client, configOptions, grant, idToken);
         }
 
@@ -239,32 +227,19 @@ namespace CdrAuthServer.Controllers
         {
             var scopes = scope.Split(' ');
             return string.Join(" ", scopes.Where(
-                s => configOptions.ScopesSupported.Contains(s) && !configOptions.ClientCredentialScopesSupported.Contains(s)));
+                s => configOptions.ScopesSupported != null && configOptions.ScopesSupported.Contains(s) && configOptions.ClientCredentialScopesSupported != null && !configOptions.ClientCredentialScopesSupported.Contains(s)));
         }
 
         private async Task<IActionResult> CallbackResponse(
-            AuthorizationRequestObject requestObject,
-            Client client,
-            ConfigurationOptions configOptions,
-            AuthorizationCodeGrant grant,
-            string? idToken = null)
+           AuthorizationRequestObject requestObject,
+           Client client,
+           ConfigurationOptions configOptions,
+           AuthorizationCodeGrant grant,
+           string? idToken = null)
         {
             // Send the error back to the client using query mode.
-            if (requestObject.ResponseMode.StartsWith("query"))
-            {
-                var queryUri = await BuildQueryUri(requestObject, client, configOptions, grant.Key, idToken);
-                return Redirect(queryUri);
-            }
-
-            // Send the error back to the client using form_post mode.
-            if (requestObject.ResponseMode.StartsWith("form_post"))
-            {
-                return await FormPostCallback(requestObject, client, configOptions, grant.Key, idToken);
-            }
-
-            // Send the error back to the client using fragment mode.
-            var fragmentUri = await BuildFragmentUri(requestObject, client, configOptions, grant.Key, idToken);
-            return Redirect(fragmentUri);
+            var queryUri = await BuildQueryUri(requestObject, client, configOptions, grant.Key, idToken);
+            return Redirect(queryUri);
         }
 
         private async Task<IActionResult> CallbackErrorResponse(
@@ -279,36 +254,11 @@ namespace CdrAuthServer.Controllers
             }
 
             // Get the client so the registration metadata can be used.
-            var client = await _clientService.Get(clientId);
+            var client = await _clientService.Get(clientId) ?? throw new InvalidDataException("client not found");
 
             // Send the error back to the client using query mode.
-            if (result.ValidatedAuthorizationRequestObject.ResponseMode.StartsWith("query"))
-            {
-                var queryUri = await BuildQueryUri(result.ValidatedAuthorizationRequestObject, client, configOptions, error: result.Error, errorDescription: result.ErrorDescription);
-                return Redirect(queryUri);
-            }
-
-            // Send the error back to the client using form_post mode.
-            if (result.ValidatedAuthorizationRequestObject.ResponseMode.StartsWith("form_post"))
-            {
-                return await FormPostCallback(result.ValidatedAuthorizationRequestObject, client, configOptions, error: result.Error, errorDescription: result.ErrorDescription);
-            }
-
-            // Send the error back to the client using fragment mode.
-            var fragmentUri = await BuildFragmentUri(result.ValidatedAuthorizationRequestObject, client, configOptions, error: result.Error, errorDescription: result.ErrorDescription);
-            return Redirect(fragmentUri);
-        }
-
-        private async Task<string> BuildFragmentUri(
-            AuthorizationRequestObject requestObject,
-            Client client,
-            ConfigurationOptions configOptions,
-            string? authCode = null,
-            string? idToken = null,
-            string? error = null,
-            string? errorDescription = null)
-        {
-            return $"{requestObject.RedirectUri}#{await BuildQueryString(requestObject, client, configOptions, authCode, idToken, error, errorDescription)}";
+            var queryUri = await BuildQueryUri(result.ValidatedAuthorizationRequestObject, client, configOptions, error: result.Error, errorDescription: result.ErrorDescription);
+            return Redirect(queryUri);
         }
 
         private async Task<string> BuildQueryUri(
@@ -325,66 +275,8 @@ namespace CdrAuthServer.Controllers
             {
                 delimiter = '&';
             }
+
             return $"{requestObject.RedirectUri}{delimiter}{await BuildQueryString(requestObject, client, configOptions, authCode, idToken, error, errorDescription)}";
-        }
-
-        private async Task<IActionResult> FormPostCallback(
-            AuthorizationRequestObject requestObject,
-            Client client,
-            ConfigurationOptions configOptions,
-            string? authCode = null,
-            string? idToken = null,
-            string? error = null,
-            string? errorDescription = null)
-        {
-            var html = new StringBuilder();
-            html.AppendLine("<!doctype html>");
-            html.AppendLine("<html>");
-            html.AppendLine("<body>");
-
-            // Build the form to post back to the callback.
-            html.AppendLine($@"<form name=""form"" method=""post"" action=""{requestObject.RedirectUri}"">");
-
-            // Add hidden fields that will be posted back to the callback.
-            if (requestObject.ResponseMode.EndsWith("jwt"))
-            {
-                // JARM response.
-                html.AppendLine($@"<input type=""hidden"" name=""response"" value=""{(await BuildJarmResponse(requestObject, client, configOptions, authCode, error, errorDescription))}"" />");
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(authCode))
-                {
-                    html.AppendLine($@"<input type=""hidden"" name=""code"" value=""{authCode}"" />");
-                }
-
-                if (!string.IsNullOrEmpty(idToken))
-                {
-                    html.AppendLine($@"<input type=""hidden"" name=""id_token"" value=""{idToken}"" />");
-                }
-
-                if (!string.IsNullOrEmpty(error))
-                {
-                    html.AppendLine($@"<input type=""hidden"" name=""error"" value=""{error}"" />");
-                }
-
-                if (!string.IsNullOrEmpty(errorDescription))
-                {
-                    html.AppendLine($@"<input type=""hidden"" name=""error_description"" value=""{errorDescription}"" />");
-                }
-
-                if (!string.IsNullOrEmpty(requestObject.State))
-                {
-                    html.AppendLine($@"<input type=""hidden"" name=""state"" value=""{requestObject.State}"" />");
-                }
-            }
-
-            html.AppendLine(@"<noscript>Click here to finish the authorization process: <input type=""submit"" /></noscript>");
-            html.AppendLine("</form>");
-            html.AppendLine("<script>document.form.submit();</script>");
-            html.AppendLine("</body>");
-            html.AppendLine("</html>");
-            return Content(html.ToString(), "text/html");
         }
 
         private async Task<string> BuildQueryString(
@@ -399,7 +291,7 @@ namespace CdrAuthServer.Controllers
             // JARM response.
             if (requestObject.ResponseMode.EndsWith("jwt"))
             {
-                return $"response={(await BuildJarmResponse(requestObject, client, configOptions, authCode, error, errorDescription))}";
+                return $"response={await BuildJarmResponse(requestObject, client, configOptions, authCode, error, errorDescription)}";
             }
 
             var queryString = new StringBuilder();
@@ -472,7 +364,7 @@ namespace CdrAuthServer.Controllers
             {
                 // Get the client enc jwk.
                 var jwks = await _clientService.GetJwks(client);
-                clientJwk = jwks.Keys.First(jwk => jwk.Alg == client.AuthorizationEncryptedResponseAlg);
+                clientJwk = jwks?.Keys.First(jwk => jwk.Alg == client.AuthorizationEncryptedResponseAlg);
                 encryptedResponseAlg = client.AuthorizationEncryptedResponseAlg;
                 encryptedResponseEnc = client.AuthorizationEncryptedResponseEnc;
             }
@@ -483,7 +375,7 @@ namespace CdrAuthServer.Controllers
                 TokenTypes.Jwt,
                 300,
                 configOptions,
-                signingAlg: client.AuthorizationSignedResponseAlg,
+                signingAlg: client.AuthorizationSignedResponseAlg ?? string.Empty,
                 encryptedResponseAlg: encryptedResponseAlg,
                 encryptedResponseEnc: encryptedResponseEnc,
                 clientJwk: clientJwk);
@@ -511,7 +403,7 @@ namespace CdrAuthServer.Controllers
         /// This is used to generate html that can be used to Confirm/Cancel an authorisation
         /// request when in HeadlessMode.
         /// </summary>
-        /// <returns>IActionResult</returns>
+        /// <returns>IActionResult.</returns>
         private IActionResult OutputAuthConfirmation(
             string confirmationUri,
             string requestUri,

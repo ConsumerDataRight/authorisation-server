@@ -29,23 +29,20 @@ namespace CdrAuthServer.IntegrationTests.Services
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        public async Task<TokenResponse> GetToken(TokenType tokenType,
+        public async Task<TokenResponse> GetToken(
+            TokenType tokenType,
             string? clientId = null,
             int tokenLifetime = Constants.AuthServer.DefaultTokenLifetime,
             int sharingDuration = Constants.AuthServer.SharingDuration)
         {
-
-            if (clientId == null)
-            {
-                clientId = _options.LastRegisteredClientId;
-            }
+            clientId ??= _options.LastRegisteredClientId;
 
             var userId = tokenType switch
             {
                 TokenType.KamillaSmith => Constants.Users.UserIdKamillaSmith,
                 TokenType.MaryMoss => Constants.Users.Energy.UserIdMaryMoss,
                 TokenType.JaneWilson => Constants.Users.Banking.UserIdJaneWilson,
-                _ => throw new ArgumentException($"{nameof(GetToken)} - Unsupported token type - {tokenType}")
+                _ => throw new ArgumentException($"{nameof(GetToken)} - Unsupported token type - {tokenType}"),
             };
 
             var scope = tokenType switch
@@ -53,7 +50,7 @@ namespace CdrAuthServer.IntegrationTests.Services
                 TokenType.KamillaSmith => Constants.Scopes.ScopeBanking,
                 TokenType.JaneWilson => Constants.Scopes.ScopeBanking,
                 TokenType.MaryMoss => Constants.Scopes.ScopeEnergy,
-                _ => throw new ArgumentException($"{nameof(GetToken)} - Unsupported token type - {tokenType}")
+                _ => throw new ArgumentException($"{nameof(GetToken)} - Unsupported token type - {tokenType}"),
             };
 
             var authService = await new DataHolderAuthoriseService.DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
@@ -68,11 +65,30 @@ namespace CdrAuthServer.IntegrationTests.Services
 
             // User authCode to get tokens
             var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
-            if (tokenResponse == null) throw new InvalidOperationException($"{nameof(GetToken)} - TokenResponse is null");
-            if (tokenResponse.IdToken == null) throw new InvalidOperationException($"{nameof(GetToken)} - Id token is null");
-            if (tokenResponse.AccessToken == null) throw new InvalidOperationException($"{nameof(GetToken)} - Access token is null");
-            if (tokenResponse.RefreshToken == null) throw new InvalidOperationException($"{nameof(GetToken)} - Refresh token is null");
-            if (tokenResponse.CdrArrangementId == null) throw new InvalidOperationException($"{nameof(GetToken)} - CdrArrangementId is null");
+            if (tokenResponse == null)
+            {
+                throw new InvalidOperationException($"{nameof(GetToken)} - TokenResponse is null");
+            }
+
+            if (tokenResponse.IdToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(GetToken)} - Id token is null");
+            }
+
+            if (tokenResponse.AccessToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(GetToken)} - Access token is null");
+            }
+
+            if (tokenResponse.RefreshToken == null)
+            {
+                throw new InvalidOperationException($"{nameof(GetToken)} - Refresh token is null");
+            }
+
+            if (tokenResponse.CdrArrangementId == null)
+            {
+                throw new InvalidOperationException($"{nameof(GetToken)} - CdrArrangementId is null");
+            }
 
             // Return access token
             return tokenResponse;

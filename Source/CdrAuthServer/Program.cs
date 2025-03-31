@@ -1,3 +1,4 @@
+﻿using System.Text.RegularExpressions;
 using CdrAuthServer;
 using CdrAuthServer.API.Logger;
 using CdrAuthServer.Authorisation;
@@ -6,6 +7,7 @@ using CdrAuthServer.Domain.Models;
 using CdrAuthServer.Domain.Repositories;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Helpers;
+using CdrAuthServer.HttpPipeline;
 using CdrAuthServer.Infrastructure.Authorisation;
 using CdrAuthServer.Infrastructure.Certificates;
 using CdrAuthServer.Infrastructure.Extensions;
@@ -25,25 +27,23 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Serilog;
-using System.Text.RegularExpressions;
+using Serilog.Settings.Configuration;
 using static CdrAuthServer.Infrastructure.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddScoped<ICertificateLoader, CertificateLoader>();
-builder.Services.ConfigureWebServer(
+builder.Services.AddSingleton<ICertificateLoader, CertificateLoader>();
+
+await builder.Services.ConfigureWebServer(
     builder.Configuration,
     "Certificates:TlsInternalCertificate",
     httpPort: builder.Configuration.GetValue<int>("CdrAuthServer:HttpPort", 8080),
     httpsPort: builder.Configuration.GetValue<int>("CdrAuthServer:HttpsPort", 8001));
 
 // Add logging provider.
-var logger = new LoggerConfiguration()
-  .ReadFrom.Configuration(builder.Configuration)
-  .Enrich.FromLogContext()
-  .CreateLogger();
+ConfigureSerilog(builder.Configuration);
 builder.Logging.ClearProviders();
-builder.Logging.AddSerilog(logger);
+builder.Logging.AddSerilog();
 IdentityModelEventSource.ShowPII = true;
 
 // Turn off default model validation so that it can be handled according to standards.
@@ -52,8 +52,32 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
+builder.Services
+    .AddOptions<ConfigurationOptions>()
+    .ValidateDataAnnotations()
+    .Configure<IConfiguration>((options, config) => config.GetSection(ConfigurationOptions.ConfigurationSectionName).Bind(options));
+
+builder.Services
+    .AddOptions<CdrRegisterConfiguration>()
+    .ValidateDataAnnotations()
+    .Configure<IConfiguration>((options, config) => config
+                                                    .GetSection(ConfigurationOptions.ConfigurationSectionName)
+                                                    .GetSection(nameof(ConfigurationOptions.CdrRegister))
+                                                    .Bind(options));
+
+builder.Services.AddTransient<HttpLoggingDelegatingHandler>();
+
 builder.Services.AddHttpClient<IJwksService, JwksService>()
-    .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration));
+    .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration))
+    .AddHttpMessageHandler<HttpLoggingDelegatingHandler>();
+
+builder.Services.AddHttpClient<IConsentRevocationService, ConsentRevocationService>()
+    .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration))
+    .AddHttpMessageHandler<HttpLoggingDelegatingHandler>();
+
+builder.Services.AddHttpClient<IRegisterClientService, RegisterClientService>()
+    .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration))
+    .AddHttpMessageHandler<HttpLoggingDelegatingHandler>();
 
 builder.Services.AddMemoryCache();
 
@@ -93,13 +117,13 @@ builder.Services
         options.Configuration = new OpenIdConnectConfiguration()
         {
             JwksUri = $"{metadataAddress}/jwks",
-            JsonWebKeySet = await LoadJwks($"{metadataAddress}/jwks", HttpHelper.CreateHttpClientHandler(builder.Configuration))
+            JsonWebKeySet = await LoadJwks($"{metadataAddress}/jwks", HttpHelper.CreateHttpClientHandler(builder.Configuration)),
         };
 
         options.TokenValidationParameters = BuildTokenValidationParameters(options, validIssuers, validAudiences, clockSkew);
 
         // Ignore server certificate issues when retrieving OIDC configuration and JWKS.
-        options.BackchannelHttpHandler =  HttpHelper.CreateHttpClientHandler(builder.Configuration);
+        options.BackchannelHttpHandler = HttpHelper.CreateHttpClientHandler(builder.Configuration);
     });
 
 builder.Services.AddAuthorization();
@@ -109,7 +133,7 @@ builder.Services.AddMvcCore().AddAuthorization(options =>
 {
     var allAuthPolicies = AuthorisationPolicies.GetAllPolicies();
 
-    //Apply all listed policities from a single source of truth that is also used for self-documentation
+    // Apply all listed policities from a single source of truth that is also used for self-documentation
     foreach (var pol in allAuthPolicies)
     {
         options.AddPolicy(pol.Name, policy =>
@@ -118,14 +142,17 @@ builder.Services.AddMvcCore().AddAuthorization(options =>
             {
                 policy.Requirements.Add(new ScopeRequirement(pol.ScopeRequirement));
             }
+
             if (pol.HasMtlsRequirement)
             {
-                //policy.Requirements.Add(new MtlsRequirement()); //Currently not in CdrAuthServer but kept to later align with Mock Register
+                // policy.Requirements.Add(new MtlsRequirement()); //Currently not in CdrAuthServer but kept to later align with Mock Register
             }
+
             if (pol.HasHolderOfKeyRequirement)
             {
                 policy.Requirements.Add(new HolderOfKeyRequirement());
             }
+
             if (pol.HasAccessTokenRequirement)
             {
                 policy.Requirements.Add(new AccessTokenRequirement());
@@ -137,7 +164,8 @@ builder.Services.AddMvcCore().AddAuthorization(options =>
 // Add CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllOrigins",
+    options.AddPolicy(
+        "AllOrigins",
         policy =>
         {
             policy.WithOrigins("*")
@@ -176,21 +204,20 @@ builder.Services.AddHttpClient<ValidateMtlsAttribute>();
 var enableSwagger = builder.Configuration.GetValue<bool>(ConfigurationKeys.EnableSwagger);
 if (enableSwagger)
 {
-    builder.Services.AddCdrSwaggerGen(opt =>
-    {
-        opt.SwaggerTitle = "Consumer Data Right (CDR) Participant Tooling - Mock Auth Server API";
-        opt.IncludeAuthentication = true;
-    }, false);
+    builder.Services.AddCdrSwaggerGen(
+        opt =>
+        {
+            opt.SwaggerTitle = "Consumer Data Right (CDR) Participant Tooling - Mock Auth Server API";
+            opt.IncludeAuthentication = true;
+        },
+        false);
 }
 
 var connectionString = builder.Configuration.GetConnectionString(DbConstants.ConnectionStrings.Default);
 builder.Services.AddDbContext<CdrAuthServerDatabaseContext>(options => options.UseSqlServer(connectionString));
 
-if (builder.Configuration.GetSection("SerilogRequestResponseLogger") != null)
-{
-    Log.Logger.Information("Adding request response logging middleware");
-    builder.Services.AddRequestResponseLogging();
-}
+Log.Logger.Information("Adding request response logging middleware");
+builder.Services.AddRequestResponseLogging();
 
 // Add services to the container.
 builder.Services
@@ -202,7 +229,7 @@ builder.Services
     })
     .AddNewtonsoftJson(options =>
     {
-        options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
+        options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
     });
 
 bool healthCheckMigration = false;
@@ -212,8 +239,8 @@ string? healthCheckSeedDataMessage = null;
 
 builder.Services
     .AddHealthChecks()
-        .AddCheck("migration", () => healthCheckMigration ? HealthCheckResult.Healthy(healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(healthCheckMigrationMessage))
-        .AddCheck("seed-data", () => healthCheckSeedData ? HealthCheckResult.Healthy(healthCheckSeedDataMessage) : HealthCheckResult.Unhealthy(healthCheckSeedDataMessage));
+    .AddCheck("migration", () => healthCheckMigration ? HealthCheckResult.Healthy(healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(healthCheckMigrationMessage))
+    .AddCheck("seed-data", () => healthCheckSeedData ? HealthCheckResult.Healthy(healthCheckSeedDataMessage) : HealthCheckResult.Unhealthy(healthCheckSeedDataMessage));
 
 var app = builder.Build();
 app.UseStaticFiles();
@@ -236,7 +263,7 @@ if (!string.IsNullOrEmpty(basePathExpression))
             var path = matches[0].Groups[0].Value;
             var remainder = matches[0].Groups[1].Value;
             context.Request.Path = $"/{remainder}";
-            context.Request.PathBase = path.Replace(remainder, "").TrimEnd('/');
+            context.Request.PathBase = path.Replace(remainder, string.Empty).TrimEnd('/');
         }
 
         return next(context);
@@ -266,7 +293,7 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         // Try and retrieve the error from the ExceptionHandler middleware
         var exceptionDetails = context.Features.Get<IExceptionHandlerFeature>();
         var ex = exceptionDetails?.Error;
-        var error = new ResponseErrorList(CdrAuthServer.Domain.Constants.ErrorCodes.Cds.UnexpectedError, CdrAuthServer.Domain.Constants.ErrorTitles.UnexpectedError, ex?.Message);
+        var error = new ResponseErrorList(CdrAuthServer.Domain.Constants.ErrorCodes.Cds.UnexpectedError, CdrAuthServer.Domain.Constants.ErrorTitles.UnexpectedError, ex?.Message ?? string.Empty);
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsync(JsonConvert.SerializeObject(error));
@@ -280,17 +307,33 @@ MigrateDatabase();
 healthCheckMigration = true;
 healthCheckMigrationMessage = "Migration completed";
 
+// Reconfigure Serilog with DB
+ConfigureSerilog(builder.Configuration, true);
+
 healthCheckSeedData = true;
 healthCheckSeedDataMessage = "Seeding of data completed";
 
 app.UseHealthChecks("/health", new HealthCheckOptions()
 {
-    ResponseWriter = CustomResponseWriter
+    ResponseWriter = CustomResponseWriter,
 });
 
-app.Run();
+await app.RunAsync();
 
+static void ConfigureSerilog(IConfiguration configuration, bool isDatabaseReady = false)
+{
+    var loggerConfiguration = new LoggerConfiguration()
+        .ReadFrom.Configuration(configuration)
+        .Enrich.FromLogContext();
 
+    // If the database is ready, configure the SQL Server sink
+    if (isDatabaseReady)
+    {
+        loggerConfiguration.ReadFrom.Configuration(configuration, new ConfigurationReaderOptions() { SectionName = "SerilogMSSqlServerWriteTo" });
+    }
+
+    Log.Logger = loggerConfiguration.CreateLogger();
+}
 
 static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
 {
@@ -301,26 +344,27 @@ static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
         {
             key = e.Key,
             value = e.Value.Status.ToString(),
-        })
+        }),
     });
     return context.Response.WriteAsync(result);
 }
 
-static async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> LoadJwks(string jwksUri, HttpMessageHandler httpMessageHandler)
+static async Task<JsonWebKeySet?> LoadJwks(string jwksUri, HttpMessageHandler httpMessageHandler)
 {
     var httpClient = new HttpClient(httpMessageHandler);
     var httpResponse = await httpClient.GetAsync(jwksUri);
-    return await httpResponse.Content.ReadAsJson<Microsoft.IdentityModel.Tokens.JsonWebKeySet>();
+    return await httpResponse.Content.ReadAsJson<JsonWebKeySet>();
 }
 
 void MigrateDatabase()
 {
     var optionsBuilder = new DbContextOptionsBuilder<CdrAuthServerDatabaseContext>();
+
     // Run migrations if the DBO connection string is set.
     var migrationsConnectionString = builder.Configuration.GetConnectionString(DbConstants.ConnectionStrings.Migrations);
     if (!string.IsNullOrEmpty(migrationsConnectionString))
     {
-        logger.Information("Found connection string for migrations dbo, migrating database");
+        Log.Logger.Information("Found connection string for migrations dbo, migrating database");
         optionsBuilder.UseSqlServer(migrationsConnectionString);
         using var dbContext = new CdrAuthServerDatabaseContext(optionsBuilder.Options);
         dbContext.Database.Migrate();
@@ -353,37 +397,36 @@ static TokenValidationParameters BuildTokenValidationParameters(
             string errorMessage = $"IDX10205: Issuer validation failed. Issuer: '{issuer}'. Did not match: '{string.Join(',', validationParameters.ValidIssuers)}'.";
             throw new SecurityTokenInvalidIssuerException(errorMessage)
             {
-                InvalidIssuer = issuer
+                InvalidIssuer = issuer,
             };
         },
 
         ValidateAudience = true,
-        ValidAudiences = validAudiences,       
+        ValidAudiences = validAudiences,
         AudienceValidator = (IEnumerable<string> audiences, SecurityToken securityToken, TokenValidationParameters validationParameters) =>
-        {
-            var validAudiences = new HashSet<string>(validationParameters.ValidAudiences, StringComparer.OrdinalIgnoreCase);
+                    {
+                        var validAudiences = new HashSet<string>(validationParameters.ValidAudiences, StringComparer.OrdinalIgnoreCase);
 
-            bool isValid = audiences.Any(audience =>
-                validAudiences.Contains(audience) ||
-                validAudiences.Any(validAudience => audience.StartsWith(validAudience, StringComparison.OrdinalIgnoreCase))
-            );
+                        bool isValid = audiences.Any(audience =>
+                            validAudiences.Contains(audience) ||
+                            validAudiences.Any(validAudience => audience.StartsWith(validAudience, StringComparison.OrdinalIgnoreCase)));
 
-            if (!isValid)
-            {
-                string errorMessage = $"IDX10214: Audience validation failed. Audiences: '{string.Join(',', audiences)}'. Did not match: '{string.Join(',', validationParameters.ValidAudiences)}'.";
-                throw new SecurityTokenInvalidAudienceException(errorMessage)
-                {
-                    InvalidAudience = string.Join(',', audiences)
-                };
-            }
+                        if (!isValid)
+                        {
+                            string errorMessage = $"IDX10214: Audience validation failed. Audiences: '{string.Join(',', audiences)}'. Did not match: '{string.Join(',', validationParameters.ValidAudiences)}'.";
+                            throw new SecurityTokenInvalidAudienceException(errorMessage)
+                            {
+                                InvalidAudience = string.Join(',', audiences),
+                            };
+                        }
 
-            return isValid;
-        },
+                        return isValid;
+                    },
 
         ValidateLifetime = true,
         ClockSkew = TimeSpan.FromSeconds(clockSkew),
 
         RequireSignedTokens = true,
-        IssuerSigningKeys = options.Configuration!.JsonWebKeySet.Keys
+        IssuerSigningKeys = options.Configuration!.JsonWebKeySet.Keys,
     };
 }

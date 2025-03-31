@@ -1,4 +1,4 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
@@ -95,8 +95,6 @@ namespace CdrAuthServer.IntegrationTests
                     Assert.Equal("PS256", json["token_endpoint_auth_signing_alg"]);
                     Assert.Equal("private_key_jwt", json["token_endpoint_auth_method"]);
                     Assert.Equal("PS256", json["id_token_signed_response_alg"]);
-                    Assert.Equal("RSA-OAEP", json["id_token_encrypted_response_alg"]);
-                    Assert.Equal("A256GCM", json["id_token_encrypted_response_enc"]);
                     Assert.Equal("PS256", json["request_object_signing_alg"]);
                     Assert.Equal("openid profile common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:regular_payments:read bank:payees:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.concessions:read energy:accounts.paymentschedule:read energy:billing:read energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.der:read energy:electricity.usage:read cdr:registration", json["scope"]);
                     Assert.Equal(ssa, json["software_statement"]);
@@ -114,8 +112,8 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(
                 ssa,
-                applicationType: "",
-                requestObjectSigningAlg: "",
+                applicationType: string.Empty,
+                requestObjectSigningAlg: string.Empty,
                 redirectUris: null);
             var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
 
@@ -141,8 +139,6 @@ namespace CdrAuthServer.IntegrationTests
                     Assert.Equal("PS256", json["token_endpoint_auth_signing_alg"]);
                     Assert.Equal("private_key_jwt", json["token_endpoint_auth_method"]);
                     Assert.Equal("PS256", json["id_token_signed_response_alg"]);
-                    Assert.Equal("RSA-OAEP", json["id_token_encrypted_response_alg"]);
-                    Assert.Equal("A256GCM", json["id_token_encrypted_response_enc"]);
                     Assert.Equal("PS256", json["request_object_signing_alg"]);
                     Assert.Equal("openid profile common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:regular_payments:read bank:payees:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.concessions:read energy:accounts.paymentschedule:read energy:billing:read energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.der:read energy:electricity.usage:read cdr:registration", json["scope"]);
                     Assert.Equal(ssa, json["software_statement"]);
@@ -241,14 +237,14 @@ namespace CdrAuthServer.IntegrationTests
         [Fact]
         public async Task AC06_Post_WithInvalidSSAPayload_400BadRequest_InvalidSSAPayloadResponse()
         {
-            // Arrange 
+            // Arrange
             Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
             const string RedirectUri = "foo";
             var expectedError = new InvalidRedirectUriException(RedirectUri);
 
             var ssa = await _registerSSAService.GetSSA(Constants.Brands.BrandId, Constants.SoftwareProducts.SoftwareProductId, _latestSSAVersion);
-            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa, redirectUris: new string[] { RedirectUri });
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa, redirectUris: [RedirectUri]);
 
             // Act
             var response = await _dataHolderRegisterService.RegisterSoftwareProduct(registrationRequest);
@@ -263,7 +259,7 @@ namespace CdrAuthServer.IntegrationTests
         [Fact]
         public async Task AC07_Post_WithInvalidMetadata_400BadRequest_InvalidMetadataResponse()
         {
-            // Arrange 
+            // Arrange
             Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
 
             var expectedError = new TokenEndpointAuthSigningAlgClaimInvalidException();

@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Artefacts", "Artefacts", "{2BA365FC-FFCC-449A-96B5-BC73D9216FB1}"
 	ProjectSection(SolutionItems) = preProject
 		.dockerignore = .dockerignore
+		.editorconfig = .editorconfig
 		..\.gitignore = ..\.gitignore
 		docker-compose.E2ETests.Standalone.yml = docker-compose.E2ETests.Standalone.yml
 		docker-compose.E2ETests.yml = docker-compose.E2ETests.yml

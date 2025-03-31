@@ -1,7 +1,6 @@
-﻿using CdrAuthServer.IdPermanence;
-using CdrAuthServer.Infrastructure;
+﻿using System.Security.Claims;
+using CdrAuthServer.IdPermanence;
 using CdrAuthServer.Models;
-using System.Security.Claims;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Extensions
@@ -50,7 +49,7 @@ namespace CdrAuthServer.Extensions
             var param = new SubPermanenceParameters()
             {
                 SoftwareProductId = client.SoftwareId,
-                SectorIdentifierUri = client.SectorIdentifierUri ?? ""
+                SectorIdentifierUri = client.SectorIdentifierUri ?? string.Empty,
             };
 
             return idPermanenceManager.DecryptSub(subject, param);
