@@ -141,13 +141,13 @@ namespace CdrAuthServer.Domain.Entities
         /// Gets a JWE &#x60;alg&#x60; algorithm with which an id_token is to be encrypted.
         /// </summary>
         [JsonProperty("id_token_encrypted_response_alg")]
-        public string IdTokenEncryptedResponseAlg { get; set; } = string.Empty;
+        public string? IdTokenEncryptedResponseAlg { get; set; }
 
         /// <summary>
         /// Gets a JWE &#x60;enc&#x60; algorithm with which an id_token is to be encrypted.
         /// </summary>
         [JsonProperty("id_token_encrypted_response_enc")]
-        public string IdTokenEncryptedResponseEnc { get; set; } = string.Empty;
+        public string? IdTokenEncryptedResponseEnc { get; set; }
 
         /// <summary>
         /// Gets an algorithm which the ADR expects to sign the request object if a request object will be part of the authorization request sent to the Data Holder.
@@ -189,7 +189,7 @@ namespace CdrAuthServer.Domain.Entities
         /// Gets an algorithm with which an auth response is to be signed (JARM).
         /// </summary>
         [JsonProperty("authorization_signed_response_alg")]
-        public string? AuthorizationSignedResponseAlg { get; set; }  = null;
+        public string? AuthorizationSignedResponseAlg { get; set; } = null;
 
         /// <summary>
         /// Gets a JWE &#x60;alg&#x60; algorithm with which an auth response is to be encrypted (JARM).

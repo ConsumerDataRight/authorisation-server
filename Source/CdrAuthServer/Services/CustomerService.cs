@@ -5,17 +5,18 @@ using Newtonsoft.Json;
 namespace CdrAuthServer.Services
 {
     public class CustomerService : ICustomerService
-    {        
+    {
         private readonly IConfiguration _config;
-        private readonly ILogger<CustomerService> _logger;        
-        private string SeedDataFilePath => _config[Keys.SeedDataFilePath];
+        private readonly ILogger<CustomerService> _logger;
+
+        private string SeedDataFilePath => _config[Keys.SeedDataFilePath] ?? string.Empty;
 
         public CustomerService(
             IConfiguration config,
             ILogger<CustomerService> logger)
         {
             _config = config;
-            _logger = logger;            
+            _logger = logger;
         }
 
         public async Task<UserInfo> Get(string subjectId)
@@ -34,6 +35,7 @@ namespace CdrAuthServer.Services
                     _logger.LogInformation("Seed data file '{SeedDataFilePath}' not found.", SeedDataFilePath);
                     return userInfo;
                 }
+
                 customerDataJson = await File.ReadAllTextAsync(SeedDataFilePath);
             }
 
@@ -42,12 +44,12 @@ namespace CdrAuthServer.Services
                 _logger.LogInformation("Seed data is unavailable.");
                 return userInfo;
             }
-            
+
             var dataHolderCustomer = JsonConvert.DeserializeObject<DataHolderCustomer>(customerDataJson);
             var dataHolderCustomerList = dataHolderCustomer?.Customers;
             if (dataHolderCustomerList != null && dataHolderCustomerList.Any())
             {
-                var customer = dataHolderCustomerList.FirstOrDefault(x => x.LoginId == subjectId);
+                var customer = dataHolderCustomerList.Find(x => x.LoginId == subjectId);
 
                 if (customer == null)
                 {
@@ -55,13 +57,13 @@ namespace CdrAuthServer.Services
                     return userInfo;
                 }
 
-                userInfo.GivenName = customer.Person.FirstName;
-                userInfo.FamilyName = customer.Person.LastName;
-                userInfo.Name = $"{customer.Person.FirstName} {customer.Person.LastName}";
+                userInfo.GivenName = customer.Person?.FirstName ?? string.Empty;
+                userInfo.FamilyName = customer.Person?.LastName ?? string.Empty;
+                userInfo.Name = $"{customer.Person?.FirstName} {customer.Person?.LastName}";
 
                 return userInfo;
-            }                       
-            
+            }
+
             return userInfo;
         }
 

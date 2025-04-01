@@ -25,7 +25,7 @@ FROM node:20-alpine AS ui-build
 WORKDIR /app
 
 ARG target_environment=production
-ENV PATH /app/node_modules/.bin:$PATH
+ENV PATH=/app/node_modules/.bin:$PATH
 
 RUN npm install react-scripts@latest -g 
 COPY CdrAuthServer.UI/package.json package.json
@@ -46,6 +46,7 @@ COPY ./ .
 
 FROM build AS publish
 COPY ./Directory.Build.props /app/Directory.Build.props
+COPY ./.editorconfig /app/.editorconfig
 COPY ./CdrAuthServer.Domain/. /app/CdrAuthServer.Domain
 COPY ./CdrAuthServer.Repository/. /app/CdrAuthServer.Repository
 COPY ./CdrAuthServer/. /app/CdrAuthServer

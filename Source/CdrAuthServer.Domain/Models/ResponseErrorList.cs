@@ -11,7 +11,7 @@ namespace CdrAuthServer.Domain.Models
 
         public bool HasErrors()
         {
-            return Errors != null && Errors.Count!=0;
+            return Errors != null && Errors.Count != 0;
         }
 
         public ResponseErrorList()

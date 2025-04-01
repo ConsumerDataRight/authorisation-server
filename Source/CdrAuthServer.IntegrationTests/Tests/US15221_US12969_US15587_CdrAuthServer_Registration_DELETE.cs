@@ -33,7 +33,6 @@ namespace CdrAuthServer.IntegrationTests
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-
         // Purge database, register product and return SSA JWT and registration json
         private async Task<(string ssa, string registration, string clientId)> Arrange()
         {
@@ -89,7 +88,8 @@ namespace CdrAuthServer.IntegrationTests
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     // Assert - Check WWWAutheticate header
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
                         response.Headers, "WWW-Authenticate");
                 }
             }

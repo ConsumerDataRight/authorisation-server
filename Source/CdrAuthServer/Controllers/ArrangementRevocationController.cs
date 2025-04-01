@@ -69,6 +69,7 @@ namespace CdrAuthServer.Controllers
                     _logger.LogError("Software Product not found {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                 }
+
                 if (softwareProduct.Status.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
                 {
                     _logger.LogError("Software product status is removed - consents cannot be revoked {SoftwareProductId}", softwareProductId);
@@ -83,11 +84,10 @@ namespace CdrAuthServer.Controllers
             }
 
             // Delete the grants.
-            await _grantService.Delete(client.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken ?? "");
+            await _grantService.Delete(client.ClientId, GrantTypes.RefreshToken, cdrArrangementGrant.RefreshToken ?? string.Empty);
             await _grantService.Delete(client.ClientId, GrantTypes.CdrArrangement, cdrArrangementGrant.Key);
 
             return NoContent();
         }
-
     }
 }

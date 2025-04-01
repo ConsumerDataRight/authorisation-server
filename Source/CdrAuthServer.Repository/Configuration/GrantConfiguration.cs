@@ -29,15 +29,14 @@
                     new Dictionary<string, object>
                     {
                         { "refresh_token", refreshToken },
-                        { "account_id", new List<string> {"123", "456", "789" } }
-                    })
+                        { "account_id", new List<string> { "123", "456", "789" } },
+                    }),
             };
             builder.HasData(
                     cdrArrangementGrant,
-
-                    //RefreshTokenGrant
                     new Grant()
                     {
+                        // RefreshTokenGrant
                         Key = refreshToken,
                         ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
                         CreatedAt = DateTime.UtcNow,
@@ -46,15 +45,15 @@
                         SubjectId = "customer1",
                         UsedAt = null,
                         Scope = Scopes.AllSectorScopes,
-                        Data = JsonSerializer.Serialize(new Dictionary<string, object> {
-                        { "response_type", ResponseTypes.Hybrid },
-                        { "CdrArrangementId", cdrArrangementGrant.Key }
-                        })
+                        Data = JsonSerializer.Serialize(new Dictionary<string, object>
+                        {
+                            { "response_type", ResponseTypes.AuthCode },
+                            { "CdrArrangementId", cdrArrangementGrant.Key },
+                        }),
                     },
-
-                    //RefreshTokenGrant2
                     new Grant()
                     {
+                        // RefreshTokenGrant2
                         Key = "expired-refresh-token",
                         ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
                         CreatedAt = DateTime.UtcNow.AddDays(-366),
@@ -63,10 +62,11 @@
                         SubjectId = "customer1",
                         UsedAt = null,
                         Scope = Scopes.BankingSectorScopes,
-                        Data = JsonSerializer.Serialize(new Dictionary<string, object> {
-                        { "response_type", ResponseTypes.Hybrid },
-                        { "CdrArrangementId", Guid.NewGuid().ToString() }
-                        })
+                        Data = JsonSerializer.Serialize(new Dictionary<string, object>
+                        {
+                            { "response_type", ResponseTypes.AuthCode },
+                            { "CdrArrangementId", Guid.NewGuid().ToString() },
+                        }),
                     });
         }
     }

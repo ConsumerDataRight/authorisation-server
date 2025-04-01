@@ -8,8 +8,6 @@ namespace CdrAuthServer.Authorisation
     public class ScopeHandler : AuthorizationHandler<ScopeRequirement>
     {
         private readonly ILogger<ScopeHandler> _logger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IConfiguration _config;
         private readonly ConfigurationOptions _configOptions;
 
         public ScopeHandler(
@@ -18,9 +16,7 @@ namespace CdrAuthServer.Authorisation
             IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
-            _config = config;
-            _configOptions = _config.GetConfigurationOptions(_httpContextAccessor.HttpContext);
+            _configOptions = config.GetConfigurationOptions(httpContextAccessor.HttpContext);
         }
 
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, ScopeRequirement requirement)

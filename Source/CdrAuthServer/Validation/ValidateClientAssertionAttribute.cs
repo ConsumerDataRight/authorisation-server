@@ -1,10 +1,8 @@
-﻿using CdrAuthServer.Authorisation;
+﻿using System.Security.Claims;
 using CdrAuthServer.Extensions;
-using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System.Security.Claims;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Validation
@@ -26,7 +24,7 @@ namespace CdrAuthServer.Validation
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<ValidateClientAssertionAttribute>>();
 
             // Basic validation.
-            if (!context.HttpContext.Request.Method.Equals("post", StringComparison.OrdinalIgnoreCase) 
+            if (!context.HttpContext.Request.Method.Equals("post", StringComparison.OrdinalIgnoreCase)
              || string.IsNullOrEmpty(context.HttpContext.Request.ContentType)
              || !context.HttpContext.Request.ContentType.Contains("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
             {
@@ -49,15 +47,15 @@ namespace CdrAuthServer.Validation
             var (result, clientId) = clientAssertionValidator.ValidateClientAssertionRequest(clientAssertionRequest, configOptions, _isTokenEndpoint).GetAwaiter().GetResult();
             if (!result.IsValid)
             {
-                logger.LogError("ValidateClientAssertion: failed. {@error}", result.Error);
-                context.Result = new BadRequestObjectResult(new Error(result.Error, result.ErrorDescription));
+                logger.LogError("ValidateClientAssertion: failed. {@Error}", result.Error);
+                context.Result = new BadRequestObjectResult(new Error(result.Error ?? string.Empty, result.ErrorDescription));
                 return;
             }
 
             // Set the claims principal.
             var claims = new List<Claim>()
             {
-                new Claim(ClaimNames.ClientId, clientId),
+                new(ClaimNames.ClientId, clientId ?? string.Empty),
             };
             context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "client_assertion", ClaimNames.ClientId, ClaimNames.Scope));
 

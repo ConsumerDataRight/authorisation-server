@@ -26,7 +26,6 @@ namespace CdrAuthServer.Validation
             _httpClient = httpClient;
         }
 
-        
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             var configOptions = _configuration.GetConfigurationOptions();
@@ -79,7 +78,7 @@ namespace CdrAuthServer.Validation
                     // Build the OCSP request URL from the client cert
                     var ocspResponderUrl = cert.GetOCSPUrlFromCertificate();
 
-                    //Read the CA PEM from configuration.
+                    // Read the CA PEM from configuration.
                     var clientCertCAPem = _configuration.GetValue<string>("Certificates:Ocsp:MtlsOcspResponderPem");
 
                     if (string.IsNullOrEmpty(clientCertCAPem))
@@ -88,7 +87,7 @@ namespace CdrAuthServer.Validation
                         throw new ConfigurationErrorsException("Certificates:Ocsp:MtlsOcspResponderPem value is either null or empty");
                     }
 
-                    //create request object for ocsp.
+                    // create request object for ocsp.
                     var ocspRequester = new OcspRequester(ocspResponderUrl, clientCertCAPem, _logger, _httpClient);
 
                     _logger.LogInformation("mTLS certificate check - calling OCSP Responder at {OcspResponderUrl}", ocspResponderUrl);

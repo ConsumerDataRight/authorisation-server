@@ -6,7 +6,6 @@ using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services;
 using Microsoft.Extensions.Options;
 using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
-
 namespace CdrAuthServer.IntegrationTests.Services
 {
     public class DataHolderCDRArrangementRevocationService : IDataHolderCDRArrangementRevocationService
@@ -33,10 +32,7 @@ namespace CdrAuthServer.IntegrationTests.Services
              string? jwtCertificateFilename = Constants.Certificates.JwtCertificateFilename,
              string? jwtCertificatePassword = Constants.Certificates.JwtCertificatePassword)
         {
-            if (clientId == null)
-            {
-                clientId = _options.LastRegisteredClientId;
-            }
+            clientId ??= _options.LastRegisteredClientId;
 
             var URL = $"{_options.DH_MTLS_GATEWAY_URL}/connect/arrangements/revoke";
 
@@ -45,27 +41,30 @@ namespace CdrAuthServer.IntegrationTests.Services
             {
                 formFields.Add(new KeyValuePair<string?, string?>("grant_type", grantType));
             }
+
             if (clientId != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("client_id", clientId.ToLower()));
             }
+
             if (clientAssertionType != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("client_assertion_type", clientAssertionType));
             }
+
             if (cdrArrangementId != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("cdr_arrangement_id", cdrArrangementId));
             }
+
             formFields.Add(new KeyValuePair<string?, string?>("client_assertion", clientAssertion ??
                 new PrivateKeyJwtService()
                 {
                     CertificateFilename = jwtCertificateFilename,
                     CertificatePassword = jwtCertificatePassword,
                     Issuer = clientId ?? throw new NullReferenceException(nameof(clientId)),
-                    Audience = URL
-                }.Generate()
-            ));
+                    Audience = URL,
+                }.Generate()));
             var content = new FormUrlEncodedContent(formFields);
 
             using var client = Helpers.Web.CreateHttpClient(certificateFilename ?? Constants.Certificates.CertificateFilename, certificatePassword ?? Constants.Certificates.CertificatePassword);

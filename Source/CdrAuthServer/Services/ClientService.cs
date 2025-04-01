@@ -34,7 +34,7 @@
             }
 
             var client = await _clientRepository.Get(clientId);
-            return _mapper.Map<Client?>(client);  
+            return _mapper.Map<Client?>(client);
         }
 
         public async Task<Client> GetClientBySoftwareProductId(string softwareProductId)
@@ -67,7 +67,7 @@
             _logger.LogInformation("deleted client with id:{Id}", clientId);
         }
 
-        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetJwks(Client client)
+        public async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet?> GetJwks(Client client)
         {
             if (string.IsNullOrEmpty(client.JwksUri))
             {
@@ -95,6 +95,5 @@
 
             return keys;
         }
-
     }
 }

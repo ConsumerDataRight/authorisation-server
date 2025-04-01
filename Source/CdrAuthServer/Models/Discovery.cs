@@ -85,12 +85,6 @@ namespace CdrAuthServer.Models
         [JsonProperty("id_token_signing_alg_values_supported")]
         public IList<string>? IdTokenSigningAlgValuesSupported { get; set; }
 
-        [JsonProperty("id_token_encryption_alg_values_supported")]
-        public IList<string>? IdTokenEncryptionAlgValuesSupported { get; set; }
-
-        [JsonProperty("id_token_encryption_enc_values_supported")]
-        public IList<string>? IdTokenEncryptionEncValuesSupported { get; set; }
-
         [JsonProperty("authorization_signing_alg_values_supported")]
         public IList<string>? AuthorizationSigningAlgValuesSupported { get; set; }
 
@@ -102,6 +96,5 @@ namespace CdrAuthServer.Models
 
         [JsonProperty("mtls_endpoint_aliases")]
         public IDictionary<string, string>? MtlsEndpointAliases { get; set; }
-
     }
 }

@@ -14,7 +14,7 @@ docker-compose -f docker-compose.E2ETests.Standalone.yml up --build --abort-on-c
 $_lastExitCode = $LASTEXITCODE
 
 # Stop containers
-docker-compose -f docker-compose.E2ETests.yml down
+docker-compose -f docker-compose.E2ETests.Standalone.yml down
 
 if ($_lastExitCode -eq 0) {
     Write-Output "***********************************************************"

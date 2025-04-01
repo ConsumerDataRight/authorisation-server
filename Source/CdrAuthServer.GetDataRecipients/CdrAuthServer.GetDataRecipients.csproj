@@ -8,7 +8,8 @@
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>	
 	<OutputType>Exe</OutputType>	
 	<DockerFastModeProjectMountDirectory>/home/site/wwwroot</DockerFastModeProjectMountDirectory>	
-	<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>   
+	<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>	
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>   
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Infrastructure\AccessToken.cs" />
@@ -26,6 +27,14 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.6.3" />
   </ItemGroup>
   <ItemGroup>

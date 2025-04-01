@@ -7,7 +7,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
     {
         public static string GetOCSPUrlFromCertificate(this X509Certificate2 certificate)
         {
-            X509Extension ocspExtension = certificate.Extensions["1.3.6.1.5.5.7.1.1"]; //AuthorityInfoAccess
+            X509Extension? ocspExtension = certificate.Extensions["1.3.6.1.5.5.7.1.1"]; // AuthorityInfoAccess
 
             if (ocspExtension == null)
             {
@@ -30,8 +30,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
                 throw new ClientCertificateException("Unable to validate certificate - Missing OCSP URL");
             }
 
-            return ocspResponderUrl;                        
-
+            return ocspResponderUrl;
         }
     }
 }

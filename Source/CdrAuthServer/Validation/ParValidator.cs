@@ -1,8 +1,7 @@
-﻿using CdrAuthServer.Configuration;
-using CdrAuthServer.Extensions;
+﻿using System.IdentityModel.Tokens.Jwt;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
-using System.IdentityModel.Tokens.Jwt;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Validation
@@ -26,9 +25,9 @@ namespace CdrAuthServer.Validation
             _clientService = clientService;
         }
 
-        public async Task<(ValidationResult, AuthorizationRequestObject?)> Validate(
-            string clientId, 
-            string requestObject, 
+        public async Task<(ValidationResult ValidationResult, AuthorizationRequestObject? AuthorizationRequestObject)> Validate(
+            string clientId,
+            string requestObject,
             ConfigurationOptions configOptions)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -39,15 +38,20 @@ namespace CdrAuthServer.Validation
             }
 
             var client = await _clientService.Get(clientId);
+            if (client == null)
+            {
+                return (ValidationResult.Fail(ErrorCodes.Generic.InvalidClient, $"No client found for {clientId}"), null);
+            }
+
             var (validationResult, requestJwt) = await _jwtValidator.Validate(
-                requestObject, 
-                client, 
-                JwtValidationContext.request,
+                requestObject,
+                client,
+                JwtValidationContext.Request,
                 configOptions,
-                validAudiences: new List<string>() { configOptions.Issuer, configOptions.PushedAuthorizationEndpoint },
+                validAudiences: [configOptions.Issuer, configOptions.PushedAuthorizationEndpoint],
                 validAlgorithms: configOptions.RequestObjectSigningAlgValuesSupported);
 
-            if (validationResult == null || !validationResult.IsValid)
+            if (validationResult == null || !validationResult.IsValid || requestJwt == null)
             {
                 _logger.LogError("request validation failed with error {@ErrorDescription}", validationResult);
                 return (ValidationResult.Fail(ErrorCodes.Generic.InvalidRequestObject, $"{validationResult?.ErrorDescription}"), null);
@@ -57,8 +61,8 @@ namespace CdrAuthServer.Validation
             var (requestValidationResult, validatedRequestObject) = await _requestObjectValidator.Validate(clientId, requestJwt, configOptions);
             if (requestValidationResult != null && !requestValidationResult.IsValid)
             {
-                _logger.LogError("additional request validation failed with error {@requestValidationResult.ErrorDescription}", requestValidationResult);
-                return (ValidationResult.Fail(requestValidationResult.Error, requestValidationResult.ErrorDescription, requestValidationResult.StatusCode.HasValue ? requestValidationResult.StatusCode.Value : 400), null);
+                _logger.LogError("additional request validation failed with error {ErrorDescription}", requestValidationResult.ErrorDescription);
+                return (ValidationResult.Fail(requestValidationResult.Error ?? string.Empty, requestValidationResult.ErrorDescription, requestValidationResult.StatusCode.HasValue ? requestValidationResult.StatusCode.Value : 400), null);
             }
 
             return (ValidationResult.Pass(), validatedRequestObject);

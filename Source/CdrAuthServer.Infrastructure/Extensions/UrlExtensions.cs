@@ -37,7 +37,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
 
             var uri = new Uri(endpoint);
             uri.ValidateEndpoint(enforceHttpsEndpoint);
-                return endpoint;
+            return endpoint;
         }
 
         public static Uri ValidateEndpoint(this Uri uri, bool enforceHttpsEndpoint)
@@ -54,10 +54,5 @@ namespace CdrAuthServer.Infrastructure.Extensions
 
             return uri;
         }
-    }
-
-    public class NoHttpsException : SecurityException
-    {
-        public NoHttpsException() : base("A non-https endpoint has been encountered and blocked") { }
     }
 }

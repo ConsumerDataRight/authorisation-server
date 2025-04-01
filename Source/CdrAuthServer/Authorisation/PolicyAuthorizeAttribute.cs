@@ -9,11 +9,11 @@ namespace CdrAuthServer.Authorisation
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public class PolicyAuthorizeAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
     {
-        public readonly AuthServerAuthorisationPolicyAttribute policy;
+        public AuthServerAuthorisationPolicyAttribute PolicyName { get; }
 
         public PolicyAuthorizeAttribute(AuthServerAuthorisationPolicyAttribute policy)
         {
-            this.policy = policy;
+            this.PolicyName = policy;
         }
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -23,12 +23,15 @@ namespace CdrAuthServer.Authorisation
             {
                 return;
             }
-            var authorizationResult = await authorizationService.AuthorizeAsync(context.HttpContext.User, policy.ToString());
+
+            var authorizationResult = await authorizationService.AuthorizeAsync(context.HttpContext.User, PolicyName.ToString());
 
             var logger = context.HttpContext.RequestServices.GetService(typeof(ILogger)) as ILogger;
 
             if (authorizationResult.Succeeded)
+            {
                 return;
+            }
 
             if (authorizationResult.Failure?.FailedRequirements.Any(r => r.GetType() == typeof(HolderOfKeyRequirement)) is true)
             {
@@ -55,7 +58,6 @@ namespace CdrAuthServer.Authorisation
             logger?.LogError("invalid_token - insufficient_scope");
             context.Result = ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.AUTHORIZATION_INSUFFICIENT_SCOPE);
             context.Result = new JsonResult(new Error("insufficient_scope")) { StatusCode = 403 };
-
         }
     }
 }

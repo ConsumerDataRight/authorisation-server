@@ -13,7 +13,7 @@ namespace CdrAuthServer.Controllers
     /// ensure that the auth server is issuing access tokens correctly.
     /// </summary>
     [ApiController]
-    public class ResourceController : Controller
+    public class ResourceController : ControllerBase
     {
         private readonly ILogger<ResourceController> _logger;
         private readonly IConfiguration _config;
@@ -38,7 +38,7 @@ namespace CdrAuthServer.Controllers
 
             if (_config.GetValue<bool>("CdrAuthServer:ValidateResourceEndpoint", true))
             {
-                // Add validation for the resource endpoint.                
+                // Add validation for the resource endpoint.
                 var (isValidAuthDate, authDateError, authDateStatusCode) = HttpContext.Request.Headers.ValidateAuthDate();
                 if (!isValidAuthDate)
                 {
@@ -75,7 +75,8 @@ namespace CdrAuthServer.Controllers
             {
                 xFapiInterationId = Request.Headers["x-fapi-interaction-id"].ToString();
             }
-            Response.Headers.Add("x-fapi-interaction-id", xFapiInterationId);
+
+            Response.Headers.Append("x-fapi-interaction-id", xFapiInterationId);
             return Content(body, "application/json");
         }
 
@@ -93,9 +94,7 @@ namespace CdrAuthServer.Controllers
 
             if (_config.GetValue<bool>("CdrAuthServer:ValidateResourceEndpoint", true))
             {
-                //
                 // Add validation for the resource endpoint.
-                //
                 var (isValidAuthDate, authDateError, authDateStatusCode) = HttpContext.Request.Headers.ValidateAuthDate();
                 if (!isValidAuthDate)
                 {
@@ -120,7 +119,8 @@ namespace CdrAuthServer.Controllers
             {
                 xFapiInterationId = Request.Headers["x-fapi-interaction-id"].ToString();
             }
-            Response.Headers.Add("x-fapi-interaction-id", xFapiInterationId);
+
+            Response.Headers.Append("x-fapi-interaction-id", xFapiInterationId);
             return Content(body, "application/json");
         }
     }

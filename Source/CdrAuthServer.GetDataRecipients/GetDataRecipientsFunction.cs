@@ -1,4 +1,4 @@
-using CdrAuthServer.Infrastructure;
+﻿using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Extensions;
 using CdrAuthServer.Infrastructure.Models;
 using Microsoft.Azure.Functions.Worker;
@@ -23,14 +23,13 @@ namespace CdrAuthServer.GetDataRecipients
         public GetDataRecipientsFunction(ILoggerFactory loggerFactory, IOptions<GetDROptions> options)
         {
             _logger = loggerFactory.CreateLogger<GetDataRecipientsFunction>();
-            _drOptions =options.Value;
+            _drOptions = options.Value;
         }
-        /// <summary>
-        /// Get Data Recipients Function
-        /// </summary>
-        /// <remarks>Gets the Data Recipients from the Register and updates the local repository</remarks>
 
-        
+        /// <summary>
+        /// Get Data Recipients Function.
+        /// </summary>
+        /// <remarks>Gets the Data Recipients from the Register and updates the local repository.</remarks>
         [Function("GetDataRecipients")]
         public async Task Run([TimerTrigger("%Schedule%")] TimerInfo myTimer)
         {
@@ -38,7 +37,6 @@ namespace CdrAuthServer.GetDataRecipients
 
             try
             {
-
                 // Updated names for the cdrauth server
                 var dataRecipientsEndpoint = _drOptions.Register_CdrAuthServer_MetadataUpdate_Endpoint;
                 var ignoreServerCertificateErrors = _drOptions.Ignore_Server_Certificate_Errors.Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -55,7 +53,7 @@ namespace CdrAuthServer.GetDataRecipients
                 // Add token to the bear token call
                 // Auth Api should receive the call and authorize it before calling on
 
-                //Loading client certificates from Base64 string
+                // Loading client certificates from Base64 string
                 X509Certificate2 clientCertificate = LoadCertificates(_logger, clientCert, clientCertPwd);
                 _logger.LogInformation("Client certificate loaded: {Thumbprint}", clientCertificate.Thumbprint);
 
@@ -66,7 +64,7 @@ namespace CdrAuthServer.GetDataRecipients
 
                 if (tokenResponse.IsSuccessful)
                 {
-                    // Send access token as bear token request to autherization server                    
+                    // Send access token as bear token request to autherization server
                     (_, var respStatusCode) = await GetDataRecipients(dataRecipientsEndpoint, tokenResponse.Data.AccessToken, clientCertificate, _logger, ignoreServerCertificateErrors);
                     if (respStatusCode != System.Net.HttpStatusCode.OK)
                     {
@@ -84,26 +82,25 @@ namespace CdrAuthServer.GetDataRecipients
             }
         }
 
-        
         /// <summary>
-        /// Returns certificates
+        /// Returns certificates.
         /// </summary>
-        /// <param name="log"></param>
-        /// <param name="cert"></param>
-        /// <param name="certPwd"></param>
-        /// <returns></returns>
+        /// <param name="log">logger interface.</param>
+        /// <param name="cert">certificate name.</param>
+        /// <param name="certPwd">password for the certificate.</param>
+        /// <returns>the loaded certificate.</returns>
         private static X509Certificate2 LoadCertificates(ILogger log, string cert, string certPwd)
         {
             log.LogInformation("Loading the certificate...");
             byte[] certBytes = Convert.FromBase64String(cert);
-            X509Certificate2 certificate = new(certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);            
+            X509Certificate2 certificate = new (certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);
             return certificate;
         }
 
         /// <summary>
-        /// Get Access Token
+        /// Get Access Token.
         /// </summary>
-        /// <returns>JWT</returns>
+        /// <returns>JWT.</returns>
         private async Task<Infrastructure.Models.Response<Token>> GetAccessToken(
             string tokenEndpoint,
             string clientId,
@@ -116,7 +113,7 @@ namespace CdrAuthServer.GetDataRecipients
             var client = GetHttpClient(clientCertificate, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
 
             // Make the request to the token endpoint.
-            log.LogInformation("Retrieving access_token from the AuthServer: {tokenEndpoint}", tokenEndpoint);
+            log.LogInformation("Retrieving access_token from the AuthServer: {TokenEndpoint}", tokenEndpoint);
 
             try
             {
@@ -132,12 +129,12 @@ namespace CdrAuthServer.GetDataRecipients
 
                 var tokenResponse = new Infrastructure.Models.Response<Token>()
                 {
-                    StatusCode = response.StatusCode
+                    StatusCode = response.StatusCode,
                 };
 
                 if (response.IsSuccessStatusCode)
                 {
-                    log.LogInformation("AuthServer response: {statusCode} - {body}", tokenResponse.StatusCode, body);
+                    log.LogInformation("AuthServer response: {StatusCode} - {Body}", tokenResponse.StatusCode, body);
                     tokenResponse.Data = JsonConvert.DeserializeObject<Token>(body);
                 }
                 else
@@ -148,7 +145,7 @@ namespace CdrAuthServer.GetDataRecipients
 
                 return tokenResponse;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await InsertDBLog(_drOptions.Register_CdrAuthServer_Logging_DB_ConnectionString, "Error", "Exception", "GetAccessToken", ex);
                 log.LogError(ex, "Caught exception in GetAccessToken");
@@ -156,41 +153,41 @@ namespace CdrAuthServer.GetDataRecipients
 
             return new Infrastructure.Models.Response<Token>()
             {
-                StatusCode = System.Net.HttpStatusCode.InternalServerError
+                StatusCode = System.Net.HttpStatusCode.InternalServerError,
             };
         }
 
-
         /// <summary>
-        /// Get the list of Data Recipients from the Register
+        /// Get the list of Data Recipients from the Register.
         /// </summary>
-        /// <returns>Raw data</returns>
+        /// <returns>Raw data.</returns>
         private async Task<(string, System.Net.HttpStatusCode)> GetDataRecipients(
             string dataRecipientsEndpoint,
             string accessToken,
-            X509Certificate2 clientCertificate,            
+            X509Certificate2 clientCertificate,
             ILogger log,
             bool ignoreServerCertificateErrors = false)
         {
-            var client = GetHttpClient(clientCertificate:clientCertificate,
-                accessToken:accessToken,
+            var client = GetHttpClient(
+                clientCertificate: clientCertificate,
+                accessToken: accessToken,
                 ignoreServerCertificateErrors: ignoreServerCertificateErrors);
 
-            log.LogInformation("Retrieving data recipients from the Register: {dataRecipientsEndpoint}", dataRecipientsEndpoint);            
+            log.LogInformation("Retrieving data recipients from the Register: {DataRecipientsEndpoint}", dataRecipientsEndpoint);
             var payload = "{\"data\": {\"action\": \"REFRESH\"}}";
 
             HttpContent content = new StringContent(payload, Encoding.UTF8, "application/json");
-            
-            var result = await client.PostAsync(dataRecipientsEndpoint, content);            
-            var data = result.Content.ReadAsStringAsync().Result;            
-            log.LogInformation("Register response: {statusCode} - {body}", result.StatusCode, data);
+
+            var result = await client.PostAsync(dataRecipientsEndpoint, content);
+            var data = await result.Content.ReadAsStringAsync();
+            log.LogInformation("Register response: {StatusCode} - {Body}", result.StatusCode, data);
 
             return (data, result.StatusCode);
         }
 
         private HttpClient GetHttpClient(
             X509Certificate2 clientCertificate = null,
-            string accessToken = null,            
+            string accessToken = null,
             bool ignoreServerCertificateErrors = false)
         {
             var clientHandler = new HttpClientHandler();
@@ -210,7 +207,9 @@ namespace CdrAuthServer.GetDataRecipients
 
             // If an access token has been provided then add to the Authorization header of the client.
             if (!string.IsNullOrEmpty(accessToken))
+            {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
 
             // Add the x-v header to the request from configurations
             if (!string.IsNullOrEmpty(_drOptions.Register_CdrAuthServer_MetadataUpdate_XV))
@@ -226,18 +225,18 @@ namespace CdrAuthServer.GetDataRecipients
 
             return client;
         }
-        
+
         /// <summary>
-        /// Update the Log table
+        /// Update the Log table.
         /// </summary>
         private static async Task InsertDBLog(string dbConnString, string msg, string lvl, string methodName, Exception exMsg = null, string entity = "")
         {
-            string exMessage = "";
+            string exMessage = string.Empty;
 
             if (exMsg != null)
             {
                 Exception innerException = exMsg;
-                StringBuilder innerMsg = new();
+                StringBuilder innerMsg = new ();
                 int ctr = 0;
 
                 do
@@ -259,39 +258,47 @@ namespace CdrAuthServer.GetDataRecipients
 
                 // Use the Exception message
                 if (innerMsg.Length == 0)
+                {
                     exMessage = exMsg.Message;
+                }
 
                 // Use the inner Exception message (includes the Exception message)
                 else
+                {
                     exMessage = innerMsg.ToString();
+                }
 
                 // Include the serialised entity for use with Exception message only
                 if (!string.IsNullOrEmpty(entity))
+                {
                     exMessage += "\r\nEntity: " + entity;
+                }
 
-                exMessage = exMessage.Replace("'", "");
+                exMessage = exMessage.Replace("'", string.Empty);
             }
 
-            using (SqlConnection db = new(dbConnString))
+            using SqlConnection db = new (dbConnString);
+            await db.OpenAsync();
+            var cmdText = string.Empty;
+
+            if (string.IsNullOrEmpty(exMessage))
             {
-                db.Open();
-                var cmdText = "";
-
-                if (string.IsNullOrEmpty(exMessage))
-                    cmdText = $"INSERT INTO [LogEvents-DrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
-                else
-                    cmdText = $"INSERT INTO [LogEvents-DrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
-
-                using var cmd = new SqlCommand(cmdText, db);
-                cmd.Parameters.AddWithValue("@msg", msg);
-                cmd.Parameters.AddWithValue("@lvl", lvl);
-                cmd.Parameters.AddWithValue("@exMessage", exMessage);
-                cmd.Parameters.AddWithValue("@procName", "Azure Function");
-                cmd.Parameters.AddWithValue("@methodName", methodName);
-                cmd.Parameters.AddWithValue("@srcContext", "CdrAuthServer.GetDataRecipients");
-                await cmd.ExecuteNonQueryAsync();
-                db.Close();
+                cmdText = $"INSERT INTO [LogEvents-DrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
             }
+            else
+            {
+                cmdText = $"INSERT INTO [LogEvents-DrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
+            }
+
+            using var cmd = new SqlCommand(cmdText, db);
+            cmd.Parameters.AddWithValue("@msg", msg);
+            cmd.Parameters.AddWithValue("@lvl", lvl);
+            cmd.Parameters.AddWithValue("@exMessage", exMessage);
+            cmd.Parameters.AddWithValue("@procName", "Azure Function");
+            cmd.Parameters.AddWithValue("@methodName", methodName);
+            cmd.Parameters.AddWithValue("@srcContext", "CdrAuthServer.GetDataRecipients");
+            await cmd.ExecuteNonQueryAsync();
+            await db.CloseAsync();
         }
     }
 }

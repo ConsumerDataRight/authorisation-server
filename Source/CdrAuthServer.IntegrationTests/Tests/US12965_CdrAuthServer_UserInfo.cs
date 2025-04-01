@@ -1,4 +1,4 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.CdsExceptions;
@@ -42,16 +42,19 @@ namespace CdrAuthServer.IntegrationTests
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        class AC01_AC02_Expected
+        private class AC01_AC02_Expected
         {
-#pragma warning disable IDE1006                
+#pragma warning disable IDE1006
             public string? given_name { get; set; }
+
             public string? family_name { get; set; }
+
             public string? name { get; set; }
-            public string? sub { get; set; }
+
             public string? iss { get; set; }
+
             public string? aud { get; set; }
-#pragma warning restore IDE1006                
+#pragma warning restore IDE1006
         }
 
         private async Task Test_AC01_AC02(HttpMethod httpMethod, TokenType tokenType, string expectedName, string expectedGivenName, string expectedFamilyName)
@@ -111,7 +114,7 @@ namespace CdrAuthServer.IntegrationTests
         {
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(status), status, nameof(statusDescription), statusDescription, nameof(expectedStatusCode), expectedStatusCode);
 
-            // Arrange          
+            // Arrange
             var saveStatus = _sqlQueryService.GetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId);
             _sqlQueryService.SetStatus(EntityType.LEGALENTITY, Constants.LegalEntities.LegalEntityId, "ACTIVE");
 
@@ -178,7 +181,7 @@ namespace CdrAuthServer.IntegrationTests
                     // Assert - Check error response
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        var error = new AdrStatusNotActiveException($"ERR-GEN-002: Software product status is {statusDescription.ToUpper()}", "");
+                        var error = new AdrStatusNotActiveException($"ERR-GEN-002: Software product status is {statusDescription.ToUpper()}", string.Empty);
                         var errorList = new ResponseErrorListV2(error.Code, error.Title, error.Detail, null);
 
                         var expectedContent = JsonConvert.SerializeObject(errorList);
@@ -259,10 +262,11 @@ namespace CdrAuthServer.IntegrationTests
                 // Assert - Check error response
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at ",
-                       response.Headers,
-                       "WWW-Authenticate",
-                       true);
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_token"", error_description=""The token expired at ",
+                        response.Headers,
+                        "WWW-Authenticate",
+                        true);
                 }
             }
         }
@@ -292,7 +296,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Theory]
-        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)]  // Different holder of key
+        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)] // Different holder of key
         public async Task AC09_Get_WithDifferentHolderOfKey_ShouldRespondWith_401Unauthorised(string certificateFilename, string certificatePassword)
         {
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(certificateFilename), certificateFilename, nameof(certificatePassword), certificatePassword);

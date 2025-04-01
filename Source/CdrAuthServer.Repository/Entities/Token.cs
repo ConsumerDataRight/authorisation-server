@@ -9,6 +9,7 @@ namespace CdrAuthServer.Repository.Entities
     public class Token
     {
         public string Id { get; set; } = string.Empty;
+
         public bool BlackListed { get; set; }
     }
 }

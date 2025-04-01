@@ -26,21 +26,17 @@ namespace CdrAuthServer.Validation
             _jwtValidator = jwtValidator;
         }
 
-        public async Task<(ValidationResult, string? clientId)> ValidateClientAssertionRequest(
+        public async Task<(ValidationResult Result, string? ClientId)> ValidateClientAssertionRequest(
             ClientAssertionRequest clientAssertionRequest,
             ConfigurationOptions configOptions,
             bool isTokenEndpoint)
         {
             // Basic validation.
 
-            // TODO: this is in the consumer data standards but is not valid as per the normative standards.
-            // FAPI conformance testing will not pass the client_id in the request, thus we will not pass FAPI testing 
+            // this is in the consumer data standards but is not valid as per the normative standards.
+            // FAPI conformance testing will not pass the client_id in the request, thus we will not pass FAPI testing
             // if this validation is in place.
-            //if (string.IsNullOrEmpty(clientAssertion.client_id))
-            //{
-            //    return (false, "invalid_client", "client_id not provided", null);
-            //}
-
+            // if (string.IsNullOrEmpty(clientAssertion.client_id)) return (false, "invalid_client", "client_id not provided", null)
             if (string.IsNullOrEmpty(clientAssertionRequest.ClientAssertion))
             {
                 _logger.LogError("client_assertion not provided");
@@ -103,7 +99,7 @@ namespace CdrAuthServer.Validation
             return (ValidationResult.Pass(), client?.ClientId);
         }
 
-        public async Task<(ValidationResult, Client?)> ValidateClientAssertion(
+        public async Task<(ValidationResult Result, Client? Client)> ValidateClientAssertion(
             string clientAssertion,
             ConfigurationOptions configOptions,
             IList<string>? validAudiences = null)
@@ -136,14 +132,14 @@ namespace CdrAuthServer.Validation
             var client = await _clientService.Get(clientId);
             if (client == null)
             {
-                _logger.LogError("Client not found - {clientId}", clientId);
+                _logger.LogError("Client not found - {ClientId}", clientId);
                 return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CLIENT_NOT_FOUND), null);
             }
 
             var (validationResult, jwtToken) = await _jwtValidator.Validate(
                 clientAssertion,
                 client,
-                JwtValidationContext.client_assertion,
+                JwtValidationContext.Client_assertion,
                 configOptions,
                 validAudiences: validAudiences);
 

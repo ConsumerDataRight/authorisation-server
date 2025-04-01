@@ -1,4 +1,4 @@
-using CdrAuthServer.IntegrationTests.Interfaces;
+﻿using CdrAuthServer.IntegrationTests.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
@@ -35,7 +35,7 @@ namespace CdrAuthServer.IntegrationTests.Services
 
             [JsonProperty("cdr_arrangement_id")]
             public string? CdrArrangementId { get; set; }
-        };
+        }
 
         public async Task<HttpResponseMessage> SendRequest(
              string? grantType = "client_credentials",
@@ -45,10 +45,7 @@ namespace CdrAuthServer.IntegrationTests.Services
              string? token = null,
              string? tokenTypeHint = "refresh_token")
         {
-            if (clientId == null)
-            {
-                clientId = _options.LastRegisteredClientId;
-            }
+            clientId ??= _options.LastRegisteredClientId;
 
             var URL = $"{_options.DH_MTLS_GATEWAY_URL}/connect/introspect";
 
@@ -57,31 +54,35 @@ namespace CdrAuthServer.IntegrationTests.Services
             {
                 formFields.Add(new KeyValuePair<string?, string?>("grant_type", grantType));
             }
+
             if (clientId != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("client_id", clientId.ToLower()));
             }
+
             if (clientAssertionType != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("client_assertion_type", clientAssertionType));
             }
+
             formFields.Add(new KeyValuePair<string?, string?>("client_assertion", clientAssertion ??
                 new PrivateKeyJwtService()
                 {
                     CertificateFilename = Constants.Certificates.JwtCertificateFilename,
                     CertificatePassword = Constants.Certificates.JwtCertificatePassword,
                     Issuer = clientId ?? throw new NullReferenceException(nameof(clientId)),
-                    Audience = URL
-                }.Generate()
-            ));
+                    Audience = URL,
+                }.Generate()));
             if (token != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("token", token));
             }
+
             if (tokenTypeHint != null)
             {
                 formFields.Add(new KeyValuePair<string?, string?>("token_type_hint", tokenTypeHint));
             }
+
             var content = new FormUrlEncodedContent(formFields);
 
             using var client = Helpers.Web.CreateHttpClient(Constants.Certificates.CertificateFilename, Constants.Certificates.CertificatePassword);
@@ -93,7 +94,7 @@ namespace CdrAuthServer.IntegrationTests.Services
             return responseMessage;
         }
 
-        static public async Task<Response?> DeserializeResponse(HttpResponseMessage response)
+        public static async Task<Response?> DeserializeResponse(HttpResponseMessage response)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
 

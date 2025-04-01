@@ -1,6 +1,4 @@
 ﻿using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace CdrAuthServer.Models
 {
@@ -137,18 +135,6 @@ namespace CdrAuthServer.Models
         /// </summary>
         [JsonProperty("id_token_signed_response_alg")]
         public string IdTokenSignedResponseAlg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets a JWE &#x60;alg&#x60; algorithm with which an id_token is to be encrypted.
-        /// </summary>
-        [JsonProperty("id_token_encrypted_response_alg")]
-        public string IdTokenEncryptedResponseAlg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets a JWE &#x60;enc&#x60; algorithm with which an id_token is to be encrypted.
-        /// </summary>
-        [JsonProperty("id_token_encrypted_response_enc")]
-        public string IdTokenEncryptedResponseEnc { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets an algorithm which the ADR expects to sign the request object if a request object will be part of the authorization request sent to the Data Holder.

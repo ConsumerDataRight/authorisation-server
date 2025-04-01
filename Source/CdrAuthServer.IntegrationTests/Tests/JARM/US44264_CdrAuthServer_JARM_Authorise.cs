@@ -1,4 +1,4 @@
-#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
+﻿#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
@@ -22,11 +22,6 @@ using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomati
 
 namespace CdrAuthServer.IntegrationTests.JARM
 {
-    /*
-     * MJS - CDRAuthServer tests are run in the CDRAuthServer pipeline, but also run again in the MDH/MDHE pipelines where they test the CdrAuthserver when
-     * it's running embedded inside MDH/MDHE, ie, testing MDH/MDHE should just happen implicity when CDRAuthServer tests are MDH/MDHE pipeline.
-     */
-
     // JARM - Authorise related tests
     public class US44264_CdrAuthServer_JARM_Authorise : BaseTest, IClassFixture<RegisterSoftwareProductFixture>
     {
@@ -54,7 +49,6 @@ namespace CdrAuthServer.IntegrationTests.JARM
         private class ParResponse
         {
             public string? request_uri;
-            public int? expires_in;
         }
 
         [Fact]
@@ -68,8 +62,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 scope: _options.SCOPE,
                 responseMode: ResponseMode.Jwt,
                 responseType: responseType,
-                state: STATE
-            );
+                state: STATE);
 
             var parResponseMessageContent = await parResponseMessage.Content.ReadAsStringAsync();
             parResponseMessage.StatusCode.Should().Be(HttpStatusCode.Created, because: parResponseMessageContent);
@@ -82,7 +75,6 @@ namespace CdrAuthServer.IntegrationTests.JARM
                    .WithResponseType(responseType)
                    .WithRequestUri(parResponse.request_uri)
                    .BuildAsync();
-
 
             HttpResponseMessage response = await authService.AuthoriseForJarm();
 
@@ -107,6 +99,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                     var encryptedJwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
                     encryptedJwt.Header["alg"].Should().Be("RSA-OAEP", because: "JARM Encryption is turned on.");
                     encryptedJwt.Header["enc"].Should().Be("A128CBC-HS256", because: "JARM Encryption is turned on.");
+
                     // Decrypt the JARM JWT.
                     var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();

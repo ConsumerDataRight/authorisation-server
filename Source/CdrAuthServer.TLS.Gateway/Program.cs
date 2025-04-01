@@ -1,20 +1,20 @@
-using CdrAuthServer.Infrastructure;
+﻿using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Certificates;
 using CdrAuthServer.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Diagnostics;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
-using static System.Net.Mime.MediaTypeNames;
 using Serilog;
+using static System.Net.Mime.MediaTypeNames;
 using ILogger = Serilog.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("gateway-config.json", false, true);
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddScoped<ICertificateLoader, CertificateLoader>();
-builder.Services.ConfigureWebServer(
-    builder.Configuration, 
-    "Certificates:TlsServerCertificate", 
+await builder.Services.ConfigureWebServer(
+    builder.Configuration,
+    "Certificates:TlsServerCertificate",
     httpsPort: builder.Configuration.GetValue<int>("CdrAuthServer:tlsGateway:httpsPort", 8081),
     requireClientCertificate: false);
 builder.Services.AddOcelot();
@@ -40,7 +40,7 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         context.Response.StatusCode = StatusCodes.Status502BadGateway;
         context.Response.ContentType = Text.Plain;
 
-        logger?.Error("Caught exception with error: {ex}", ex);
+        logger?.Error(ex, "Caught exception with error");
         await context.Response.WriteAsync($"An error occurred handling the request: {ex?.Message}");
     });
 });
@@ -54,8 +54,8 @@ var pipelineConfiguration = new OcelotPipelineConfiguration
         // Send through the original host name to the backend service.
         httpContext.Request.Headers[HttpHeaders.ForwardedHost] = httpContext.Request.Host.ToString();
         await next.Invoke();
-    }
+    },
 };
 app.UseOcelot(pipelineConfiguration).Wait();
 
-app.Run();
+await app.RunAsync();

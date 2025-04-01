@@ -14,12 +14,16 @@ namespace CdrAuthServer.API.Logger
 {
     public class RequestResponseLoggingMiddleware
     {
-        const string httpSummaryMessageTemplate =
-            "HTTP {RequestMethod} {RequestScheme:l}://{RequestHost:l}{RequestPathBase:l}{RequestPath:l} responded {StatusCode} in {ElapsedTime:0.0000} ms.";
+        private const string HttpSummaryMessageTemplate =
+           "HTTP {RequestMethod} {RequestScheme:l}://{RequestHost:l}{RequestPathBase:l}{RequestPath:l} responded {StatusCode} in {ElapsedTime:0.0000} ms.";
 
-        const string httpSummaryExceptionMessageTemplate =
+        private const string HttpSummaryExceptionMessageTemplate =
             "HTTP {RequestMethod} {RequestScheme:l}://{RequestHost:l}{RequestPathBase:l}{RequestPath:l} encountered following error {error}";
 
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+        private readonly RequestDelegate _next;
+        private readonly ILogger _requestResponseLogger;
+        private readonly IConfiguration _configuration;
         private string? _requestMethod;
         private string? _requestBody;
         private string? _requestHeaders;
@@ -36,20 +40,13 @@ namespace CdrAuthServer.API.Logger
         private string? _requestPathBase;
         private string? _clientId;
         private string? _softwareId;
-        private string? _fapiInteractionId;        
-
-
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
-        readonly RequestDelegate _next;
-        private readonly ILogger _requestResponseLogger;
-        private readonly IConfiguration _configuration;
-
+        private string? _fapiInteractionId;
 
         public RequestResponseLoggingMiddleware(RequestDelegate next, IRequestResponseLogger requestResponseLogger, IConfiguration configuration)
         {
             _requestResponseLogger = requestResponseLogger.Log.ForContext<RequestResponseLoggingMiddleware>();
             _next = next ?? throw new ArgumentNullException(nameof(next));
-            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();            
+            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
             _configuration = configuration;
         }
 
@@ -87,14 +84,13 @@ namespace CdrAuthServer.API.Logger
 
             if (!string.IsNullOrEmpty(_exceptionMessage))
             {
-                logger.Error(httpSummaryExceptionMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _exceptionMessage);
+                logger.Error(HttpSummaryExceptionMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _exceptionMessage);
             }
             else
             {
-                logger.Write(LogEventLevel.Information, httpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
+                logger.Write(LogEventLevel.Information, HttpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
             }
         }
-
 
         private async Task ExtractRequestProperties(HttpContext context)
         {
@@ -126,7 +122,7 @@ namespace CdrAuthServer.API.Logger
             }
         }
 
-        static class ClaimIdentifiers
+        private static class ClaimIdentifiers
         {
             public const string ClientId = "client_id";
             public const string SoftwareId = "software_id";
@@ -139,7 +135,7 @@ namespace CdrAuthServer.API.Logger
             if (handler.CanReadToken(jwt))
             {
                 var decodedJwt = handler.ReadJwtToken(jwt);
-                var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? "";
+                var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? string.Empty;
 
                 idToSet = id;
             }
@@ -149,14 +145,14 @@ namespace CdrAuthServer.API.Logger
         {
             try
             {
-                //try fetching x-fapi-interaction-id. After fetching we don't return as we need other important ids.
+                // try fetching x-fapi-interaction-id. After fetching we don't return as we need other important ids.
                 _fapiInteractionId = string.Empty;
                 if (request.Headers.TryGetValue("x-fapi-interaction-id", out var interactionid))
                 {
                     _fapiInteractionId = interactionid;
                 }
 
-                //try fetching from the JWT in the authorization header
+                // try fetching from the JWT in the authorization header
                 var authorization = request.Headers[HeaderNames.Authorization];
                 if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue) && string.IsNullOrEmpty(_clientId))
                 {
@@ -165,12 +161,12 @@ namespace CdrAuthServer.API.Logger
 
                     if (scheme == JwtBearerDefaults.AuthenticationScheme && parameter != null)
                     {
-                        _clientId = String.Empty;
+                        _clientId = string.Empty;
                         SetIdFromJwt(parameter, ClaimIdentifiers.ClientId, ref _clientId);
                     }
                 }
 
-                //try fetching from the clientid in the body for connect/par
+                // try fetching from the clientid in the body for connect/par
                 if (!string.IsNullOrEmpty(_requestBody) && _requestBody.Contains("client_assertion=") && string.IsNullOrEmpty(_clientId))
                 {
                     var nameValueCollection = HttpUtility.ParseQueryString(_requestBody);
@@ -181,14 +177,13 @@ namespace CdrAuthServer.API.Logger
                         if (assertion != null)
                         {
                             // in this case we set the iss to clientid
-                            _clientId = String.Empty;
+                            _clientId = string.Empty;
                             SetIdFromJwt(assertion, ClaimIdentifiers.Iss, ref _clientId);
                         }
                     }
-
                 }
 
-                //try fetching from the clientid in the body account/login, /consent, /token
+                // try fetching from the clientid in the body account/login, /consent, /token
                 if (!string.IsNullOrEmpty(_requestBody) && _requestBody.Contains(ClaimIdentifiers.ClientId) && string.IsNullOrEmpty(_clientId))
                 {
                     var decodedBody = HttpUtility.UrlDecode(_requestBody);
@@ -211,10 +206,9 @@ namespace CdrAuthServer.API.Logger
                     }
                 }
 
-
                 if (request.ContentType == "application/jwt")
                 {
-                    //decode jwt sent to register
+                    // decode jwt sent to register
                     var handler = new JwtSecurityTokenHandler();
                     if (handler.CanReadToken(_requestBody))
                     {
@@ -223,14 +217,14 @@ namespace CdrAuthServer.API.Logger
 
                         if (softStatementValue != null)
                         {
-                            _softwareId = String.Empty;
+                            _softwareId = string.Empty;
                             SetIdFromJwt(softStatementValue, ClaimIdentifiers.SoftwareId, ref _softwareId);
                             return;
                         }
                     }
                 }
 
-                //try fetching from query string, this should be the last place to check for client id.
+                // try fetching from query string, this should be the last place to check for client id.
                 if (request.QueryString.Value?.Contains(ClaimIdentifiers.ClientId) == true && string.IsNullOrEmpty(_clientId))
                 {
                     var nameValueCollection = HttpUtility.ParseQueryString(request.QueryString.Value);
@@ -244,7 +238,6 @@ namespace CdrAuthServer.API.Logger
             {
                 _exceptionMessage = ex.Message;
             }
-
         }
 
         private string ReadStreamInChunks(Stream stream)
@@ -261,7 +254,8 @@ namespace CdrAuthServer.API.Logger
                 {
                     readChunkLength = reader.ReadBlock(readChunk, 0, readChunkBufferLength);
                     textWriter.Write(readChunk, 0, readChunkLength);
-                } while (readChunkLength > 0);
+                }
+                while (readChunkLength > 0);
                 return textWriter.ToString();
             }
             catch (Exception ex)
@@ -269,13 +263,11 @@ namespace CdrAuthServer.API.Logger
                 _exceptionMessage = ex.Message;
             }
 
-            return "";
+            return string.Empty;
         }
-
 
         private async Task ExtractResponseProperties(HttpContext httpContext)
         {
-
             var originalBodyStream = httpContext.Response.Body;
             await using var responseBody = _recyclableMemoryStreamManager.GetStream();
             httpContext.Response.Body = responseBody;
@@ -318,13 +310,13 @@ namespace CdrAuthServer.API.Logger
             // 1. check if the X-Forwarded-Host header has been provided -> use that
             // 2. If not, use the request.Host
             string hostHeaderKey = _configuration.GetValue<string>("SerilogRequestResponseLogger:HostNameHeaderKey") ?? "X-Forwarded-Host";
-            
+
             if (!request.Headers.TryGetValue(hostHeaderKey, out var keys))
             {
                 return request.Host.ToString();
             }
 
-            return keys[0] ?? "";
+            return keys[0] ?? string.Empty;
         }
 
         private string? GetIpAddress(HttpContext context)
@@ -340,7 +332,7 @@ namespace CdrAuthServer.API.Logger
             // the traffic traverses through.  We get the first (and potentially only) ip address from the list as the client IP.
             // We also remove any port numbers that may be included on the client IP.
             return keys[0]?
-                .Split(',')[0]  // Get the first IP address in the list, in case there are multiple.
+                .Split(',')[0] // Get the first IP address in the list, in case there are multiple.
                 .Split(':')[0]; // Strip off the port number, in case it is attached to the IP address.
         }
 
@@ -348,19 +340,18 @@ namespace CdrAuthServer.API.Logger
         {
             // local containers have ports with requesthost e.g. mock-data-holder:8001
             // test environment has mock-data-holder
-            
             if (string.IsNullOrEmpty(_requestHost))
             {
                 return string.Empty;
             }
-            
+
             if (_requestHost.Contains("mock-data-holder-energy"))
             {
                 return "SB-DHE-ID";
             }
 
             if (_requestHost.Contains("mock-data-holder"))
-            {                             
+            {
                 return "SB-DHB-ID";
             }
 

@@ -40,8 +40,10 @@ namespace CdrAuthServer.IntegrationTests
         private readonly ISqlQueryService _sqlQueryService;
         private readonly IApiServiceDirector _apiServiceDirector;
 
-        private string _clientId { get; set; }
-        public US12963_CdrAuthServer_Token(IOptions<TestAutomationOptions> options,
+        private string? _clientId { get; set; }
+
+        public US12963_CdrAuthServer_Token(
+            IOptions<TestAutomationOptions> options,
             IOptions<TestAutomationAuthServerOptions> authServerOptions,
             IDataHolderParService dataHolderParService,
             IDataHolderTokenService dataHolderTokenService,
@@ -66,7 +68,7 @@ namespace CdrAuthServer.IntegrationTests
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        static void AssertAccessToken(string? accessToken)
+        private static void AssertAccessToken(string? accessToken)
         {
             accessToken.Should().NotBeNullOrEmpty();
             if (accessToken != null)
@@ -84,7 +86,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        static void AssertIdToken(string? idToken)
+        private static void AssertIdToken(string? idToken)
         {
             string decryptedIdToken;
 
@@ -124,46 +126,13 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        #region TEST_SCENARIO_A_IDTOKEN_AND_ACCESSTOKEN        
+        #region TEST_SCENARIO_A_IDTOKEN_AND_ACCESSTOKEN
         [Fact]
         public async Task AC01_Auth_Code_Flow_Post_ShouldRespondWith_200OK_IDToken_AccessToken_RefreshToken()
         {
             // Arrange
             var authCode = await GetAuthCode();
 
-            // Act
-            var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
-
-            // Assert
-            using (new AssertionScope(BaseTestAssertionStrategy))
-            {
-                responseMessage.StatusCode.Should().Be(HttpStatusCode.OK);
-
-                if (responseMessage.StatusCode == HttpStatusCode.OK)
-                {
-                    Assertions.AssertHasContentTypeApplicationJson(responseMessage.Content);
-
-                    var tokenResponse = await _dataHolderTokenService.DeserializeResponse(responseMessage);
-                    tokenResponse.Should().NotBeNull();
-                    tokenResponse?.TokenType.Should().Be("Bearer");
-                    tokenResponse?.ExpiresIn.Should().Be(_authServerOptions.ACCESSTOKENLIFETIMESECONDS);
-                    tokenResponse?.CdrArrangementId.Should().NotBeNullOrEmpty();
-                    tokenResponse?.Scope.Should().Be(SCOPE_TOKEN_ACCOUNTS);
-                    tokenResponse?.AccessToken.Should().NotBeNullOrEmpty();
-                    tokenResponse?.IdToken.Should().NotBeNullOrEmpty();
-                    tokenResponse?.RefreshToken.Should().NotBeNullOrEmpty();
-
-                    AssertAccessToken(tokenResponse?.AccessToken);
-                }
-            }
-        }
-
-        [Fact]
-        public async Task AC01_Hybrid_Flow_Post_ShouldRespondWith_200OK_IDToken_AccessToken_RefreshToken()
-        {
-            // Arrange
-            var authCode = await GetAuthCode(responseType: ResponseType.CodeIdToken, responseMode: ResponseMode.Fragment);
-            
             // Act
             var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
 
@@ -290,14 +259,13 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-
         [Fact]
         public async Task AC03_Post_WithValidRequest_ClientId_Success()
         {
             // Arrange
             var requestClientId = _options.LastRegisteredClientId;
 
-            var authCode = await GetAuthCode(); //note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
+            var authCode = await GetAuthCode(); // note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
 
             // Act
             var responseMessage = await _dataHolderTokenService.SendRequest(
@@ -314,9 +282,8 @@ namespace CdrAuthServer.IntegrationTests
         [Fact]
         public async Task AC03_Post_WithMissingIssuer_ShouldRespondWith_400BadRequest_MissingIssClaimResponse()
         {
-
             // Arrange
-            var authCode = await GetAuthCode(); //note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
+            var authCode = await GetAuthCode(); // note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
 
             AuthoriseException expectedError = new MissingIssClaimException();
 
@@ -333,13 +300,11 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-
         [Fact]
         public async Task AC03_Post_WithInvalidClientAndIssuer_ShouldRespondWith_400BadRequest_ClientNotFoundResponse()
         {
-
             // Arrange
-            var authCode = await GetAuthCode(); //note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
+            var authCode = await GetAuthCode(); // note that this uses _clientId, so by specifying different values in requestClientId we ensure invalidClientId errors
 
             AuthoriseException expectedError = new ClientNotFoundException();
 
@@ -378,6 +343,7 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC03_Post_WithInvalidRequest_ClientAssertionType_ShouldRespondWith_400BadRequest_InvalidClientErrorResponse(string clientAssertionType)
         {
             Log.Information("Running test with Params: {P1}={V1}.", nameof(clientAssertionType), clientAssertionType);
+
             // Arrange
             var authCode = await GetAuthCode();
 
@@ -434,7 +400,15 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        public enum AC04_TestType { valid_jwt, omit_iss, omit_aud, omit_exp, omit_jti, exp_backdated }
+        public enum AC04_TestType
+        {
+            valid_jwt,
+            omit_iss,
+            omit_aud,
+            omit_exp,
+            omit_jti,
+            exp_backdated
+        }
 
         [Fact]
         public async Task AC04_Post_WithValidClientAssertion_Success()
@@ -473,7 +447,7 @@ namespace CdrAuthServer.IntegrationTests
                 AC04_TestType.omit_exp => new TokenValidationClientAssertionException(),
                 AC04_TestType.omit_jti => new MissingJtiException(),
                 AC04_TestType.exp_backdated => new ExpiredClientAssertionException(),
-                _ => throw new NotSupportedException()
+                _ => throw new NotSupportedException(),
             };
 
             // Act
@@ -511,12 +485,12 @@ namespace CdrAuthServer.IntegrationTests
             async Task ExpireAuthCode(string authCode)
             {
                 using var connection = new SqlConnection(_options.AUTHSERVER_CONNECTIONSTRING);
-                connection.Open();
+                await connection.OpenAsync();
 
                 var count = await connection.ExecuteAsync("update grants set expiresat = @expiresAt where [key]=@key", new
                 {
                     expiresAt = DateTime.UtcNow.AddDays(-90),
-                    key = authCode
+                    key = authCode,
                 });
 
                 if (count != 1)
@@ -544,7 +518,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
-        public async Task AC06_Post_WithMissingAuthCode_ShouldRespondWith_400BadRequest_InvalidGrant() //TODO: The title says should return InvalidGrant, but the test checks for InvalidRequest. Logged as Bug 63704
+        public async Task AC06_Post_WithMissingAuthCode_ShouldRespondWith_400BadRequest_InvalidGrant() // TODO: The title says should return InvalidGrant, but the test checks for InvalidRequest. Logged as Bug 63704
         {
             // Act
             var responseMessage = await _dataHolderTokenService.SendRequest(authCode: null);
@@ -565,24 +539,6 @@ namespace CdrAuthServer.IntegrationTests
             var expectedError = new InvalidAuthorizationCodeException();
 
             // Assert
-            using (new AssertionScope(BaseTestAssertionStrategy))
-            {
-                await Assertions.AssertErrorAsync(responseMessage, expectedError);
-            }
-        }
-
-        [Fact]
-        public async Task ACXXX_Post_InvalidClientEncryptionKey_ShouldRespondWith_400BadRequest_InvalidXXX()
-        {
-            // Arrange
-            var authCode = await GetAuthCode(responseType: ResponseType.CodeIdToken, responseMode: ResponseMode.Fragment);
-            Helpers.AuthServer.UpdateAuthServerClientClaim(_options, _clientId, "id_token_encrypted_response_alg", "RSA-OAEP-256");
-
-            // Act
-            var responseMessage = await _dataHolderTokenService.SendRequest(authCode);
-
-            // Assert
-            var expectedError = new UnexpectedErrorException("Unable to get encryption key required for id_token encryption from client JWKS");
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
                 await Assertions.AssertErrorAsync(responseMessage, expectedError);
@@ -633,7 +589,7 @@ namespace CdrAuthServer.IntegrationTests
         #region TEST_SCENARIO_C_USE_REFRESHTOKEN_FOR_NEW_ACCESSTOKEN
         private async Task<HttpResponseMessage> Test_AC09_AC10(string initalScope, string requestedScope)
         {
-            async Task<(string? authCode, string? refreshToken)> GetRefreshToken(string scope)
+            async Task<(string? AuthCode, string? RefreshToken)> GetRefreshToken(string scope)
             {
                 // Create grant with specific scope
                 var authCode = await GetAuthCode(100000, scope);
@@ -647,16 +603,16 @@ namespace CdrAuthServer.IntegrationTests
                 }
 
                 // Just make sure refresh token was issued with correct scope
-                if (tokenResponse?.Scope != scope)
+                if (tokenResponse.Scope != scope)
                 {
                     throw new Exception($"{nameof(AC09_Post_WithRefreshToken_AndSameScope_ShouldRespondWith_200OK_AccessToken_RefreshToken)}.{nameof(GetRefreshToken)} - Unexpected scope");
                 }
 
-                return (authCode, tokenResponse?.RefreshToken);
+                return (authCode, tokenResponse.RefreshToken);
             }
 
             // Get a refresh token with initial scope
-            var (authCode, refreshToken) = await GetRefreshToken(initalScope);
+            var (_, refreshToken) = await GetRefreshToken(initalScope);
 
             // Use the refresh token to get a new accesstoken and new refreshtoken (with the requested scope)
             var responseMessage = await _dataHolderTokenService.SendRequest(
@@ -778,7 +734,7 @@ namespace CdrAuthServer.IntegrationTests
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(sharingDuration), sharingDuration, nameof(expectsRefreshToken), expectsRefreshToken);
 
             string authCode = await GetAuthCode(sharingDuration);
-           
+
             var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
 
             // Assert
@@ -794,7 +750,6 @@ namespace CdrAuthServer.IntegrationTests
                     tokenResponse?.RefreshToken.Should().NotBeNullOrEmpty();
 
                     var decodedJWT = new JwtSecurityTokenHandler().ReadJwtToken(tokenResponse?.AccessToken);
-
                 }
                 else
                 {
@@ -811,7 +766,7 @@ namespace CdrAuthServer.IntegrationTests
         {
             Log.Information("Running test with Params: {P1}={V1}.", nameof(usageAttempts), usageAttempts);
 
-            // Arrange - Get authcode, 
+            // Arrange - Get authcode,
             var authCode = await GetAuthCode(100000);
 
             // Act - Get access token and refresh token
@@ -819,7 +774,7 @@ namespace CdrAuthServer.IntegrationTests
 
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert 
+                // Assert
                 tokenResponse.Should().NotBeNull();
                 tokenResponse?.AccessToken.Should().NotBeNull();
                 tokenResponse?.RefreshToken.Should().NotBeNull();
@@ -835,7 +790,7 @@ namespace CdrAuthServer.IntegrationTests
                     refreshTokenResponse.Should().NotBeNull();
                     refreshTokenResponse?.AccessToken.Should().NotBeNull();
                     refreshTokenResponse?.RefreshToken.Should().NotBeNull();
-                    refreshTokenResponse?.RefreshToken.Should().Be(refreshToken); // same refresh token is returned 
+                    refreshTokenResponse?.RefreshToken.Should().Be(refreshToken); // same refresh token is returned
 
                     refreshToken = refreshTokenResponse?.RefreshToken;
                 }
@@ -859,7 +814,7 @@ namespace CdrAuthServer.IntegrationTests
 
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                // Assert 
+                // Assert
                 tokenResponse.Should().NotBeNull();
                 tokenResponse?.AccessToken.Should().NotBeNull();
                 tokenResponse?.RefreshToken.Should().NotBeNull();
@@ -868,7 +823,7 @@ namespace CdrAuthServer.IntegrationTests
                 if (expired)
                 {
                     // Assert - Check that refresh token will expire when we expect it to
-                    var decodedJWT = new JwtSecurityTokenHandler().ReadJwtToken(tokenResponse?.AccessToken);
+                    _ = new JwtSecurityTokenHandler().ReadJwtToken(tokenResponse?.AccessToken);
 
                     // Arrange - wait until refresh token has expired
                     await Task.Delay((SHARING_DURATION_FOR_EXPIRED_REFRESHTOKEN + 10) * 1000);
@@ -882,20 +837,9 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        private async Task<HttpStatusCode> CallResourceAPI(string accessToken)
-        {
-            var api = _apiServiceDirector.BuildCustomerResourceAPI(accessToken);
-            var response = await api.SendAsync();
-
-            return response.StatusCode;
-        }
-
         private async Task<string> GetAuthCode(int? sharingDuration = Constants.AuthServer.SharingDuration, string? scope = null, ResponseType responseType = ResponseType.Code, ResponseMode responseMode = ResponseMode.Jwt)
         {
-            if (_clientId == null)
-            {
-                _clientId = _options.LastRegisteredClientId;
-            }
+            _clientId ??= _options.LastRegisteredClientId;
 
             if (scope.IsNullOrWhiteSpace())
             {
@@ -926,7 +870,7 @@ namespace CdrAuthServer.IntegrationTests
             var additionalClaims = new List<Claim>
                 {
                      new Claim("sub", ISSUER),
-                     new Claim("iat", new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer)
+                     new Claim("iat", new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer),
                 };
 
             if (testType != AC04_TestType.omit_iss)

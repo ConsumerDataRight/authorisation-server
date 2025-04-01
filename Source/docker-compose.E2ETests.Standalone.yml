@@ -1,8 +1,10 @@
 # Docker compose e2e tests
 
+name: cdr-auth-server-e2e-tests
+
 services:
   mock-register:
-    container_name: mock-register
+    container_name: mock-register-cdr-auth-server-e2e-tests
     image: mock-register
     hostname: mock-register
     ports: 
@@ -26,7 +28,7 @@ services:
         condition: service_healthy
 
   cdr-auth-server:
-    container_name: cdr-auth-server-standalone
+    container_name: cdr-auth-server-standalone-e2e-tests
     image: cdr-auth-server-standalone
     build:
       context: .
@@ -65,7 +67,7 @@ services:
         condition: service_healthy
 
   cdr-auth-server-e2e-tests:
-    container_name: cdr-auth-server-e2e-tests
+    container_name: cdr-auth-server-e2e-tests-testing
     image: cdr-auth-server-e2e-tests
     ports: 
       - "9999:9999"
@@ -91,7 +93,7 @@ services:
         condition: service_healthy
 
   mssql:
-    container_name: sql1
+    container_name: sql-cdr-auth-server-e2e-tests
     image: 'mcr.microsoft.com/mssql/server:2022-latest'
     ports:
       - "1433:1433"

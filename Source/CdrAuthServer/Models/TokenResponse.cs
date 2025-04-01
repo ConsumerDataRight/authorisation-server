@@ -28,6 +28,5 @@ namespace CdrAuthServer.Models
 
         [JsonIgnore]
         public Error? Error { get; set; }
-
     }
 }

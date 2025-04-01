@@ -1,4 +1,4 @@
-#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
+﻿#undef DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
 using CdrAuthServer.IntegrationTests.Models;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
@@ -62,18 +62,16 @@ namespace CdrAuthServer.IntegrationTests
                 actual.revocation_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/revocation");
                 actual.cdr_arrangement_revocation_endpoint.Should().Be($"{_options.CDRAUTHSERVER_SECUREBASEURI}/connect/arrangements/revoke");
                 actual.acr_values_supported.Should().IntersectWith(new[] { "urn:cds.au:cdr:2", "urn:cds.au:cdr:3" });
-                actual.id_token_encryption_alg_values_supported.Should().IntersectWith(new[] { "RSA-OAEP", "RSA-OAEP-256" });
-                actual.id_token_encryption_enc_values_supported.Should().IntersectWith(new[] { "A128CBC-HS256", "A256GCM" });
                 actual.tls_client_certificate_bound_access_tokens.Should().Be("true");
-                actual.id_token_signing_alg_values_supported.Should().BeEquivalentTo(new[] { "ES256", "PS256" });
-                actual.token_endpoint_auth_signing_alg_values_supported.Should().BeEquivalentTo(new[] { "ES256", "PS256" });
-                actual.token_endpoint_auth_methods_supported.Should().BeEquivalentTo(new[] { "private_key_jwt" });
-                actual.subject_types_supported.Should().BeEquivalentTo(new[] { "pairwise" });
-                actual.grant_types_supported.Should().BeEquivalentTo(new[] { "authorization_code", "client_credentials", "refresh_token" });
+                actual.id_token_signing_alg_values_supported.Should().BeEquivalentTo(["ES256", "PS256"]);
+                actual.token_endpoint_auth_signing_alg_values_supported.Should().BeEquivalentTo(["ES256", "PS256"]);
+                actual.token_endpoint_auth_methods_supported.Should().BeEquivalentTo(["private_key_jwt"]);
+                actual.subject_types_supported.Should().BeEquivalentTo(["pairwise"]);
+                actual.grant_types_supported.Should().BeEquivalentTo(["authorization_code", "client_credentials", "refresh_token"]);
                 actual.scopes_supported.Should().Contain(new[] { "openid", "profile", "cdr:registration", "bank:accounts.basic:read", "bank:transactions:read", "common:customer.basic:read", });
                 actual.claims_supported.Should().Contain(new[] { "name", "given_name", "family_name", "sharing_duration", "iss", "sub", "aud", "acr", "exp", "iat", "nonce", "auth_time", "updated_at" });
-                actual.response_types_supported.Should().Contain(new[] { "code id_token" });
-                actual.response_modes_supported.Should().Contain(new[] { "form_post", "fragment" });
+                actual.response_types_supported.Should().Contain(new[] { "code" });
+                actual.response_modes_supported.Should().BeEquivalentTo(new[] { "jwt" });
             }
         }
 
@@ -152,13 +150,10 @@ namespace CdrAuthServer.IntegrationTests
                         ""pairwise""
                     ],
                     ""response_modes_supported"": [
-                        ""fragment"",
-                        ""form_post"",
                         ""jwt""
                     ],
                     ""response_types_supported"": [
-                        ""code"",
-                        ""code id_token""
+                        ""code""
                     ],
                     ""code_challenge_methods_supported"": [
                         ""S256""
@@ -185,14 +180,6 @@ namespace CdrAuthServer.IntegrationTests
                     ""id_token_signing_alg_values_supported"": [
                         ""PS256"",
                         ""ES256""
-                    ],
-                    ""id_token_encryption_alg_values_supported"": [
-                        ""RSA-OAEP"",
-                        ""RSA-OAEP-256""
-                    ],
-                    ""id_token_encryption_enc_values_supported"": [
-                        ""A128CBC-HS256"",
-                        ""A256GCM""
                     ],
                     ""authorization_signing_alg_values_supported"": [
                         ""PS256"",

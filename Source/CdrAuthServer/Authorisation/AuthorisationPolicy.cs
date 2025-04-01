@@ -6,6 +6,6 @@
         UserInfo,
         GetCustomerBasic,
         GetBankingAccounts,
-        AdminMetadataUpdate
+        AdminMetadataUpdate,
     }
 }

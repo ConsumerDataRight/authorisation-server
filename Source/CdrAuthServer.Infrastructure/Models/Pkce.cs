@@ -1,10 +1,11 @@
-﻿
-namespace CdrAuthServer.Infrastructure.Models
+﻿namespace CdrAuthServer.Infrastructure.Models
 {
     public class Pkce
     {
         public string? CodeVerifier { get; set; }
+
         public string? CodeChallenge { get; set; }
+
         public string CodeChallengeMethod { get; private set; }
 
         public Pkce()

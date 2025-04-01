@@ -12,5 +12,4 @@ namespace CdrAuthServer.Models
         [JsonProperty(ClaimNames.State)]
         public string State { get; set; } = string.Empty;
     }
-
 }

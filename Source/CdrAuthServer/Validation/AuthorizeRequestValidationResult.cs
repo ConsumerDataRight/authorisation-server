@@ -6,7 +6,8 @@ namespace CdrAuthServer.Validation
     {
         public AuthorizationRequestObject ValidatedAuthorizationRequestObject { get; set; }
 
-        public AuthorizeRequestValidationResult(bool isValid) : base(isValid) 
+        public AuthorizeRequestValidationResult(bool isValid)
+            : base(isValid)
         {
             ValidatedAuthorizationRequestObject = new AuthorizationRequestObject();
         }

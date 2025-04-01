@@ -10,7 +10,7 @@ namespace CdrAuthServer.Helpers
         {
             return new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback = ServerCertificateCustomValidationCallback(configuration)
+                ServerCertificateCustomValidationCallback = ServerCertificateCustomValidationCallback(configuration),
             };
         }
 
@@ -18,7 +18,7 @@ namespace CdrAuthServer.Helpers
         {
             return new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback = ServerCertificateCustomValidationCallback(isServerCertificateValidationEnabled)
+                ServerCertificateCustomValidationCallback = ServerCertificateCustomValidationCallback(isServerCertificateValidationEnabled),
             };
         }
 

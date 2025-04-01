@@ -1,4 +1,5 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
@@ -37,10 +38,10 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         // Purge database, register product and return SSA JWT / registration json / clientId of registered software product
-        private async Task<(string ssa, string registration, string clientId)> Arrange()
+        private async Task<(string Ssa, string Registration, string ClientId)> Arrange()
         {
             Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
-            return await _dataHolderRegisterService.RegisterSoftwareProduct(responseType: "code,code id_token", authorizationSignedResponseAlg: "PS256");
+            return await _dataHolderRegisterService.RegisterSoftwareProduct(responseType: ResponseType.Code, authorizationSignedResponseAlg: "PS256");
         }
 
         [Fact]
@@ -52,11 +53,10 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(
                 ssa,
-                responseType: "code,code id_token",
+                responseType: ResponseType.Code,
                 authorizationSignedResponseAlg: "PS256",
                 authorizationEncryptedResponseAlg: "RSA-OAEP",
-                authorizationEncryptedResponseEnc: "A128CBC-HS256"
-                );
+                authorizationEncryptedResponseEnc: "A128CBC-HS256");
 
             var accessToken = await new DataHolderAccessToken(clientId, _options.DH_MTLS_GATEWAY_URL, _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE).GetAccessToken();
 
@@ -90,8 +90,9 @@ namespace CdrAuthServer.IntegrationTests
             var expectedError = new InvalidRedirectUriException(RedirectUri);
 
             // Act
-            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(ssa,
-                redirectUris: new string[] { RedirectUri });  // Invalid redirect uris
+            var registrationRequest = _dataHolderRegisterService.CreateRegistrationRequest(
+                ssa,
+                redirectUris: [RedirectUri]);  // Invalid redirect uris
 
             var accessToken = await new DataHolderAccessToken(clientId, _options.DH_MTLS_GATEWAY_URL, _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE).GetAccessToken();
 
@@ -128,7 +129,8 @@ namespace CdrAuthServer.IntegrationTests
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     // Assert - Check WWWAutheticate header
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
                         response.Headers, "WWW-Authenticate");
                 }
             }
@@ -160,8 +162,10 @@ namespace CdrAuthServer.IntegrationTests
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     // Assert - Check WWWAutheticate header
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_request"", error_description=""The client is unknown""",
-                       response.Headers, "WWW-Authenticate");
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_request"", error_description=""The client is unknown""",
+                        response.Headers,
+                        "WWW-Authenticate");
                 }
             }
         }

@@ -20,7 +20,7 @@ namespace CdrAuthServer.SwaggerFilters
 
                 foreach (var op in path.Operations.Select(op => op.Value))
                 {
-                    //api-version included as it is currently used in some places in PT instead of x-v
+                    // api-version included as it is currently used in some places in PT instead of x-v
                     if (op.Parameters.Any(p => p.Name.Equals("x-v", StringComparison.OrdinalIgnoreCase)) || op.Parameters.Any(p => p.Name.Equals("api-version", StringComparison.OrdinalIgnoreCase)))
                     {
                         op.Extensions.TryGetValue("x-version", out var value);

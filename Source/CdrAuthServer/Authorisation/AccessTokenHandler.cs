@@ -65,14 +65,14 @@ namespace CdrAuthServer.Authorisation
             }
 
             // Introspect the access token.
-            var accessToken = authHeader.ToString().Replace("Bearer ", "");
+            var accessToken = authHeader.ToString().Replace("Bearer ", string.Empty);
             var endpoint = _config["AccessTokenIntrospectionEndpoint"];
 
             var httpClient = new HttpClient(HttpHelper.CreateHttpClientHandler(_config));
 
             var formFields = new List<KeyValuePair<string, string>>
             {
-                new("token", accessToken)
+                new("token", accessToken),
             };
 
             var response = await httpClient.PostAsync(endpoint, new FormUrlEncodedContent(formFields));

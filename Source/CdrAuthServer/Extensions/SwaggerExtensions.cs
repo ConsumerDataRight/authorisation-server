@@ -20,7 +20,7 @@ namespace CdrAuthServer.Extensions
             {
                 services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
-                //Required for our Swagger setup to work when endpoints have been versioned
+                // Required for our Swagger setup to work when endpoints have been versioned
                 services.AddVersionedApiExplorer(opt =>
                 {
                     opt.GroupNameFormat = options.VersionedApiGroupNameFormat;

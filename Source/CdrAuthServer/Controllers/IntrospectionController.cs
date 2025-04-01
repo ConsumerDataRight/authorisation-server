@@ -1,11 +1,10 @@
-﻿using CdrAuthServer.Configuration;
+﻿using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -71,7 +70,7 @@ namespace CdrAuthServer.Controllers
                     IsActive = true,
                     CdrArrangementId = grant.CdrArrangementId ?? string.Empty,
                     Expiry = grant.ExpiresAt.ToEpoch(),
-                    Scope = grant.Scope
+                    Scope = grant.Scope,
                 });
             }
 
@@ -88,10 +87,10 @@ namespace CdrAuthServer.Controllers
         /// by the resource API of the mock data holder.
         /// In the CDS, the introspection endpoint only supports the introspection of refresh tokens.
         /// </summary>
-        /// <param name="token">Access token to check</param>
-        /// <returns>IntrospectionResult</returns>
+        /// <param name="token">Access token to check.</param>
+        /// <returns>IntrospectionResult.</returns>
         /// <remarks>
-        /// There is currently no auth on this endpoint.  
+        /// There is currently no auth on this endpoint.
         /// This could be added in the future to only allow the calls from the Mock Data Holder Resource API.
         /// </remarks>
         [HttpPost]
@@ -141,7 +140,7 @@ namespace CdrAuthServer.Controllers
 
                 // Check software product status (if configured).
                 var configOptions = _config.GetConfigurationOptions(this.HttpContext);
-                if (configOptions.CdrRegister.CheckSoftwareProductStatus)
+                if (configOptions.CdrRegister != null && configOptions.CdrRegister.CheckSoftwareProductStatus)
                 {
                     var client = await _clientService.Get(clientIdFromAccessToken);
                     if (client == null)
@@ -154,6 +153,7 @@ namespace CdrAuthServer.Controllers
                     {
                         return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                     }
+
                     if (!softwareProduct.IsActive())
                     {
                         return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_STATUS_INACTIVE, softwareProduct.GetStatusDescription());
@@ -173,7 +173,7 @@ namespace CdrAuthServer.Controllers
                         _logger.LogError("arrangement was not found: {CdrArrangementId}", cdrArrangementId);
                         return new JsonResult(new Introspection
                         {
-                            IsActive = false
+                            IsActive = false,
                         });
                     }
 
@@ -182,21 +182,21 @@ namespace CdrAuthServer.Controllers
                         _logger.LogError("arrangement version ({Version}) does not match arrangement version in the access token: {CdrArrangementVersion}", arrangement.Version, cdrArrangementVersion);
                         return new JsonResult(new Introspection
                         {
-                            IsActive = false
+                            IsActive = false,
                         });
                     }
 
                     // If the arrangement was not found, or has expired, or does not match the client id in the access token.
                     return new JsonResult(new Introspection
                     {
-                        IsActive = (arrangement != null && !arrangement.IsExpired && !securityToken.IsExpired())
+                        IsActive = !arrangement.IsExpired && !securityToken.IsExpired(),
                     });
                 }
             }
 
             return new JsonResult(new Introspection
             {
-                IsActive = true
+                IsActive = true,
             });
         }
     }

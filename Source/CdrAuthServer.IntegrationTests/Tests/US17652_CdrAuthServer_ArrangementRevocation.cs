@@ -1,6 +1,4 @@
-#undef FIXME_MJS_BELONGS_IN_MDH_INTEGRATION_TESTS // FIXME - MJS - the test using this code needs to be in MDH integration tests since it uses MDH endpoint (ie $"{DH_MTLS_GATEWAY_URL}/cds-au/v1/banking/accounts")
-
-using CdrAuthServer.IntegrationTests.Interfaces;
+﻿using CdrAuthServer.IntegrationTests.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.CdsExceptions;
@@ -35,14 +33,15 @@ namespace CdrAuthServer.IntegrationTests
         private readonly IDataHolderCDRArrangementRevocationService _cdrArrangementRevocationService;
         private readonly IApiServiceDirector _apiServiceDirector;
 
-        public US17652_CdrAuthServer_ArrangementRevocation(IOptions<TestAutomationOptions> options,
+        public US17652_CdrAuthServer_ArrangementRevocation(
+            IOptions<TestAutomationOptions> options,
             IOptions<TestAutomationAuthServerOptions> authServerOptions,
             IDataHolderRegisterService dataHolderRegisterService,
             IDataHolderParService dataHolderParService,
             IDataHolderTokenService dataHolderTokenService,
             ISqlQueryService sqlQueryService,
             IDataHolderCDRArrangementRevocationService cdrArrangementRevocationService,
-             IApiServiceDirector apiServiceDirector,
+            IApiServiceDirector apiServiceDirector,
             ITestOutputHelperAccessor testOutputHelperAccessor,
             IConfiguration config)
             : base(testOutputHelperAccessor, config)
@@ -69,7 +68,7 @@ namespace CdrAuthServer.IntegrationTests
             await _dataHolderRegisterService.RegisterSoftwareProduct();
         }
 
-        int CountPersistedGrant(string persistedGrantType, string? key = null)
+        private int CountPersistedGrant(string persistedGrantType, string? key = null)
         {
             using var connection = new SqlConnection(_options.AUTHSERVER_CONNECTIONSTRING);
             connection.Open();
@@ -84,12 +83,14 @@ namespace CdrAuthServer.IntegrationTests
             {
                 selectCommand = new SqlCommand($"select count(*) from grants where granttype=@type", connection);
             }
+
             selectCommand.Parameters.AddWithValue("@type", persistedGrantType);
 
             return selectCommand.ExecuteScalarInt32();
         }
 
         [Fact]
+
         // When an arrangement exists, revoking the arrangement should remove the arrangement and revoke any associated tokens
         public async Task AC01_Post_WithArrangementId_ShouldRespondWith_204NoContent_ArrangementRevoked()
         {
@@ -124,7 +125,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        async Task RevokeCdrArrangement(string cdrArrangementId)
+        private async Task RevokeCdrArrangement(string cdrArrangementId)
         {
             var response = await _cdrArrangementRevocationService.SendRequest(cdrArrangementId: cdrArrangementId);
             if (response.StatusCode != HttpStatusCode.NoContent)
@@ -136,6 +137,7 @@ namespace CdrAuthServer.IntegrationTests
         [Theory]
         [InlineData(false, HttpStatusCode.OK)]
         [InlineData(true, HttpStatusCode.BadRequest)]
+
         // When an arrangement has been revoked, trying to use associated access token should result in error (Unauthorised)
         public async Task AC02_GetAccounts_WithRevokedAccessToken_ShouldRespondWith_401Unauthorised(bool revokeArrangement, HttpStatusCode expectedStatusCode)
         {
@@ -173,7 +175,10 @@ namespace CdrAuthServer.IntegrationTests
 
             // Arrange - Get token response using authCode
             var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
-            if (tokenResponse == null || tokenResponse.AccessToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
+            if (tokenResponse == null || tokenResponse.AccessToken == null || tokenResponse.CdrArrangementId == null)
+            {
+                throw new Exception("Unexpected token response");
+            }
 
             // Arrange - Revoke the arrangement
             if (revokeArrangement)
@@ -195,7 +200,7 @@ namespace CdrAuthServer.IntegrationTests
                     await Assertions.Assert_HasNoContent2(response.Content);
                 }
             }
-#endif            
+#endif
         }
 
         [Fact]
@@ -213,15 +218,17 @@ namespace CdrAuthServer.IntegrationTests
             (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get token response using authCode
-            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);//, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
-            if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
+            if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null)
+            {
+                throw new Exception("Unexpected token response");
+            }
 
-            // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked            
+            // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked
             var response = await _dataHolderTokenService.SendRequest(
                 grantType: "refresh_token",
                 refreshToken: tokenResponse?.RefreshToken,
-                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS
-                );
+                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -231,6 +238,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // When an arrangement has been revoked, trying to use associated refresh token to get newly minted access token should result in error (401Unauthorised)
         public async Task AC03_GetAccessToken_WithRevokedRefreshToken_ShouldRespondWith_401Unauthorised()
         {
@@ -248,18 +256,20 @@ namespace CdrAuthServer.IntegrationTests
             (var authCode, _) = await authService.Authorise();
 
             // Arrange - Get token response using authCode
-            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);//, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
-            if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null) throw new Exception("Unexpected token response");
+            var tokenResponse = await _dataHolderTokenService.GetResponse(authCode);
+            if (tokenResponse == null || tokenResponse.RefreshToken == null || tokenResponse.CdrArrangementId == null)
+            {
+                throw new Exception("Unexpected token response");
+            }
 
             // Arrange - Revoke the arrangement
             await RevokeCdrArrangement(tokenResponse.CdrArrangementId);
 
-            // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked            
+            // Act - Use refresh token to get a new access token. The refresh token should have been revoked because the arrangement was revoked
             var response = await _dataHolderTokenService.SendRequest(
                 grantType: "refresh_token",
                 refreshToken: tokenResponse?.RefreshToken,
-                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS
-                );
+                scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -269,6 +279,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Calling revocation endpoint with invalid arrangementid should result in error (422UnprocessableEntity)
         public async Task AC04_POST_WithInvalidArrangementID_ShouldRespondWith_422UnprocessableEntity()
         {
@@ -292,16 +303,19 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Calling revocation endpoint with arrangementid that is not associated with the DataRecipient should result in error (422UnprocessableEntity)
         public async Task AC05_POST_WithNonAssociatedArrangementID_ShouldRespondWith_422UnprocessableEntity()
         {
             async Task<string> ArrangeAdditionalDataRecipient()
             {
                 // Patch Register for additional data recipient
-                Helpers.AuthServer.PatchRedirectUriForRegister(_options,
+                Helpers.AuthServer.PatchRedirectUriForRegister(
+                    _options,
                     Constants.SoftwareProducts.AdditionalSoftwareProductId,
                     _options.ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
-                Helpers.AuthServer.PatchJwksUriForRegister(_options,
+                Helpers.AuthServer.PatchJwksUriForRegister(
+                    _options,
                     Constants.SoftwareProducts.AdditionalSoftwareProductId,
                     _options.ADDITIONAL_SOFTWAREPRODUCT_JWKS_URI_FOR_INTEGRATION_TESTS);
 
@@ -328,7 +342,7 @@ namespace CdrAuthServer.IntegrationTests
 
             // Arrange - Get authcode and thus create a CDR arrangement for ADDITIONAL_SOFTWAREPRODUCT_ID client
             await ArrangeAdditionalDataRecipient();
-            string additionalClientId = _options.LastRegisteredClientId ?? "";
+            string additionalClientId = _options.LastRegisteredClientId ?? string.Empty;
 
             var requestUri = await _dataHolderParService.GetRequestUri(
                 scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS,
@@ -359,8 +373,7 @@ namespace CdrAuthServer.IntegrationTests
                 clientId: additionalClientId,
                 redirectUri: _options.ADDITIONAL_SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS,
                 jwkCertificateFilename: Constants.Certificates.AdditionalJwksCertificateFilename,
-                jwkCertificatePassword: Constants.Certificates.AdditionalJwksCertificatePassword
-            ))?.CdrArrangementId;
+                jwkCertificatePassword: Constants.Certificates.AdditionalJwksCertificatePassword))?.CdrArrangementId;
 
             var expectedError = new InvalidArrangementException(additional_cdrArrangementId);
             var expectedContent = JsonConvert.SerializeObject(new ResponseErrorListV2(expectedError, string.Empty));
@@ -383,6 +396,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Calling revocation endpoint with invalid clientid should result in error (401Unauthorised)
         public async Task AC07_POST_WithInvalidClientId_ShouldRespondWith_400BadRequest()
         {
@@ -415,6 +429,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Calling revocation endpoint with invalid clientassertiontype should result in error (401Unauthorised)
         public async Task AC08a_POST_WithInvalidClientAssertionType_ShouldRespondWith_400BadRequest()
         {
@@ -430,7 +445,6 @@ namespace CdrAuthServer.IntegrationTests
         .BuildAsync();
 
             (var authCode, _) = await authService.Authorise();
-
 
             // Arrange - Get cdrArrangementId
             var cdrArrangementId = (await _dataHolderTokenService.GetResponse(authCode))?.CdrArrangementId;
@@ -448,6 +462,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Calling revocation endpoint with invalid clientassertion should result in error (401Unauthorised)
         public async Task AC08b_POST_WithInvalidClientAssertion_ShouldRespondWith_400BadRequest()
         {
@@ -510,7 +525,8 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Theory]
-        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)]  // ie different holder of key
+        [InlineData(Constants.Certificates.AdditionalCertificateFilename, Constants.Certificates.AdditionalCertificatePassword)] // ie different holder of key
+
         // Calling revocation endpoint with different holder of key should result in error
         public async Task AC09_POST_WithDifferentHolderOfKey_ShouldRespondWith_400BadRequest(string jwtCertificateFilename, string jwtCertificatePassword)
         {

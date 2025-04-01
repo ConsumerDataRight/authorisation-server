@@ -8,7 +8,7 @@ namespace CdrAuthServer.IntegrationTests
 {
     public class DataHolderAccessTokenResponse
     {
-        static public async Task<DataHolderAccessTokenResponse?> Deserialize(HttpResponseMessage responseMessage)
+        public static async Task<DataHolderAccessTokenResponse?> Deserialize(HttpResponseMessage responseMessage)
         {
             var content = await responseMessage.Content.ReadAsStringAsync();
 
@@ -78,7 +78,7 @@ namespace CdrAuthServer.IntegrationTests
                 CertificateFilename = Constants.Certificates.JwtCertificateFilename,
                 CertificatePassword = Constants.Certificates.JwtCertificatePassword,
                 Issuer = ClientId,
-                Audience = URL
+                Audience = URL,
             }.Generate();
 
             var formFields = new List<KeyValuePair<string, string>>();

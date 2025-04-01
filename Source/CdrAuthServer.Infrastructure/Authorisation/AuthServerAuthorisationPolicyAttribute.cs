@@ -13,6 +13,6 @@ namespace CdrAuthServer.Infrastructure.Authorisation
         [AuthorisationPolicy("GetBankingAccounts", Scopes.ResourceApis.Banking.AccountsBasicRead, false, true, true)]
         GetBankingAccounts,
         [AuthorisationPolicy("AdminMetadataUpdate", Scopes.AdminMetadataUpdate, false, true, false)]
-        AdminMetadataUpdate
+        AdminMetadataUpdate,
     }
 }

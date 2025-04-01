@@ -25,23 +25,23 @@
         }
 
         public async Task InsertDataRecipients(List<SoftwareProduct> softwareProducts)
-        {                        
+        {
             var newSoftwareProductList = mapper.Map<List<CdrAuthServer.Repository.Entities.SoftwareProduct>>(softwareProducts);
 
-            using (var transaction = cdrAuthServervDatabaseContext.Database.BeginTransaction())
-            {                
-                // Bulk insert the new data recipient software products.
-                await cdrAuthServervDatabaseContext.SoftwareProducts.AddRangeAsync(newSoftwareProductList);
-                await cdrAuthServervDatabaseContext.SaveChangesAsync();
+            using var transaction = await cdrAuthServervDatabaseContext.Database.BeginTransactionAsync();
 
-                // Commit the transaction.
-                transaction.Commit();                
-            }            
+            // Bulk insert the new data recipient software products.
+            await cdrAuthServervDatabaseContext.SoftwareProducts.AddRangeAsync(newSoftwareProductList);
+            await cdrAuthServervDatabaseContext.SaveChangesAsync();
+
+            // Commit the transaction.
+            await transaction.CommitAsync();
         }
 
         public async Task PurgeDataRecipients()
         {
-            using var transaction = cdrAuthServervDatabaseContext.Database.BeginTransaction();
+            using var transaction = await cdrAuthServervDatabaseContext.Database.BeginTransactionAsync();
+
             // Remove the existing data recipients software products.
             var existingSoftwareProducts = await cdrAuthServervDatabaseContext.SoftwareProducts.AsNoTracking().Where(sp => sp.SoftwareProductId != "cdr-register").ToListAsync();
 
@@ -50,9 +50,9 @@
                 cdrAuthServervDatabaseContext.RemoveRange(existingSoftwareProducts);
                 await cdrAuthServervDatabaseContext.SaveChangesAsync();
             }
+
             // Commit the transaction.
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
-        
     }
 }

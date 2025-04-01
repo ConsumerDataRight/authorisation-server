@@ -3,7 +3,7 @@
 namespace CdrAuthServer.Infrastructure.Attributes
 {
     /// <summary>
-    /// Checks the x-v header field is a supported version, if not then responds with BadRequest and appropriate ResponseErrorList
+    /// Checks the x-v header field is a supported version, if not then responds with BadRequest and appropriate ResponseErrorList.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
     public class ReturnXVAttribute : ActionFilterAttribute
