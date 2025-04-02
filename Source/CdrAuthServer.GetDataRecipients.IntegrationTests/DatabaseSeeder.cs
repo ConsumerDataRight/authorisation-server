@@ -1,16 +1,26 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
 using Dapper;
+using Microsoft.Data.SqlClient;
 
 #nullable enable
 
 namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 {
-    static public class DatabaseSeeder
+    public static class DatabaseSeeder
     {
-        private enum IndustryType { Banking, Energy, Telecommunications }
-        private enum ParticipantType { DH, DR }
+        private enum IndustryType
+        {
+            Banking,
+            Energy,
+            Telecommunications,
+        }
+
+        private enum ParticipantType
+        {
+            DH,
+            DR,
+        }
 
         private static int nextRegisterLegalEntityId = 0;
         private static int nextRegisterParticipationId = 0;
@@ -21,12 +31,11 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
         private static int nextAuthServerBrandId = 0;
         private static int nextAuthServerSoftwareProductId = 0;
 
-        static public async Task Execute(
+        public static async Task Execute(
             int registerLegalEntityCount, int registerBrandCount, int registerSoftwareProductCount,
             int authServerLegalEntityCount, int authServerBrandCount, int authServerSoftwareProductCount,
             bool registerModified,  // simulate change to register records
-            bool authServerModified // simulate change to dataholder records
-        )
+            bool authServerModified) // simulate change to dataholder records
         {
             // Database is purged so, reset next ids so that ids are consistent across tests
             nextRegisterLegalEntityId = 0;
@@ -39,13 +48,13 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 
             // Seed Register
             using var registerConnection = new SqlConnection(BaseTest.CONNECTIONSTRING_REGISTER_RW);
-            registerConnection.Open();
+            await registerConnection.OpenAsync();
             await RegisterPurge(registerConnection);
             await RegisterInsert(registerConnection, registerLegalEntityCount, registerBrandCount, registerSoftwareProductCount, registerModified);
 
             // Seed Software Products
             using var authServerConnection = new SqlConnection(BaseTest.CONNECTIONSTRING_AUTHSERVER_RW);
-            authServerConnection.Open();
+            await authServerConnection.OpenAsync();
             await AuthServerPurge(authServerConnection);
             await AuthServerInsert(authServerConnection, authServerLegalEntityCount, authServerBrandCount, authServerSoftwareProductCount, authServerModified);
         }
@@ -64,8 +73,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 
         // Purge Auth Server database but leave standing data intact
         private static async Task AuthServerPurge(SqlConnection connection)
-        {                        
-            await connection.ExecuteAsync("delete SoftwareProducts");            
+        {
+            await connection.ExecuteAsync("delete SoftwareProducts");
         }
 
         private static async Task RegisterInsert(SqlConnection connection, int legalEntityCount, int brandCount, int softwareProductCount, bool modified)
@@ -75,28 +84,31 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                 var legalEntityId = new Guid($"00000000-0000-0000-0000-{++nextRegisterLegalEntityId:d012}");
 
                 string legalEntityName = $"LegalEntity_{legalEntityId}".ToString().Replace('-', '_');
-                
-                await connection.ExecuteScalarAsync<Guid>(@"
+
+                await connection.ExecuteScalarAsync<Guid>(
+                    @"
                         insert into LegalEntity(LegalEntityId, LegalEntityName, LogoUri, AnzsicDivision, OrganisationTypeId, AccreditationLevelId, AccreditationNumber) 
                         values(@LegalEntityId, @LegalEntityName, @LogoUri, @AnzsicDivision, @OrganisationTypeId, @AccreditationLevelId, @AccreditationNumber)",
                     new
                     {
-                        LegalEntityId = legalEntityId,                        
+                        LegalEntityId = legalEntityId,
+
                         // MA
                         LegalEntityName = legalEntityName,
                         LogoUri = $"https://www.{legalEntityName}.com/logo.jpg",
-                        
+
                         AnzsicDivision = industryType switch
                         {
                             IndustryType.Banking => "6221",
                             IndustryType.Energy => "2640",
                             IndustryType.Telecommunications => "5801",
-                            _ => throw new NotSupportedException()
+                            _ => throw new NotSupportedException(),
                         },
-                        OrganisationTypeId = "2", // company 
-                        // LegalEntityStatusId = "1", // make it active by default     
+                        OrganisationTypeId = "2", // company
+
+                        // LegalEntityStatusId = "1", // make it active by default
                         AccreditationLevelId = "1", // unrestricted
-                        AccreditationNumber = $"ABC{nextRegisterLegalEntityId:d012}"
+                        AccreditationNumber = $"ABC{nextRegisterLegalEntityId:d012}",
                     });
 
                 return legalEntityId;
@@ -106,7 +118,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
             {
                 var participationId = new Guid($"00000000-0000-0000-0000-{++nextRegisterParticipationId:d012}");
 
-				await connection.ExecuteScalarAsync<Guid>(@"
+                await connection.ExecuteScalarAsync<Guid>(
+                    @"
                     insert into Participation(ParticipationId, LegalEntityId, ParticipationTypeId, IndustryId, StatusId) 
                     values(@ParticipationId, @LegalEntityId,
                         (select ParticipationTypeId from ParticipationType where ParticipationTypeCode = @ParticipantTypeCode),
@@ -116,11 +129,12 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                     {
                         ParticipationId = participationId,
                         LegalEntityId = legalEntityId,
-                        ParticipantTypeCode = participantType.ToString(),                                                
+                        ParticipantTypeCode = participantType.ToString(),
+
                         // MA
                         ParticipationStatusCode = "ACTIVE",
 
-                        IndustryTypeCode = industryType.ToString()
+                        IndustryTypeCode = industryType.ToString(),
                     });
 
                 return participationId;
@@ -132,7 +146,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 
                 string brandName = $"Brand_{brandId}".ToString().Replace('-', '_');
 
-                await connection.ExecuteScalarAsync<Guid>(@"
+                await connection.ExecuteScalarAsync<Guid>(
+                    @"
                     insert into Brand(BrandId, BrandName, LogoUri, BrandStatusId, ParticipationId, LastUpdated) 
                     values(@BrandId, @BrandName, @LogoUri,
                         --(select BrandStatusId from BrandStatus where Upper(BrandStatusCode) = 'ACTIVE'),
@@ -141,14 +156,15 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                         @LastUpdated)",
                     new
                     {
-                        BrandId = brandId,                        
-                        // MA 
+                        BrandId = brandId,
+
+                        // MA
                         BrandName = brandName,
                         LogoUri = $"https://www.{brandName}.com/logo.jpg",
                         StatusId = "1", // 1=active, 2=inactive
 
                         ParticipationId = participationId,
-                        LastUpdated = DateTime.UtcNow
+                        LastUpdated = DateTime.UtcNow,
                     });
 
                 return brandId;
@@ -160,7 +176,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 
                 string softwareProductName = $"SoftwareProduct_{softwareProductId}".ToString().Replace('-', '_');
 
-                await connection.ExecuteScalarAsync<Guid>(@"
+                await connection.ExecuteScalarAsync<Guid>(
+                    @"
                         insert into SoftwareProduct(
                             SoftwareProductId, 
                             SoftwareProductName, 
@@ -192,11 +209,12 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                             @BrandId)",
                     new
                     {
-                        SoftwareProductId = softwareProductId,                        
+                        SoftwareProductId = softwareProductId,
+
                         // MA
                         SoftwareProductName = $"{softwareProductName}",
                         SoftwareProductDescription = $"{softwareProductName} description",
-                        LogoUri = $"https://www.{softwareProductName}.com/logo.jpg",                        
+                        LogoUri = $"https://www.{softwareProductName}.com/logo.jpg",
 
                         ClientUri = $"https://www.{softwareProductName}.com/client",
                         RecipientBaseUri = $"https://www.{softwareProductName}.com/recipientbase",
@@ -204,8 +222,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                         RedirectUris = $"https://www.{softwareProductName}.com/redirect1,https://www.{softwareProductName}.com/redirect2",
                         JwksUri = $"https://www.{softwareProductName}.com/jwks",
                         Scope = "scope",
-                        
-                        //StatusId = modified ? "2" : "1", // 1=active, 2=inactive
+
+                        // StatusId = modified ? "2" : "1", // 1=active, 2=inactive
                         StatusId = "1", // 1=active, 2=inactive
 
                         BrandId = brandId,
@@ -228,7 +246,7 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                     // Insert software products
                     for (int isoftwareProductCount = 0; isoftwareProductCount < softwareProductCount; isoftwareProductCount++)
                     {
-                        var register_SoftwareProductId = await Register_InsertSoftwareProduct(connection, register_BrandId, modified);
+                        _ = await Register_InsertSoftwareProduct(connection, register_BrandId, modified);
                     }
                 }
             }
@@ -238,8 +256,8 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
         {
             static async Task AuthServer_InsertCDRSoftwareProduct(SqlConnection connection)
             {
-
-                await connection.ExecuteScalarAsync(@"
+                await connection.ExecuteScalarAsync(
+                    @"
                         insert into SoftwareProducts(SoftwareProductId, SoftwareProductName, SoftwareProductDescription, LogoUri, Status, 
                                                      LegalEntityId, LegalEntityName, LegalEntityStatus, BrandId, BrandName, BrandStatus ) 
                         values(@SoftwareProductId, @SoftwareProductName, @SoftwareProductDescription, @LogoUri, @Status, 
@@ -258,38 +276,38 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 
                         BrandId = "cdr-register",
                         BrandName = "cdr-register",
-                        BrandStatus = "ACTIVE"
-                    }); ;
-
-                
+                        BrandStatus = "ACTIVE",
+                    });
             }
+
             static async Task<Guid> AuthServer_InsertSoftwareProducts(SqlConnection connection, Guid legalEntityId, Guid brandId, bool modified)
             {
                 var softwareProductId = new Guid($"00000000-0000-0000-0000-{++nextAuthServerSoftwareProductId:d012}");
 
                 string softwareProductName = $"SoftwareProduct_{softwareProductId}".ToString().Replace('-', '_');
 
-                await connection.ExecuteScalarAsync<Guid>(@"
+                await connection.ExecuteScalarAsync<Guid>(
+                    @"
                         insert into SoftwareProducts(SoftwareProductId, SoftwareProductName, SoftwareProductDescription, LogoUri, Status, 
                                                      LegalEntityId, LegalEntityName, LegalEntityStatus, BrandId, BrandName, BrandStatus ) 
                         values(@SoftwareProductId, @SoftwareProductName, @SoftwareProductDescription, @LogoUri, @Status, 
                               @LegalEntityId, @LegalEntityName, @LegalEntityStatus,  @BrandId, @BrandName, @BrandStatus)",
                     new
                     {
-                        SoftwareProductId = softwareProductId,                        
+                        SoftwareProductId = softwareProductId,
                         SoftwareProductName = softwareProductName,
                         SoftwareProductDescription = $"{softwareProductName} description",
-                        LogoUri = $"https://www.{softwareProductName}.com/logo.jpg",                        
+                        LogoUri = $"https://www.{softwareProductName}.com/logo.jpg",
                         Status = "ACTIVE",
-                        
-                        LegalEntityId = legalEntityId,                        
+
+                        LegalEntityId = legalEntityId,
                         LegalEntityName = $"LegalEntity_{legalEntityId}".ToString().Replace('-', '_'),
                         LegalEntityStatus = "ACTIVE",
 
-                        BrandId = brandId,                        
+                        BrandId = brandId,
                         BrandName = $"Brand_{brandId}".ToString().Replace('-', '_'),
-                        BrandStatus = "ACTIVE"
-                    }); ;
+                        BrandStatus = "ACTIVE",
+                    });
 
                 return softwareProductId;
             }
@@ -297,14 +315,14 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
             await AuthServer_InsertCDRSoftwareProduct(connection);
 
             for (int i = 1; i <= legalEntityCount; i++)
-            {                
+            {
                 var legalEntityId = new Guid($"00000000-0000-0000-0000-{++nextAuthServerLegalEntityId:d012}");
                 for (int i2 = 1; i2 <= brandCount; i2++)
-                {                    
+                {
                     var brandId = new Guid($"00000000-0000-0000-0000-{++nextAuthServerBrandId:d012}");
                     for (int i3 = 1; i3 <= brandCount; i3++)
-                    {                                                
-                        var softwareProductId = await AuthServer_InsertSoftwareProducts(connection, legalEntityId, brandId, modified);
+                    {
+                        _ = await AuthServer_InsertSoftwareProducts(connection, legalEntityId, brandId, modified);
                     }
                 }
             }

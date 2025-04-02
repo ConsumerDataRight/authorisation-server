@@ -7,12 +7,11 @@ using Org.BouncyCastle.Ocsp;
 using Org.BouncyCastle.X509;
 using System.Collections;
 
-
 namespace CdrAuthServer.Infrastructure.Certificates
 {
     /// <summary>
     /// Online Certificate Status Protocol (OCSP) request builder class that is used to send a request
-    /// to the defined OCSP responder defined in the certificates Authority Information Access (AIA) extension. 
+    /// to the defined OCSP responder defined in the certificates Authority Information Access (AIA) extension.
     /// </summary>
     public class OcspRequester
     {
@@ -72,7 +71,7 @@ namespace CdrAuthServer.Infrastructure.Certificates
 
             _logger.LogInformation("OCSP Response revocation status = {RevokedStatus}", revokedStatus?.RevocationReason);
 
-            return (revokedStatus == null ? OcspResult.Good : OcspResult.Revoked);
+            return revokedStatus == null ? OcspResult.Good : OcspResult.Revoked;
         }
 
         private BigInteger ConvertSerialNumber(string serialNumber)
@@ -87,7 +86,7 @@ namespace CdrAuthServer.Infrastructure.Certificates
             CertificateID certId = new(CertificateID.HashSha1, cacert, serialNumber);
             ocspRequestGenerator.AddRequest(certId);
 
-            var derObjectIds = new List<DerObjectIdentifier>(); //Distinguished Encoding Rules (DER)
+            var derObjectIds = new List<DerObjectIdentifier>(); // Distinguished Encoding Rules (DER)
             var extensionValues = new Hashtable();
 
             Asn1OctetString asn1OctetString = new DerOctetString(BigInteger.ValueOf(DateTime.Now.Ticks).ToByteArray());
@@ -103,9 +102,9 @@ namespace CdrAuthServer.Infrastructure.Certificates
         public static byte[] GetBytesFromPEM(string pem)
         {
             var base64 = pem
-                .Replace(BEGIN_CERTIFICATE_MARKER, "")
-                .Replace(END_CERTIFICATE_MARKER, "")
-                .Replace(Environment.NewLine, "");
+                .Replace(BEGIN_CERTIFICATE_MARKER, string.Empty)
+                .Replace(END_CERTIFICATE_MARKER, string.Empty)
+                .Replace(Environment.NewLine, string.Empty);
 
             return Convert.FromBase64String(base64);
         }

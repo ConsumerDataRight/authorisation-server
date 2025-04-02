@@ -6,6 +6,6 @@ namespace CdrAuthServer.Validation
 {
     public interface IRequestObjectValidator
     {
-        Task<(ValidationResult, AuthorizationRequestObject)> Validate(string clientId, JwtSecurityToken requestObject, ConfigurationOptions configOptions);
+        Task<(ValidationResult ValidationResult, AuthorizationRequestObject? AuthorizationRequestObject)> Validate(string clientId, JwtSecurityToken requestObject, ConfigurationOptions configOptions);
     }
 }

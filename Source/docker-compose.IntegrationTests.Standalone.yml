@@ -1,8 +1,8 @@
 # Docker compose integration tests
-
+name: cdr-auth-server-integration-tests
 services:
   mock-register:
-    container_name: mock-register
+    container_name: mock-register-cdr-auth-server-integration-tests
     image: mock-register
     hostname: mock-register
     ports: 
@@ -26,7 +26,7 @@ services:
         condition: service_healthy
 
   cdr-auth-server:
-    container_name: cdr-auth-server-standalone
+    container_name: cdr-auth-server-standalone-integration-tests
     image: cdr-auth-server-standalone
     build:
       context: .
@@ -87,7 +87,7 @@ services:
   #       condition: service_healthy
 
   cdr-auth-server-integration-tests:
-    container_name: cdr-auth-server-integration-tests
+    container_name: cdr-auth-server-integration-tests-testing
     image: cdr-auth-server-integration-tests
     hostname: cdr-auth-server-integration-tests
     ports: 
@@ -116,7 +116,7 @@ services:
         condition: service_healthy
 
   mssql:
-    container_name: sql1
+    container_name: sql-cdr-auth-server-integration-tests
     image: 'mcr.microsoft.com/mssql/server:2022-latest'
     ports:
       - "1433:1433"

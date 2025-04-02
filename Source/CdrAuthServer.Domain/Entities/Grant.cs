@@ -19,5 +19,5 @@
         public string Scope { get; set; } = string.Empty;
 
         public virtual IDictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
-    }  
+    }
 }

@@ -6,7 +6,6 @@ namespace CdrAuthServer.Infrastructure.Extensions
 {
     public static class HttpExtensions
     {
-
         public static void SetClientCertificate(this HttpClientHandler clientHandler, string certificateFileName, string certificatePassword)
         {
             clientHandler.ClientCertificates.Add(new X509Certificate2(certificateFileName, certificatePassword, X509KeyStorageFlags.Exportable));
@@ -19,7 +18,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
 
         public static int ToInt(this HttpStatusCode statusCode)
         {
-            return ((int)statusCode);
+            return (int)statusCode;
         }
 
         public static async Task<HttpResponseMessage> SendPrivateKeyJwtRequest(

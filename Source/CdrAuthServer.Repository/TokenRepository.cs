@@ -19,7 +19,7 @@
                 new Entities.Token
                 {
                     Id = id,
-                    BlackListed = true
+                    BlackListed = true,
                 });
 
             await cdrAuthServervDatabaseContext.SaveChangesAsync();

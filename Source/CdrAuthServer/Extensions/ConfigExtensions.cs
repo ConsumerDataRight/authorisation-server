@@ -1,15 +1,15 @@
-﻿using CdrAuthServer.Configuration;
+﻿using System.Security.Cryptography.X509Certificates;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Certificates;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Cryptography.X509Certificates;
 
 namespace CdrAuthServer.Extensions
 {
     public static class ConfigExtensions
     {
         private static IConfiguration? _config;
-        private static ConfigurationOptions _configurationOptions;
+        private static ConfigurationOptions _configurationOptions = null!;
 
         public static ConfigurationOptions GetConfigurationOptions(this IConfiguration config, HttpContext? context = null)
         {
@@ -46,7 +46,7 @@ namespace CdrAuthServer.Extensions
             return null;
         }
 
-        private static void SetDefaults(HttpContext context)
+        private static void SetDefaults(HttpContext? context)
         {
             // Default endpoints.
             var basePath = (context != null && context.Request.PathBase.HasValue) ? context.Request.PathBase.Value : _configurationOptions.BasePath;
@@ -91,30 +91,23 @@ namespace CdrAuthServer.Extensions
                 "client_credentials"
             ]);
             var scopesSupported = _configurationOptions.ScopesSupported;
-            if (_configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileBanking)
+            if (_configurationOptions.ScopesProfile == ConfigurationOptions.ScopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.ScopesProfileBanking)
             {
                 scopesSupported = scopesSupported!.Union(_configurationOptions.BankingScopesSupported!).ToList();
             }
-            if (_configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.scopesProfileEnergy)
+
+            if (_configurationOptions.ScopesProfile == ConfigurationOptions.ScopesProfileAll || _configurationOptions.ScopesProfile == ConfigurationOptions.ScopesProfileEnergy)
             {
                 scopesSupported = scopesSupported!.Union(_configurationOptions.EnergyScopesSupported!).ToList();
             }
+
             _configurationOptions.ScopesSupported = SetDefault(scopesSupported, [
                 "openid",
                 "profile",
                 "cdr:registration"
             ]);
             _configurationOptions.ResponseModesSupported = SetDefault(_configurationOptions.ResponseModesSupported, [
-                "fragment",
-                "form_post",
                 "jwt",
-                "form_post.jwt",
-                "fragment.jwt",
-                "query.jwt",
-            ]);
-            _configurationOptions.ResponseTypesSupported = SetDefault(_configurationOptions.ResponseTypesSupported, [
-                "code",
-                "code id_token"
             ]);
             _configurationOptions.SubjectTypesSupported = SetDefault(_configurationOptions.SubjectTypesSupported, [
                 "pairwise"
@@ -134,21 +127,15 @@ namespace CdrAuthServer.Extensions
                 SecurityAlgorithms.RsaSsaPssSha256,
                 SecurityAlgorithms.EcdsaSha256
             ]);
-            _configurationOptions.IdTokenEncryptionAlgValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionAlgValuesSupported, [
-                "RSA-OAEP",
-                "RSA-OAEP-256"
-            ]);
-            _configurationOptions.IdTokenEncryptionEncValuesSupported = SetDefault(_configurationOptions.IdTokenEncryptionEncValuesSupported, [
-                "A128CBC-HS256",
-                "A256GCM"
-            ]);
             _configurationOptions.AuthorizationSigningAlgValuesSupported = SetDefault(_configurationOptions.AuthorizationSigningAlgValuesSupported, [
                 SecurityAlgorithms.RsaSsaPssSha256,
                 SecurityAlgorithms.EcdsaSha256
             ]);
-            _configurationOptions.AuthorizationEncryptionAlgValuesSupported = SetDefault(_configurationOptions.AuthorizationEncryptionAlgValuesSupported, 
+            _configurationOptions.AuthorizationEncryptionAlgValuesSupported = SetDefault(
+                _configurationOptions.AuthorizationEncryptionAlgValuesSupported,
                 "RSA-OAEP,RSA-OAEP-256");
-            _configurationOptions.AuthorizationEncryptionEncValuesSupported = SetDefault(_configurationOptions.AuthorizationEncryptionEncValuesSupported, 
+            _configurationOptions.AuthorizationEncryptionEncValuesSupported = SetDefault(
+                _configurationOptions.AuthorizationEncryptionEncValuesSupported,
                 "A128CBC-HS256,A256GCM");
             _configurationOptions.BrandId = SetDefault(_configurationOptions.BrandId, "00000000-0000-0000-0000-000000000000");
             _configurationOptions.HeadlessMode = SetDefault(_configurationOptions.HeadlessMode, false);
@@ -159,7 +146,6 @@ namespace CdrAuthServer.Extensions
             _configurationOptions.RequestUriExpirySeconds = SetDefault(_configurationOptions.RequestUriExpirySeconds, 90);
             _configurationOptions.AccessTokenExpirySeconds = SetDefault(_configurationOptions.AccessTokenExpirySeconds, 300);
             _configurationOptions.IdTokenExpirySeconds = SetDefault(_configurationOptions.IdTokenExpirySeconds, 300);
-            _configurationOptions.AlwaysEncryptIdTokens = SetDefault(_configurationOptions.AlwaysEncryptIdTokens, false);
             _configurationOptions.UseMtlsEndpointAliases = SetDefault(_configurationOptions.UseMtlsEndpointAliases, false);
             _configurationOptions.ClockSkewSeconds = SetDefault(_configurationOptions.ClockSkewSeconds, 0);
             _configurationOptions.ClientCertificateThumbprintHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateThumbprintHttpHeaderName, HttpHeaders.ClientCertificateThumbprint);
@@ -167,8 +153,8 @@ namespace CdrAuthServer.Extensions
             _configurationOptions.ClientCertificateHttpHeaderName = SetDefault(_configurationOptions.ClientCertificateHttpHeaderName, HttpHeaders.ClientCertificate);
 
             // If needing to turn off mtls checking at specific endpoints, such as for FAPI JARM testing with PAR endpoint.
-            var endpointList = _config.GetValue<string>("CdrAuthServer:OverrideMtlsCheckEndpointList", "");
-            _configurationOptions.OverrideMtlsChecks = SetDefault(_configurationOptions.OverrideMtlsChecks, endpointList.Split(','));
+            var endpointList = _config?.GetValue<string>("CdrAuthServer:OverrideMtlsCheckEndpointList", string.Empty);
+            _configurationOptions.OverrideMtlsChecks = SetDefault(_configurationOptions.OverrideMtlsChecks, endpointList?.Split(',') ?? []);
         }
 
         private static string SetDefault(string option, string defaultValue)

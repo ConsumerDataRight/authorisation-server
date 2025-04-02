@@ -6,7 +6,7 @@ namespace XUnit_Skippable
 {
     public class SkippableFactDiscoverer : IXunitTestCaseDiscoverer
     {
-        readonly IMessageSink diagnosticMessageSink;
+        private readonly IMessageSink diagnosticMessageSink;
 
         public SkippableFactDiscoverer(IMessageSink diagnosticMessageSink)
         {

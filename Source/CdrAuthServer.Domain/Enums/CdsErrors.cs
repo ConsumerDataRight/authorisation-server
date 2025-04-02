@@ -16,7 +16,7 @@ namespace CdrAuthServer.Domain.Enums
         [CdrError(Constants.ErrorTitles.ServiceUnavailable, Constants.ErrorCodes.Cds.ServiceUnavailable)]
         ServiceUnavailable,
 
-        [CdrError(Constants.ErrorTitles.MissingRequiredField,Constants.ErrorCodes.Cds.MissingRequiredField)]
+        [CdrError(Constants.ErrorTitles.MissingRequiredField, Constants.ErrorCodes.Cds.MissingRequiredField)]
         MissingRequiredField,
 
         [CdrError(Constants.ErrorTitles.MissingRequiredHeader, Constants.ErrorCodes.Cds.MissingRequiredHeader)]

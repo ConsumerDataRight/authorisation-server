@@ -55,7 +55,7 @@ namespace CdrAuthServer.Models
         public string? ClientUri => Claims.FirstOrDefault(x => x.Type == "client_uri")?.Value;
 
         /// <summary>
-        /// Gets a URL string that references a logo for the client. If present, the server SHOULD display this image to the end-user during approval
+        /// Gets a URL string that references a logo for the client. If present, the server SHOULD display this image to the end-user during approval.
         /// </summary>
         [JsonPropertyName("logo_uri")]
         public string? LogoUri => Claims.FirstOrDefault(x => x.Type == "logo_uri")?.Value;
@@ -63,7 +63,7 @@ namespace CdrAuthServer.Models
         /// <summary>
         /// URL string that points to a human-readable terms of service document for the Software Product.
         /// </summary>
-        /// <value>URL string that points to a human-readable terms of service document for the Software Product</value>
+        /// <value>URL string that points to a human-readable terms of service document.</value>
         [JsonPropertyName("tos_uri")]
         public string? TosUri => Claims.FirstOrDefault(x => x.Type == "tos_uri")?.Value;
 
@@ -92,13 +92,13 @@ namespace CdrAuthServer.Models
         public string? RecipientBaseUri => Claims.FirstOrDefault(x => x.Type == "recipient_base_uri")?.Value;
 
         /// <summary>
-        /// Gets a String representing a unique identifier assigned by the ACCC Register and used by registration endpoints to identify the software product to be dynamically registered. &lt;/br&gt;&lt;/br&gt;The \&quot;software_id\&quot; will remain the same for the lifetime of the product, across multiple updates and versions
+        /// Gets a String representing a unique identifier assigned by the ACCC Register and used by registration endpoints to identify the software product to be dynamically registered. &lt;/br&gt;&lt;/br&gt;The \&quot;software_id\&quot; will remain the same for the lifetime of the product, across multiple updates and versions.
         /// </summary>
         [JsonPropertyName("software_id")]
         public string? SoftwareId => Claims.FirstOrDefault(x => x.Type == "software_id")?.Value;
 
         /// <summary>
-        /// Gets a String containing a the software role, e.g. data-recipient-software-product
+        /// Gets a String containing a the software role, e.g. data-recipient-software-product.
         /// </summary>
         [JsonPropertyName("software_roles")]
         public string? SoftwareRoles => Claims.FirstOrDefault(x => x.Type == "software_roles")?.Value;
@@ -116,7 +116,7 @@ namespace CdrAuthServer.Models
         public IEnumerable<string> RedirectUris => Claims.Where(x => x.Type == "redirect_uris").Select(x => x.Value);
 
         /// <summary>
-        ///Sector Identifier Uri used in PPID calculations.
+        /// Sector Identifier Uri used in PPID calculations.
         /// </summary>
         [JsonPropertyName("sector_identifier_uri")]
         public string? SectorIdentifierUri => Claims.FirstOrDefault(x => x.Type == "sector_identifier_uri")?.Value;

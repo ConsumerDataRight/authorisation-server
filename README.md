@@ -1,8 +1,7 @@
 ![Consumer Data Right Logo](./Assets/cdr-logo.png?raw=true) 
 
-[![Consumer Data Standards v1.31.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.31.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)
-[![Conformance Test Suite Data Holders 5.0.0](https://img.shields.io/badge/Conformance%20Test%20Suite%20Data%20Holders-v5.0.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders)
-[![Conformance Test Suite Data Recipients 4.3.0](https://img.shields.io/badge/Conformance%20Test%20Suite%20Data%20Recipients-v4.3.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients)
+[![Consumer Data Standards v1.33.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.33.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction)
+[![Conformance Test Suite Data Recipients 4.4.0](https://img.shields.io/badge/Conformance%20Test%20Suite%20Data%20Recipients-v4.4.0-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients)
 [![FAPI 1.0 Advanced Profile](https://img.shields.io/badge/FAPI%201.0-orange.svg)](https://openid.net/specs/openid-financial-api-part-2-1_0.html)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -17,9 +16,8 @@ The project is used in the Participant Tooling Authorisation Server, providing t
 ## Authorisation Server - Alignment
 The Authorisation Server:
 
--   aligns to  [v1.31.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  of the  [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  in particular  [FAPI 1.0 Migration Phase 4](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.31.0/#introduction)  with backwards compatibility to Migration Phase 2 and 3;
--   has passed v5.0.0 of the  [Conformance Test Suite for Data Holders](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-holders); 
--   has passed v4.3.0 of the  [Conformance Test Suite for Data Recipients](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients);
+-   aligns to  [v1.33.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction)  of the  [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction)  in particular  [FAPI 1.0 Migration Phase 4](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction)  with backwards compatibility to Migration Phase 2 and 3;
+-   has passed v4.4.0 of the  [Conformance Test Suite for Data Recipients](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients);
 and
 -   is certified with the [FAPI 1.0 Advanced Profile](https://openid.net/specs/openid-financial-api-part-2-1_0.html)  .
 
@@ -162,7 +160,7 @@ The Authorisation Server contains the following features:
 - Pushed Authorization Requests
 - Authorization endpoint
     - Support for request_uri parameter
-    - Hybrid and Authorization Code flow
+    - Authorization Code flow
     - Conforms to Consumer Data Right [CX Guidelines](https://consumerdatastandards.gov.au/guidelines-and-conventions/consumer-experience-guidelines).
 - Token endpoint
     - Authorization Code

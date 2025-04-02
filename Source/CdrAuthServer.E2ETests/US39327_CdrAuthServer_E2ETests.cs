@@ -1,4 +1,4 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Extensions;
@@ -34,8 +34,7 @@ namespace CdrAuthServer.E2ETests
             IApiServiceDirector apiServiceDirector,
             ITestOutputHelperAccessor testOutputHelperAccessor,
             Microsoft.Extensions.Configuration.IConfiguration config)
-            : base(testOutputHelperAccessor, config
-            )
+            : base(testOutputHelperAccessor, config)
         {
             _options = options.Value ?? throw new ArgumentNullException(nameof(options));
             _authServerOptions = authServerOptions.Value ?? throw new ArgumentNullException(nameof(authServerOptions));
@@ -47,8 +46,8 @@ namespace CdrAuthServer.E2ETests
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        PlaywrightDriver _playwrightDriver = new PlaywrightDriver();
-        IBrowserContext? _browserContext;
+        private PlaywrightDriver _playwrightDriver = new PlaywrightDriver();
+        private IBrowserContext? _browserContext;
 
         public const string CUSTOMERID_BANKING = "ksmith";
         public const string DEFAULT_OPT = "000789";
@@ -62,59 +61,9 @@ namespace CdrAuthServer.E2ETests
         private readonly IDataHolderAccessTokenCache _dataHolderAccessTokenCache;
         private readonly IApiServiceDirector _apiServiceDirector;
 
-        [Theory]
-        [InlineData(ResponseMode.FormPost)]
-        public async Task AC01_Authorize_HybridFlow_ShouldRespondWith_AuthCodeAndIdToken(ResponseMode responseMode)
-        {
-            Log.Information("Running test with Params: {P1}={V1}.", nameof(responseMode), responseMode);
-
-            // Arrange
-            Uri authRedirect = await Authorise(
-                ResponseType.CodeIdToken, // ie Hybrid flow
-                responseMode,
-                _options.SCOPE);
-            var authRedirectLeftPart = authRedirect.GetLeftPart(UriPartial.Authority) + "/ui";
-
-            _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(AC01_Authorize_HybridFlow_ShouldRespondWith_AuthCodeAndIdToken)} - {responseMode}");
-
-            var page = await _browserContext.NewPageAsync();
-
-            await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
-
-            // Username
-            AuthenticateLoginPage authenticateLoginPage = new(page);
-            await authenticateLoginPage.EnterCustomerId(CUSTOMERID_BANKING);
-            await authenticateLoginPage.ClickContinue();
-
-            // OTP
-            OneTimePasswordPage oneTimePasswordPage = new(page);
-            await oneTimePasswordPage.EnterOtp(DEFAULT_OPT);
-            await oneTimePasswordPage.ClickContinue();
-
-            // Select accounts
-            SelectAccountsPage selectAccountsPage = new(page);
-            await selectAccountsPage.SelectAccounts("Personal Loan");
-            await selectAccountsPage.ClickContinue();
-
-            // Confirmation - Click authorise and check callback response
-            ConfirmAccountSharingPage confirmAccountSharingPage = new(page);
-            (string? code, string? idtoken) = await HybridFlow_HandleCallback(responseMode: responseMode, page: page, setup: async (page) =>
-            {
-                await confirmAccountSharingPage.ClickAuthorise();
-            });
-
-            using (new AssertionScope(BaseTestAssertionStrategy))
-            {
-                code.Should().NotBeNullOrEmpty();
-                idtoken.Should().NotBeNullOrEmpty();
-            }
-
-        }
-
         [Fact]
         public async Task AC01_Authorize_CodeFlow_ShouldRespondWith_AuthCodeAndIdToken()
         {
-
             // Arrange
             Uri authRedirect = await Authorise(
                 ResponseType.Code, // ie Code flow
@@ -168,7 +117,6 @@ namespace CdrAuthServer.E2ETests
                 tokenResponse?.AccessToken.Should().NotBeNullOrEmpty();
                 tokenResponse?.IdToken.Should().NotBeNullOrEmpty();
                 tokenResponse?.RefreshToken.Should().NotBeNullOrEmpty();
-
             }
         }
 
@@ -180,7 +128,7 @@ namespace CdrAuthServer.E2ETests
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX02_Cancel_Otp_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -192,7 +140,6 @@ namespace CdrAuthServer.E2ETests
 
             // Assert
             await AssertCancelCallback(async () => await oneTimePasswordPage.ClickCancel());
-
         }
 
         [Fact]
@@ -203,7 +150,7 @@ namespace CdrAuthServer.E2ETests
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX03_Cancel_Select_Accounts_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -219,7 +166,6 @@ namespace CdrAuthServer.E2ETests
 
             // Assert
             await AssertCancelCallback(async () => await selectAccountsPage.ClickCancel());
-
         }
 
         [Fact]
@@ -230,7 +176,7 @@ namespace CdrAuthServer.E2ETests
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX04_Deny_Account_Confirmation_And_Verify_Callback)}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -249,7 +195,6 @@ namespace CdrAuthServer.E2ETests
 
             // Assert
             await AssertCancelCallback(async () => await confirmAccountSharingPage.ClickDeny());
-
         }
 
         [Theory]
@@ -260,11 +205,11 @@ namespace CdrAuthServer.E2ETests
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(testSuffix), testSuffix, nameof(customerIdToEnter), customerIdToEnter, nameof(expectedError), expectedError);
 
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX05_Invalid_Customer_Id)} - {testSuffix}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -277,7 +222,6 @@ namespace CdrAuthServer.E2ETests
             {
                 invalidCustomerIdMessageExists.Should().Be(true, $"Customer Id of '{customerIdToEnter}' was entered and expected '{expectedError}'.");
             }
-
         }
 
         [Theory]
@@ -286,12 +230,13 @@ namespace CdrAuthServer.E2ETests
         public async Task ACX06_Invalid_One_Time_Password(string testSuffix, string otpToEnter, string expectedError)
         {
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(testSuffix), testSuffix, nameof(otpToEnter), otpToEnter, nameof(expectedError), expectedError);
+
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX06_Invalid_One_Time_Password)} - {testSuffix}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -308,18 +253,17 @@ namespace CdrAuthServer.E2ETests
             {
                 invalidOptMessageExists.Should().Be(true, $"OTP of '{otpToEnter}' was entered and expected '{expectedError}'.");
             }
-
         }
 
         [Fact]
         public async Task ACX07_No_Accounts_Selected()
         {
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, _options.SCOPE);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, _options.SCOPE);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX06_Invalid_One_Time_Password)}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -339,47 +283,82 @@ namespace CdrAuthServer.E2ETests
             {
                 noAccountSelectedErrorExists.Should().Be(true, $"No accounts were selected in the account selection form.");
             }
-
         }
 
         // The test below aims to cover all Common, Banking and Energy scopes. Including the merging of Basic and Detailed clusters.
         [Theory]
-        //Common
-        [InlineData("AC01-3AU.02.14 Common Basic with Profile", "openid profile common:customer.basic:read cdr:registration",
+
+        // Common
+        [InlineData(
+            "AC01-3AU.02.14 Common Basic with Profile",
+            "openid profile common:customer.basic:read cdr:registration",
             new ClusterType[] { ClusterType.CommonName, ClusterType.CommonNameAndOccupation })]
-        [InlineData("AC02-3AU.02.14 Common Basic with Detailed Common", "openid common:customer.basic:read common:customer.detail:read cdr:registration",
+        [InlineData(
+            "AC02-3AU.02.14 Common Basic with Detailed Common",
+            "openid common:customer.basic:read common:customer.detail:read cdr:registration",
             new ClusterType[] { ClusterType.CommonNameAndOccupation, ClusterType.CommonContactDetails })]
-        [InlineData("AC03-3AU.02.14 Common Detailed Common Only", "openid common:customer.detail:read cdr:registration",
+        [InlineData(
+            "AC03-3AU.02.14 Common Detailed Common Only",
+            "openid common:customer.detail:read cdr:registration",
             new ClusterType[] { ClusterType.CommonNameOccupationAndContactDetails })]
-        //Banking
-        [InlineData("AC04-3AU.02.14 Bank Detailed with Bank Basic", "openid bank:accounts.detail:read bank:accounts.basic:read",
+
+        // Banking
+        [InlineData(
+            "AC04-3AU.02.14 Bank Detailed with Bank Basic",
+            "openid bank:accounts.detail:read bank:accounts.basic:read",
             new ClusterType[] { ClusterType.BankAccountNameTypeAndBalance, ClusterType.BankAccountNumbersAndFeatures })]
-        [InlineData("AC05-3AU.02.14 Bank Detailed Only", "openid bank:accounts.detail:read",
+        [InlineData(
+            "AC05-3AU.02.14 Bank Detailed Only",
+            "openid bank:accounts.detail:read",
             new ClusterType[] { ClusterType.BankAccountBalanceAndDetails })]
-        [InlineData("AC06-3AU.02.14 Bank Detailed with Bank Transations", "openid bank:accounts.detail:read bank:transactions:read cdr:registration",
-            new ClusterType[] { ClusterType.BankAccountBalanceAndDetails,
-                ClusterType.BankTransactionDetails})]
-        [InlineData("AC07-3AU.02.14", "openid bank:regular_payments:read",
+        [InlineData(
+            "AC06-3AU.02.14 Bank Detailed with Bank Transations",
+            "openid bank:accounts.detail:read bank:transactions:read cdr:registration",
+            new ClusterType[]
+            {
+                ClusterType.BankAccountBalanceAndDetails,
+                ClusterType.BankTransactionDetails,
+            })]
+        [InlineData(
+            "AC07-3AU.02.14",
+            "openid bank:regular_payments:read",
             new ClusterType[] { ClusterType.BankDirectDebitAndSheduledPayments })]
-        [InlineData("AC08-3AU.02.14", "openid bank:payees:read",
+        [InlineData(
+            "AC08-3AU.02.14",
+            "openid bank:payees:read",
             new ClusterType[] { ClusterType.BankSavedPayees })]
-        [InlineData("AC09-3AU.02.14 all bank", "openid bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:regular_payments:read bank:payees:read",
-            new ClusterType[] { ClusterType.BankAccountNameTypeAndBalance,
+        [InlineData(
+            "AC09-3AU.02.14 all bank",
+            "openid bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:regular_payments:read bank:payees:read",
+            new ClusterType[]
+            {
+                ClusterType.BankAccountNameTypeAndBalance,
                 ClusterType.BankAccountNumbersAndFeatures,
                 ClusterType.BankTransactionDetails,
                 ClusterType.BankDirectDebitAndSheduledPayments,
-                ClusterType.BankSavedPayees})]
-        //Energy
-        [InlineData("AC10-3AU.02.14 Energy Basic with detailed", "openid energy:accounts.basic:read openid energy:accounts.detail:read",
+                ClusterType.BankSavedPayees,
+            })]
+
+        // Energy
+        [InlineData(
+            "AC10-3AU.02.14 Energy Basic with detailed",
+            "openid energy:accounts.basic:read openid energy:accounts.detail:read",
             new ClusterType[] { ClusterType.EnergyAccountsAndPlans, ClusterType.EnergyAccountAndPlanDetailsWithBasicScope })]
-        [InlineData("AC11-3AU.02.14 Energy Detailed Only", "openid energy:accounts.detail:read",
+        [InlineData(
+            "AC11-3AU.02.14 Energy Detailed Only",
+            "openid energy:accounts.detail:read",
             new ClusterType[] { ClusterType.EnergyAccountAndPlanDetailsWithoutBasicScope })]
-        [InlineData("AC12-3AU.02.14 Energy connection and meter", "openid energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read",
+        [InlineData(
+            "AC12-3AU.02.14 Energy connection and meter",
+            "openid energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read",
             new ClusterType[] { ClusterType.EnergyElectricityConnection, ClusterType.EnergyElectricityMeter })]
-        [InlineData("AC13-3AU.02.14 Energy Consessions-Payments-Billing",
+        [InlineData(
+            "AC13-3AU.02.14 Energy Consessions-Payments-Billing",
             "openid energy:accounts.concessions:read energy:accounts.paymentschedule:read energy:billing:read",
             new ClusterType[] { ClusterType.EnergyConcessionsAndAssistance, ClusterType.EnergyPaymentPreferences, ClusterType.EnergyEnergyBillingPaymentsAndHistory })]
-        [InlineData("AC14-3AU.02.14 Energy DER-Usage", "openid energy:electricity.der:read energy:electricity.usage:read",
+        [InlineData(
+            "AC14-3AU.02.14 Energy DER-Usage",
+            "openid energy:electricity.der:read energy:electricity.usage:read",
             new ClusterType[] { ClusterType.EnergyEnergyGenerationAndStorage, ClusterType.EnergyElectricityUsage })]
 
         public async Task ACX08_Confirmation_UI_Cluster_Verification(string testSuffix, string actualScope, ClusterType[] expectedClusters)
@@ -387,12 +366,11 @@ namespace CdrAuthServer.E2ETests
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}, {P3}={V3}.", nameof(testSuffix), testSuffix, nameof(actualScope), actualScope, nameof(expectedClusters), expectedClusters);
 
             // Arrange
-            Uri authRedirect = await Authorise(ResponseType.CodeIdToken, ResponseMode.FormPost, scope: actualScope);
+            Uri authRedirect = await Authorise(ResponseType.Code, ResponseMode.Jwt, scope: actualScope);
             _browserContext = await _playwrightDriver.NewBrowserContext($"{nameof(ACX08_Confirmation_UI_Cluster_Verification)} - {testSuffix}");
             var page = await _browserContext.NewPageAsync();
 
-            // Act        
-
+            // Act
             await page.GotoAsync(authRedirect.AbsoluteUri); // redirect user to Auth UI to login and consent to share accounts
 
             AuthenticateLoginPage authenticateLoginPage = new(page);
@@ -410,7 +388,7 @@ namespace CdrAuthServer.E2ETests
 
             ConfirmAccountSharingPage confirmAccountSharingPage = new(page);
 
-            //Assert
+            // Assert
             foreach (ClusterType c in expectedClusters)
             {
                 await VerifyCluster(c, confirmAccountSharingPage);
@@ -433,7 +411,7 @@ namespace CdrAuthServer.E2ETests
 
             // Remove newline chars from actual and expected to ensure consistency in results.
             // When running in a docker container, the last element does not always have a newline delimiter.
-            Assert.Equal(expectedDetail.Replace("\n", ""), actualClusterDetail.Replace("\n", ""));
+            Assert.Equal(expectedDetail.Replace("\n", string.Empty), actualClusterDetail.Replace("\n", string.Empty));
         }
 
         public enum ClusterType
@@ -458,7 +436,7 @@ namespace CdrAuthServer.E2ETests
             EnergyElectricityUsage,
             CommonNameAndOccupation,
             CommonContactDetails,
-            CommonNameOccupationAndContactDetails
+            CommonNameOccupationAndContactDetails,
         }
 
         // Call authorise endpoint, should respond with a redirect to UI, return the redirect URI
@@ -491,62 +469,8 @@ namespace CdrAuthServer.E2ETests
             return response.Headers.Location ?? throw new NullReferenceException(nameof(response.Headers.Location.AbsoluteUri));
         }
 
-        delegate Task HybridFlow_HandleCallback_Setup(IPage page);
-        private async Task<(string? code, string? idtoken)> HybridFlow_HandleCallback(ResponseMode responseMode, IPage page, HybridFlow_HandleCallback_Setup setup)
-        {
-            var callback = new DataRecipientConsentCallback(_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
-            callback.Start();
-            try
-            {
-                await setup(page);
+        private delegate Task CodeFlow_HandleCallback_Setup(IPage page);
 
-                var callbackRequest = await callback.WaitForCallback();
-                using (new AssertionScope(BaseTestAssertionStrategy))
-                {
-                    switch (responseMode)
-                    {
-                        case ResponseMode.FormPost:
-                            {
-                                callbackRequest.Should().NotBeNull();
-                                callbackRequest?.received.Should().BeTrue();
-                                callbackRequest?.method.Should().Be(HttpMethod.Post);
-                                callbackRequest?.body.Should().NotBeNullOrEmpty();
-
-                                var body = QueryHelpers.ParseQuery(callbackRequest?.body);
-                                var code = body["code"];
-                                var id_token = body["id_token"];
-
-                                code.Should().NotBeNullOrEmpty();
-                                id_token.Should().NotBeNullOrEmpty();
-
-                                return (code, id_token);
-                            }
-                        case ResponseMode.Fragment:
-                            {
-                                callbackRequest.Should().NotBeNull();
-                                callbackRequest?.received.Should().BeTrue();
-                                callbackRequest?.method.Should().Be(HttpMethod.Get);
-                                throw new NotImplementedException("FIXME - MJS - check request URL fragment for authcode & idtoken");
-                            }
-                        case ResponseMode.Query:
-                            {
-                                callbackRequest.Should().NotBeNull();
-                                callbackRequest?.received.Should().BeTrue();
-                                callbackRequest?.method.Should().Be(HttpMethod.Get);
-                                throw new NotImplementedException("FIXME - MJS - check request URL query string for authcode & idtoken");
-                            }
-                        default:
-                            throw new NotSupportedException(nameof(responseMode));
-                    }
-                }
-            }
-            finally
-            {
-                await callback.Stop();
-            }
-        }
-
-        delegate Task CodeFlow_HandleCallback_Setup(IPage page);
         private async Task<string?> CodeFlow_HandleCallback(IPage page, CodeFlow_HandleCallback_Setup setup)
         {
             var callback = new DataRecipientConsentCallback(_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
@@ -570,8 +494,7 @@ namespace CdrAuthServer.E2ETests
                     var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
 
                     jwt.Claim("code").Should().NotBeNull();
-                    return (jwt.Claim("code").Value);
-
+                    return jwt.Claim("code").Value;
                 }
             }
             finally
@@ -580,10 +503,10 @@ namespace CdrAuthServer.E2ETests
             }
         }
 
-        delegate Task CancelAction();
+        private delegate Task CancelAction();
+
         private async Task AssertCancelCallback(CancelAction cancelAction)
         {
-
             var expectedError = new UserCancelledException();
 
             var callback = new DataRecipientConsentCallback(_options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS);
@@ -605,10 +528,9 @@ namespace CdrAuthServer.E2ETests
                     var encodedJwt = queryValues["response"];
 
                     // Check claims of decode jwt
-                    var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);                 
+                    var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
                     jwt.Claim("error").Value.Should().Be(expectedError.Error);
                     jwt.Claim("error_description").Value.Should().Be(expectedError.ErrorDescription);
-
                 }
             }
             finally
@@ -616,7 +538,8 @@ namespace CdrAuthServer.E2ETests
                 await callback.Stop();
             }
         }
-        public static (string expectedHeading, string expectedDetail) GetExpectedClusterDetail(ClusterType scopesType)
+
+        public static (string ExpectedHeading, string ExpectedDetail) GetExpectedClusterDetail(ClusterType scopesType)
         {
             switch (scopesType)
             {

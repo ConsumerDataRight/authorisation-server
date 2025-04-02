@@ -105,8 +105,6 @@ namespace CdrAuthServer.Domain
             public const string ClientMetaDataResponseTypes = "response_types";
             public const string ApplicationType = "application_type";
             public const string IdTokenSignedResponseAlg = "id_token_signed_response_alg";
-            public const string IdTokenEncryptedResponseAlg = "id_token_encrypted_response_alg";
-            public const string IdTokenEncryptedResponseEnc = "id_token_encrypted_response_enc";
             public const string RequestObjectSigningAlg = "request_object_signing_alg";
             public const string SoftwareStatement = "software_statement";
             public const string AuthorizationSignedResponseAlg = "authorization_signed_response_alg";
@@ -216,16 +214,11 @@ namespace CdrAuthServer.Domain
             public const string RefreshToken = "refresh_token";
             public const string AuthCode = "authorization_code";
             public const string ClientCredentials = "client_credentials";
-            public const string Hybrid = "hybrid";
             public const string RequestUri = "request_uri";
         }
 
         public static class ResponseModes
         {
-            public const string FormPost = "form_post";
-            public const string Fragment = "fragment";
-            public const string FormPostJwt = "form_post.jwt";
-            public const string FragmentJwt = "fragment.jwt";
             public const string QueryJwt = "query.jwt";
             public const string Jwt = "jwt";
         }
@@ -233,14 +226,12 @@ namespace CdrAuthServer.Domain
         public static class ResponseTypes
         {
             public const string AuthCode = "code";
-            public const string Hybrid = "code id_token";
         }
 
         // The order of the response modes represents the precedence for each response type.
         public static readonly ImmutableDictionary<string, string[]> SupportedResponseModesForResponseType = new Dictionary<string, string[]>
         {
-            { ResponseTypes.Hybrid, new string[] { ResponseModes.Fragment, ResponseModes.FormPost } },
-            { ResponseTypes.AuthCode, new string[] { ResponseModes.QueryJwt, ResponseModes.FragmentJwt, ResponseModes.FormPostJwt, ResponseModes.Jwt } },
+            { ResponseTypes.AuthCode, new string[] {  ResponseModes.Jwt } },
         }.ToImmutableDictionary();
 
         public static class ValidationRestrictions

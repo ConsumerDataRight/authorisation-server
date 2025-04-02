@@ -19,11 +19,11 @@
         {
             public const string OpenId = "openid";
             public const string Profile = "profile";
-            public const string Registration = "cdr:registration"; //CDR_DYNAMIC_CLIENT_REGISTRATION
+            public const string Registration = "cdr:registration"; // CDR_DYNAMIC_CLIENT_REGISTRATION
             public const string Common = "common:customer.basic:read common:customer.detail:read";
             public const string Banking = "bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:payees:read bank:regular_payments:read";
             public const string Energy = "energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.usage:read energy:electricity.der:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.paymentschedule:read energy:accounts.concessions:read energy:billing:read";
-            public const string AdminMetadataUpdate = "admin:metadata:update"; //CDR_AUTHSERVER
+            public const string AdminMetadataUpdate = "admin:metadata:update"; // CDR_AUTHSERVER
             public const string AdminMetricsRead = "admin:metrics.basic:read";
             public const string BankingSectorScopes = $"{OpenId} {Profile} {Registration} {Common} {Banking}";
             public const string AllSectorScopes = $"{BankingSectorScopes} {Energy}";

@@ -5,12 +5,12 @@ namespace CdrAuthServer.Infrastructure.Models
     public class CdrApiOptions
     {
         private static readonly List<CdrApiEndpointVersionOptions> _supportedApiVersions = new List<CdrApiEndpointVersionOptions>
-            {
-                //(?i) is to make the regex case insensitive
-                //(%7B)* and (%7D)* represent the possibility of a { and } in the path, to cover the value '{industry}' for OAS generation purposes
+        {
+            // (?i) is to make the regex case insensitive
+            // (%7B)* and (%7D)* represent the possibility of a { and } in the path, to cover the value '{industry}' for OAS generation purposes
 
-                //Currently everything is unversioned or v1 with optional x-v, so we don't need to list anything
-            };
+            // Currently everything is unversioned or v1 with optional x-v, so we don't need to list anything
+        };
 
         public List<CdrApiEndpointVersionOptions> EndpointVersionOptions { get; } = _supportedApiVersions;
 

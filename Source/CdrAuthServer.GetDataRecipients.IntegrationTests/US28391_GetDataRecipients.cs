@@ -1,15 +1,15 @@
-// #define DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
+﻿// #define DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
 using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
 using Dapper;
-using Newtonsoft.Json;
-using Xunit;
 using FluentAssertions;
 using FluentAssertions.Execution;
-using System.Net.Http;
-using System.Net;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
+using Xunit;
 
 #nullable enable
 
@@ -34,16 +34,25 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
         }
 
         private async Task Test(
-            int registerLegalEntityCount, int registerBrandCount, int registerSoftwareProductCount,
-            int authServerLegalEntityCount, int authServerBrandCount, int authServerSoftwareProductCount,
-            bool registerModified = false, bool authServerModified = false)
+            int registerLegalEntityCount,
+            int registerBrandCount,
+            int registerSoftwareProductCount,
+            int authServerLegalEntityCount,
+            int authServerBrandCount,
+            int authServerSoftwareProductCount,
+            bool registerModified = false,
+            bool authServerModified = false)
         {
             // Arrange
             await DatabaseSeeder.Execute(
-                registerLegalEntityCount, registerBrandCount, registerSoftwareProductCount,
-                authServerLegalEntityCount, authServerBrandCount, authServerSoftwareProductCount,
-                registerModified, authServerModified
-            );
+                registerLegalEntityCount,
+                registerBrandCount,
+                registerSoftwareProductCount,
+                authServerLegalEntityCount,
+                authServerBrandCount,
+                authServerSoftwareProductCount,
+                registerModified,
+                authServerModified);
 
             // Act
             await ExecuteAzureFunction();
@@ -87,16 +96,15 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
             await Test(1, 1, 1, 1, 1, 1, false, true);
         }
 
-        
-
-        static private async Task Assert_RegisterAndDataHolderIsSynced()
+        private static async Task Assert_RegisterAndDataHolderIsSynced()
         {
             static async Task Assert_TableDataIsEqual(
-                SqlConnection registerConnection, string registerSql,
-                SqlConnection authServerConnection, string authServerSql,
+                SqlConnection registerConnection,
+                string registerSql,
+                SqlConnection authServerConnection,
+                string authServerSql,
                 string tableName)
             {
-
                 var registerJson = JsonConvert.SerializeObject(await registerConnection.QueryAsync(registerSql));
                 var authServerJson = JsonConvert.SerializeObject(await authServerConnection.QueryAsync(authServerSql));
 
@@ -106,7 +114,6 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                 File.WriteAllText($"c:/temp/actual_{tableName}.json", authServerJson);                
 #endif
                 authServerJson.Should().Be(registerJson);
-
             }
 
             const string REGISTER_LEGALENTITY_SQL = @"
@@ -158,16 +165,16 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
                 where pt.ParticipationTypeCode = 'DR' -- hardly necessary since only DRs have software products anyway
                 order by SoftwareProductId";
 
-            //Upper(Status) Status,
+            // Upper(Status) Status,
             var AUTHSERVER_LEGALENTITY_SQL = "select LegalEntityId, LegalEntityName, LegalEntityStatus Status from SoftwareProducts where LegalEntityId != 'cdr-register' order by LegalEntityId ";
             var AUTHSERVER_BRAND_SQL = "select BrandId, BrandName, BrandStatus Status, LegalEntityId from SoftwareProducts where BrandId != 'cdr-register' order by BrandId";
             var AUTHSERVER_SOFTWAREPRODUCT_SQL = "select SoftwareProductId, SoftwareProductName, SoftwareProductDescription, LogoUri, Status from SoftwareProducts  where SoftwareProductId != 'cdr-register' order by SoftwareProductId";
 
             using var registerConnection = new SqlConnection(BaseTest.CONNECTIONSTRING_REGISTER_RW);
-            registerConnection.Open();
+            await registerConnection.OpenAsync();
 
             using var authServerConnection = new SqlConnection(BaseTest.CONNECTIONSTRING_AUTHSERVER_RW);
-            authServerConnection.Open();
+            await authServerConnection.OpenAsync();
 
             // Assert
             await Assert_TableDataIsEqual(registerConnection, REGISTER_LEGALENTITY_SQL, authServerConnection, AUTHSERVER_LEGALENTITY_SQL, "LegalEntity");

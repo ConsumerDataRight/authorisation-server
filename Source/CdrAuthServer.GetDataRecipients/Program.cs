@@ -1,19 +1,21 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System;
 using System.IO;
 using System.Reflection;
-using System;
+using CdrAuthServer.GetDataRecipients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using CdrAuthServer.GetDataRecipients;
+using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
      .ConfigureAppConfiguration((context, builder) =>
      {
-         var configuration = builder.SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
-         //while running on local machine via vs studio these are settings used
+         _ = builder.SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
+
+         // while running on local machine via vs studio these are settings used
          .AddJsonFile("local.settings.json", true, true)
-         //while running docker these are config values used
+
+         // while running docker these are config values used
          .AddJsonFile("appsettings.docker.json", true, true)
          .AddEnvironmentVariables()
          .AddCommandLine(Environment.GetCommandLineArgs())
@@ -35,4 +37,4 @@ var host = new HostBuilder()
     })
     .Build();
 
-host.Run();
+await host.RunAsync();

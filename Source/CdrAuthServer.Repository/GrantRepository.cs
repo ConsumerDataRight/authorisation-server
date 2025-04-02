@@ -8,11 +8,9 @@
     using CdrAuthServer.Repository.Infrastructure;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
-    
 
     public class GrantRepository : IGrantRepository
     {
-
         private readonly CdrAuthServerDatabaseContext cdrAuthServervDatabaseContext;
         private readonly IMapper mapper;
         private readonly ILogger<GrantRepository> logger;
@@ -31,12 +29,11 @@
                 var grantEntity = this.mapper.Map<Entities.Grant>(grant);
 
                 await cdrAuthServervDatabaseContext.Grants.AddAsync(grantEntity);
-                cdrAuthServervDatabaseContext.SaveChanges();
+                await cdrAuthServervDatabaseContext.SaveChangesAsync();
 
                 grant.Key = grantEntity.Key.ToString();
 
                 return grant;
-
             }
             catch (Exception ex)
             {
@@ -77,16 +74,16 @@
 
         public async Task<Grant?> Update(Grant grant)
         {
-            var _grant = await cdrAuthServervDatabaseContext.Grants.AsNoTracking().FirstOrDefaultAsync(g => g.Key == grant.Key);
-            
-            if (_grant == null)
+            var grantStored = await cdrAuthServervDatabaseContext.Grants.AsNoTracking().FirstOrDefaultAsync(g => g.Key == grant.Key);
+
+            if (grantStored == null)
             {
                 return null;
             }
 
             try
             {
-                var grantToUpdate = mapper.Map<Entities.Grant>(grant);                
+                var grantToUpdate = mapper.Map<Entities.Grant>(grant);
                 cdrAuthServervDatabaseContext.Grants.Update(grantToUpdate);
                 await cdrAuthServervDatabaseContext.SaveChangesAsync();
             }

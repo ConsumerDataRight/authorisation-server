@@ -6,12 +6,9 @@ namespace CdrAuthServer.Infrastructure.Extensions
 {
     public static class CdrSwaggerMiddlewareExtensions
     {
-        public static IApplicationBuilder UseCdrSwagger(this IApplicationBuilder builder, IApiVersionDescriptionProvider provider = null)
+        public static IApplicationBuilder UseCdrSwagger(this IApplicationBuilder builder, IApiVersionDescriptionProvider? provider = null)
         {
-            if (provider == null)
-            {
-                provider = builder.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>();
-            }
+            provider ??= builder.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>();
 
             builder.UseSwagger();
 
@@ -21,7 +18,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
                     // Configure swagger Ui for multiple versions of the API
                     string swaggerJsonBasePath = string.IsNullOrWhiteSpace(options.RoutePrefix) ? "." : "..";
 
-                    foreach (var groupName in provider.ApiVersionDescriptions?.Select(d => d.GroupName))
+                    foreach (var groupName in provider.ApiVersionDescriptions.Select(d => d.GroupName))
                     {
                         options.SwaggerEndpoint(
                             $"{swaggerJsonBasePath}/swagger/{groupName}/swagger.json",
@@ -44,7 +41,7 @@ namespace CdrAuthServer.Infrastructure.Extensions
 
                     options.SwaggerEndpoint(
                              $"{swaggerJsonBasePath}/swagger/v1/swagger.json",
-                            name);
+                             name);
                 });
 
             return builder;

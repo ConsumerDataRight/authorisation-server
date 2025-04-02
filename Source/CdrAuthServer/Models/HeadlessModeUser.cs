@@ -17,6 +17,6 @@ namespace CdrAuthServer.Models
         public string Subject { get; } = "ksmith";
 
         [JsonProperty("accounts")]
-        public string[] Accounts { get; } = { "123456", "987654" };
+        public string[] Accounts { get; } = ["123456", "987654"];
     }
 }

@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Authorisation;
+﻿using System.ComponentModel.DataAnnotations;
+using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Infrastructure;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -76,13 +76,13 @@ namespace CdrAuthServer.Controllers
             var result = await _clientRegistrationValidator.Validate(request, configOptions);
             if (!result.IsValid)
             {
-                return new BadRequestObjectResult(new Error(result.Error, result.ErrorDescription));
+                return new BadRequestObjectResult(new Error(result.Error ?? string.Empty, result.ErrorDescription));
             }
 
             // Check if the software product has already been registered.
             if (!configOptions.AllowDuplicateRegistrations)
             {
-                var existingClient = await _clientService.GetClientBySoftwareProductId(request.SoftwareStatement.SoftwareId);
+                var existingClient = await _clientService.GetClientBySoftwareProductId(request.SoftwareStatement?.SoftwareId ?? string.Empty);
                 if (existingClient != null)
                 {
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.DUPLICATE_REGISTRATION);
@@ -130,7 +130,7 @@ namespace CdrAuthServer.Controllers
             if (!result.IsValid)
             {
                 _logger.LogError("client registration validation failed with error:{Error} errordescription:{Desc}", clientIdResult.Error, clientIdResult.ErrorDescription);
-                return new BadRequestObjectResult(new Error(result.Error, result.ErrorDescription));
+                return new BadRequestObjectResult(new Error(result.Error ?? string.Empty, result.ErrorDescription));
             }
 
             var client = Map(request, clientId, configOptions);
@@ -190,34 +190,32 @@ namespace CdrAuthServer.Controllers
             var client = new Client()
             {
                 ClientId = clientId,
-                ClientName = request.SoftwareStatement.ClientName ?? string.Empty,
-                ClientDescription = request.SoftwareStatement.ClientDescription ?? string.Empty,
+                ClientName = request.SoftwareStatement?.ClientName ?? string.Empty,
+                ClientDescription = request.SoftwareStatement?.ClientDescription ?? string.Empty,
                 ApplicationType = request.ApplicationType ?? "web",
-                ClientUri = request.SoftwareStatement.ClientUri ?? string.Empty,
+                ClientUri = request.SoftwareStatement?.ClientUri ?? string.Empty,
                 GrantTypes = request.GrantTypes,
                 ResponseTypes = request.ResponseTypes,
-                RedirectUris = (request.RedirectUris == null || !request.RedirectUris.Any()) ? request.SoftwareStatement.RedirectUris : request.RedirectUris,
-                Scope = request.SoftwareStatement.Scope ?? "openid profile cdr:registration",
-                LegalEntityId = request.SoftwareStatement.LegalEntityId ?? string.Empty,
-                LegalEntityName = request.SoftwareStatement.LegalEntityName ?? string.Empty,
-                OrgId = request.SoftwareStatement.OrgId ?? string.Empty,
-                OrgName = request.SoftwareStatement.OrgName ?? string.Empty,
-                LogoUri = request.SoftwareStatement.LogoUri ?? string.Empty,
-                TosUri = request.SoftwareStatement.TosUri ?? string.Empty,
-                PolicyUri = request.SoftwareStatement.PolicyUri ?? string.Empty,
-                RecipientBaseUri = request.SoftwareStatement.RecipientBaseUri ?? string.Empty,
-                SectorIdentifierUri = request.SoftwareStatement.SectorIdentifierUri ?? null,
-                RevocationUri = request.SoftwareStatement.RevocationUri ?? string.Empty,
-                JwksUri = request.SoftwareStatement.JwksUri ?? string.Empty,
-                SoftwareId = request.SoftwareStatement.SoftwareId ?? string.Empty,
-                RequestObjectSigningAlg = request.RequestObjectSigningAlg ?? configOptions.RequestObjectSigningAlgValuesSupported.First(),
-                IdTokenEncryptedResponseAlg = request.IdTokenEncryptedResponseAlg,
-                IdTokenEncryptedResponseEnc = request.IdTokenEncryptedResponseEnc,
-                IdTokenSignedResponseAlg = request.IdTokenSignedResponseAlg ?? configOptions.IdTokenSigningAlgValuesSupported.First(),
-                TokenEndpointAuthMethod = request.TokenEndpointAuthMethod ?? configOptions.TokenEndpointAuthMethodsSupported.First(),
-                TokenEndpointAuthSigningAlg = request.TokenEndpointAuthSigningAlg ?? configOptions.TokenEndpointAuthSigningAlgValuesSupported.First(),
+                RedirectUris = (request.RedirectUris == null || !request.RedirectUris.Any()) ? (request.SoftwareStatement?.RedirectUris ?? []) : request.RedirectUris,
+                Scope = request.SoftwareStatement?.Scope ?? "openid profile cdr:registration",
+                LegalEntityId = request.SoftwareStatement?.LegalEntityId ?? string.Empty,
+                LegalEntityName = request.SoftwareStatement?.LegalEntityName ?? string.Empty,
+                OrgId = request.SoftwareStatement?.OrgId ?? string.Empty,
+                OrgName = request.SoftwareStatement?.OrgName ?? string.Empty,
+                LogoUri = request.SoftwareStatement?.LogoUri ?? string.Empty,
+                TosUri = request.SoftwareStatement?.TosUri ?? string.Empty,
+                PolicyUri = request.SoftwareStatement?.PolicyUri ?? string.Empty,
+                RecipientBaseUri = request.SoftwareStatement?.RecipientBaseUri ?? string.Empty,
+                SectorIdentifierUri = request.SoftwareStatement?.SectorIdentifierUri ?? null,
+                RevocationUri = request.SoftwareStatement?.RevocationUri ?? string.Empty,
+                JwksUri = request.SoftwareStatement?.JwksUri ?? string.Empty,
+                SoftwareId = request.SoftwareStatement?.SoftwareId ?? string.Empty,
+                RequestObjectSigningAlg = request.RequestObjectSigningAlg ?? (configOptions.RequestObjectSigningAlgValuesSupported != null ? configOptions.RequestObjectSigningAlgValuesSupported[0] : string.Empty),
+                IdTokenSignedResponseAlg = request.IdTokenSignedResponseAlg ?? (configOptions.IdTokenSigningAlgValuesSupported != null ? configOptions.IdTokenSigningAlgValuesSupported[0] : string.Empty),
+                TokenEndpointAuthMethod = request.TokenEndpointAuthMethod ?? (configOptions.TokenEndpointAuthMethodsSupported != null ? configOptions.TokenEndpointAuthMethodsSupported[0] : string.Empty),
+                TokenEndpointAuthSigningAlg = request.TokenEndpointAuthSigningAlg ?? (configOptions.TokenEndpointAuthSigningAlgValuesSupported != null ? configOptions.TokenEndpointAuthSigningAlgValuesSupported[0] : string.Empty),
                 SoftwareStatementJwt = request.SoftwareStatementJwt ?? string.Empty,
-                SoftwareRoles = request.SoftwareStatement.SoftwareRoles ?? string.Empty
+                SoftwareRoles = request.SoftwareStatement?.SoftwareRoles ?? string.Empty,
             };
 
             client.AuthorizationSignedResponseAlg = null;
@@ -232,8 +230,8 @@ namespace CdrAuthServer.Controllers
                 // If JARM encryption is supported.
                 if (configOptions.SupportJarmEncryption)
                 {
-                    client.AuthorizationEncryptedResponseAlg = String.IsNullOrEmpty(request.AuthorizationEncryptedResponseAlg) ? configOptions.AuthorizationEncryptionAlgValuesSupportedList.FirstOrDefault() : request.AuthorizationEncryptedResponseAlg;
-                    client.AuthorizationEncryptedResponseEnc = String.IsNullOrEmpty(request.AuthorizationEncryptedResponseEnc) ? configOptions.AuthorizationEncryptionEncValuesSupportedList.FirstOrDefault() : request.AuthorizationEncryptedResponseEnc;
+                    client.AuthorizationEncryptedResponseAlg = string.IsNullOrEmpty(request.AuthorizationEncryptedResponseAlg) ? configOptions.AuthorizationEncryptionAlgValuesSupportedList?[0] : request.AuthorizationEncryptedResponseAlg;
+                    client.AuthorizationEncryptedResponseEnc = string.IsNullOrEmpty(request.AuthorizationEncryptedResponseEnc) ? configOptions.AuthorizationEncryptionEncValuesSupportedList?[0] : request.AuthorizationEncryptedResponseEnc;
                 }
             }
 

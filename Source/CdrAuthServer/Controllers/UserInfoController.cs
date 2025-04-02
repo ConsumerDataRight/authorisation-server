@@ -50,7 +50,7 @@ namespace CdrAuthServer.Controllers
             }
 
             // Check software product status (if configured).
-            if (configOptions.CdrRegister.CheckSoftwareProductStatus)
+            if (configOptions.CdrRegister != null && configOptions.CdrRegister.CheckSoftwareProductStatus)
             {
                 var softwareProductId = client.SoftwareId;
                 var softwareProduct = await _cdrService.GetSoftwareProduct(softwareProductId);
@@ -59,6 +59,7 @@ namespace CdrAuthServer.Controllers
                     _logger.LogInformation("Software Product not found {SoftwareProductId}", softwareProductId);
                     return ErrorCatalogue.Catalogue().GetErrorResponse(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                 }
+
                 if (!softwareProduct.IsActive())
                 {
                     _logger.LogInformation("Software product status is removed - consents cannot be revoked {SoftwareProductId}", softwareProductId);
@@ -70,7 +71,7 @@ namespace CdrAuthServer.Controllers
             {
                 Audience = User.GetClientId() ?? string.Empty,
                 Issuer = User.GetIssuer() ?? string.Empty,
-                Subject = User.GetSubject() ?? string.Empty
+                Subject = User.GetSubject() ?? string.Empty,
             };
 
             if (configOptions.HeadlessMode)
@@ -84,11 +85,11 @@ namespace CdrAuthServer.Controllers
             }
             else
             {
-                var subjectId = User.GetSubject()
+                var subjectId = User?.GetSubject()?
                                     .DecryptSub(client, _config);
 
                 // Get customer login details from seed data file instead
-                var customer = await _customerService.Get(subjectId);
+                var customer = await _customerService.Get(subjectId ?? string.Empty);
                 userInfo.FamilyName = customer.FamilyName;
                 userInfo.GivenName = customer.GivenName;
                 userInfo.Name = customer.Name;

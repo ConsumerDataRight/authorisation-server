@@ -63,14 +63,13 @@ namespace CdrAuthServer.Validation
             }
 
             // 3. Validate the sector identifier uri
-            var sectorIdentifierResult = await ValidateSectorIdentifierUri(clientRegistrationRequest.SoftwareStatement.SectorIdentifierUri);
+            var sectorIdentifierResult = await ValidateSectorIdentifierUri(clientRegistrationRequest.SoftwareStatement?.SectorIdentifierUri);
             if (!sectorIdentifierResult.IsValid)
             {
                 _logger.LogError("Sector Identifier validation failed: {Error} {ErrorDescription}", sectorIdentifierResult.Error, sectorIdentifierResult.ErrorDescription);
                 return sectorIdentifierResult;
             }
 
-            //
             // Signature validation has been completed successfully.
             //
 
@@ -80,10 +79,10 @@ namespace CdrAuthServer.Validation
             CheckMandatory(clientRegistrationRequest.Exp, nameof(clientRegistrationRequest.Exp));
             CheckMandatory(clientRegistrationRequest.Jti, nameof(clientRegistrationRequest.Jti));
             MustEqual(clientRegistrationRequest.Aud, nameof(clientRegistrationRequest.Aud), configOptions.Issuer);
-            MustEqual(clientRegistrationRequest.Iss, nameof(clientRegistrationRequest.Iss), clientRegistrationRequest.SoftwareStatement.SoftwareId!);
-            MustBeOne(clientRegistrationRequest.TokenEndpointAuthSigningAlg, nameof(clientRegistrationRequest.TokenEndpointAuthSigningAlg), configOptions.TokenEndpointAuthSigningAlgValuesSupported!);
-            MustBeOne(clientRegistrationRequest.TokenEndpointAuthMethod, nameof(clientRegistrationRequest.TokenEndpointAuthMethod), configOptions.TokenEndpointAuthMethodsSupported!);
-            MustBeOne(clientRegistrationRequest.IdTokenSignedResponseAlg, nameof(clientRegistrationRequest.IdTokenSignedResponseAlg), configOptions.IdTokenSigningAlgValuesSupported!);
+            MustEqual(clientRegistrationRequest.Iss, nameof(clientRegistrationRequest.Iss), clientRegistrationRequest.SoftwareStatement?.SoftwareId!);
+            _ = MustBeOne(clientRegistrationRequest.TokenEndpointAuthSigningAlg, nameof(clientRegistrationRequest.TokenEndpointAuthSigningAlg), configOptions.TokenEndpointAuthSigningAlgValuesSupported!);
+            _ = MustBeOne(clientRegistrationRequest.TokenEndpointAuthMethod, nameof(clientRegistrationRequest.TokenEndpointAuthMethod), configOptions.TokenEndpointAuthMethodsSupported!);
+            _ = MustBeOne(clientRegistrationRequest.IdTokenSignedResponseAlg, nameof(clientRegistrationRequest.IdTokenSignedResponseAlg), configOptions.IdTokenSigningAlgValuesSupported!);
             MustContain(clientRegistrationRequest.GrantTypes, nameof(clientRegistrationRequest.GrantTypes), "authorization_code");
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.RequestObjectSigningAlg))
@@ -107,12 +106,6 @@ namespace CdrAuthServer.Validation
                 {
                     MustBeOne(clientRegistrationRequest.AuthorizationSignedResponseAlg, nameof(clientRegistrationRequest.AuthorizationSignedResponseAlg), configOptions.AuthorizationSigningAlgValuesSupported!);
                 }
-
-                if (clientRegistrationRequest.ResponseTypes.Contains(ResponseTypes.Hybrid))
-                {
-                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseAlg, nameof(clientRegistrationRequest.IdTokenEncryptedResponseAlg), configOptions.IdTokenEncryptionAlgValuesSupported!);
-                    MustBeOne(clientRegistrationRequest.IdTokenEncryptedResponseEnc, nameof(clientRegistrationRequest.IdTokenEncryptedResponseEnc), configOptions.IdTokenEncryptionEncValuesSupported!);
-                }
             }
 
             if (!string.IsNullOrEmpty(clientRegistrationRequest.AuthorizationEncryptedResponseEnc))
@@ -134,13 +127,13 @@ namespace CdrAuthServer.Validation
             // redirect_uri validation.
             foreach (var redirectUri in clientRegistrationRequest.RedirectUris)
             {
-                if (!clientRegistrationRequest.SoftwareStatement.RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase))
+                if (clientRegistrationRequest.SoftwareStatement != null && !clientRegistrationRequest.SoftwareStatement.RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase))
                 {
                     _logger.LogError("redirect_uri: {RedirectUri} is not present in SoftwareStatement", redirectUri);
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REGISTRATION_REQUEST_INVALID_REDIRECT_URI, redirectUri);
                 }
 
-                if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var _))
+                if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out _))
                 {
                     _logger.LogError("malformed redirect_uri: {RedirectUri}", redirectUri);
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_REDIRECT_URI);
@@ -158,7 +151,7 @@ namespace CdrAuthServer.Validation
 
         private bool CheckMandatory(object? propValue, string propName)
         {
-            if (propValue == null || (propValue as string) == "")
+            if (propValue == null || (propValue as string) == string.Empty)
             {
                 _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MissingClaim, GetDisplayName(propName)), [propName]));
                 return false;
@@ -178,7 +171,7 @@ namespace CdrAuthServer.Validation
             {
                 if (string.IsNullOrEmpty(customErrorMessage))
                 {
-                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustBeOne, GetDisplayName(propName), String.Join(",", expectedValues)), [propName]));
+                    _validationResults.Add(new System.ComponentModel.DataAnnotations.ValidationResult(string.Format(Constants.ValidationErrorMessages.MustBeOne, GetDisplayName(propName), string.Join(",", expectedValues)), [propName]));
                 }
                 else
                 {
@@ -215,7 +208,7 @@ namespace CdrAuthServer.Validation
         private async Task<ValidationResult> ValidateRequestSignature(ClientRegistrationRequest request, ConfigurationOptions configOptions)
         {
             // Check the Data Recipient's JWKS from the Software Statement.
-            if (string.IsNullOrEmpty(request.SoftwareStatement.JwksUri) || !Uri.IsWellFormedUriString(request.SoftwareStatement.JwksUri, UriKind.Absolute))
+            if (string.IsNullOrEmpty(request.SoftwareStatement?.JwksUri) || !Uri.IsWellFormedUriString(request.SoftwareStatement.JwksUri, UriKind.Absolute))
             {
                 _logger.LogError("Invalid jwks_uri in SSA");
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_JWKS_URI);
@@ -338,22 +331,21 @@ namespace CdrAuthServer.Validation
             return ValidationResult.Pass();
         }
 
-        private async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet> GetSsaJwks(ClientRegistrationRequest clientRegistrationRequest)
+        private async Task<Microsoft.IdentityModel.Tokens.JsonWebKeySet?> GetSsaJwks(ClientRegistrationRequest clientRegistrationRequest)
         {
             // Remove this logic once CTS has removed the use of the x-cts-ssa-publickey header for passing SSA JWKS public key.
             // Check if the SSA JWKS public key was passed as a http header (CTS).
-            var ssaJwksHeaderName = _configuration.GetValue<string>("CdrAuthServer:RegisterSsaPublicKeyHttpHeaderName", "");
+            var ssaJwksHeaderName = _configuration.GetValue<string>("CdrAuthServer:RegisterSsaPublicKeyHttpHeaderName", string.Empty);
             if (!string.IsNullOrEmpty(ssaJwksHeaderName)
                 && _httpContextAccessor != null
                 && _httpContextAccessor.HttpContext != null
                 && _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(ssaJwksHeaderName, out StringValues publicKey)
                 && !string.IsNullOrEmpty(publicKey))
             {
-               
                 _logger.LogInformation("SSA JWKS found in http header {Header}: {Value}", ssaJwksHeaderName, publicKey);
 
                 var jwk = new Microsoft.IdentityModel.Tokens.JsonWebKey(publicKey);
-                if (jwk.Kid == clientRegistrationRequest.SoftwareStatement.Header.Kid)
+                if (jwk.Kid == clientRegistrationRequest.SoftwareStatement?.Header.Kid)
                 {
                     var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet();
                     jwks.Keys.Add(jwk);
@@ -364,7 +356,7 @@ namespace CdrAuthServer.Validation
             // Retrieve the JWKS from the Register's SSA JWKS endpoint.
             var configOptions = _configuration.GetConfigurationOptions();
             _logger.LogInformation("Retrieving SSA JWKS from Register {Uri}...", configOptions?.CdrRegister?.SsaJwksUri);
-            return await _jwksService.GetJwks(new Uri(configOptions?.CdrRegister?.SsaJwksUri ?? "about:blank"), clientRegistrationRequest.SoftwareStatement.Header.Kid);
+            return await _jwksService.GetJwks(new Uri(configOptions?.CdrRegister?.SsaJwksUri ?? "about:blank"), clientRegistrationRequest.SoftwareStatement?.Header.Kid ?? string.Empty);
         }
 
         private static string GetDisplayName(string propName)
@@ -380,7 +372,7 @@ namespace CdrAuthServer.Validation
 
             if (displayAttr != null)
             {
-                return displayAttr.Name ?? String.Empty;
+                return displayAttr.Name ?? string.Empty;
             }
 
             return propName;

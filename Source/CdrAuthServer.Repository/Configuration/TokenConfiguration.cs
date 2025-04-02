@@ -8,7 +8,7 @@
     {
         public void Configure(EntityTypeBuilder<Token> builder)
         {
-           builder.HasKey(x => x.Id);
+            builder.HasKey(x => x.Id);
         }
     }
 }

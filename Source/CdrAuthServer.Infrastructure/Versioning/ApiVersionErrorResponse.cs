@@ -42,7 +42,7 @@ namespace CdrAuthServer.Infrastructure.Versioning
                 statusCode = StatusCodes.Status500InternalServerError;
             }
 
-            _logger.LogError("{Detail}",errorList.Errors[0].Detail);
+            _logger.LogError("{Detail}", errorList.Errors[0].Detail);
 
             return new ObjectResult(errorList) { StatusCode = statusCode };
         }

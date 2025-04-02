@@ -20,6 +20,7 @@ COPY ./ .
 
 FROM build AS publish
 COPY ./Directory.Build.props /app/Directory.Build.props
+COPY ./.editorconfig /app/.editorconfig
 COPY ./CdrAuthServer.Domain/. /app/CdrAuthServer.Domain
 COPY ./CdrAuthServer.Repository/. /app/CdrAuthServer.Repository
 COPY ./CdrAuthServer/. /app/CdrAuthServer

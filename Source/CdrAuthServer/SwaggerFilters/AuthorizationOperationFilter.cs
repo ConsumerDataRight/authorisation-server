@@ -16,7 +16,7 @@ namespace CdrAuthServer.SwaggerFilters
         {
             var typeList = new List<Type>() { typeof(PolicyAuthorizeAttribute), typeof(ValidateMtlsAttribute), typeof(ValidateClientAssertionAttribute), typeof(ServiceFilterAttribute) };
             var relAtts = AttributeExtensions.GetAttributes(typeList, context.MethodInfo, true);
-            
+
             if (relAtts.Any())
             {
                 var authAtt = (PolicyAuthorizeAttribute?)relAtts.FirstOrDefault(attr => attr.GetType() == typeof(PolicyAuthorizeAttribute));
@@ -27,8 +27,8 @@ namespace CdrAuthServer.SwaggerFilters
 
                 if (authAtt != null)
                 {
-                    //Get the details of the policy
-                    var authPolicy = authAtt.policy.GetPolicy();
+                    // Get the details of the policy
+                    var authPolicy = authAtt.PolicyName.GetPolicy();
 
                     if (authPolicy != null)
                     {
@@ -36,14 +36,17 @@ namespace CdrAuthServer.SwaggerFilters
                         {
                             openApiObj["hasHolderOfKeyRequirement"] = new OpenApiBoolean(true);
                         }
+
                         if (authPolicy.HasAccessTokenRequirement)
                         {
                             openApiObj["hasAccessTokenRequirement"] = new OpenApiBoolean(true);
                         }
+
                         if (authPolicy.HasMtlsRequirement)
                         {
                             openApiObj["hasMtlsRequirement"] = new OpenApiBoolean(true);
                         }
+
                         if (!authPolicy.ScopeRequirement.IsNullOrEmpty())
                         {
                             openApiObj["scopeRequirement"] = new OpenApiString(authPolicy.ScopeRequirement);
@@ -51,7 +54,8 @@ namespace CdrAuthServer.SwaggerFilters
                     }
                 }
 
-                if (mtlsFilterAttr != null)  //Make MTLS requirement checks the same
+                // Make MTLS requirement checks the same
+                if (mtlsFilterAttr != null)
                 {
                     openApiObj["hasValidateMtlsAttribute"] = new OpenApiBoolean(true);
                 }

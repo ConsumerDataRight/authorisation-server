@@ -20,8 +20,9 @@ namespace CdrAuthServer
 
         public override bool CanRead(InputFormatterContext context)
         {
-            return context.HttpContext.Request.ContentType.Equals("application/jwt", StringComparison.OrdinalIgnoreCase)
-                || context.HttpContext.Request.ContentType.StartsWith("application/jwt;");
+            return context.HttpContext.Request.ContentType != null &&
+                (context.HttpContext.Request.ContentType.Equals("application/jwt", StringComparison.OrdinalIgnoreCase)
+                || context.HttpContext.Request.ContentType.StartsWith("application/jwt;"));
         }
 
         public override async Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context, Encoding encoding)
@@ -47,7 +48,7 @@ namespace CdrAuthServer
 
                 try
                 {
-                    var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt);
+                    var softwareStatement = new SoftwareStatement(clientRegistrationRequest.SoftwareStatementJwt ?? string.Empty);
 
                     _ = softwareStatement.ValidFrom;
                     _ = softwareStatement.ValidTo;
@@ -57,7 +58,7 @@ namespace CdrAuthServer
                 catch (Exception ex)
                 {
                     // Cant log actual Exception as Azure AppService Logging crashes in some instances
-                    logger?.LogError("Error processing the SSA JWT {ExceptionMessage} {StackTrace}", ex.Message, ex.StackTrace);
+                    logger?.LogError(ex, "Error processing the SSA JWT {ExceptionMessage} {StackTrace}", ex.Message, ex.StackTrace);
                     context.ModelState.AddModelError(Constants.ClientMetadata.SoftwareStatement, "SSA is an invalid JWT");
                     return await InputFormatterResult.FailureAsync();
                 }
@@ -65,7 +66,7 @@ namespace CdrAuthServer
             catch (Exception ex)
             {
                 // Cant log actual Exception as Azure AppService Logging crashes in some instances
-                logger?.LogError("Error processing the Request JWT {ExceptionMessage} {StackTrace}", ex.Message, ex.StackTrace);
+                logger?.LogError(ex, "Error processing the Request JWT {ExceptionMessage} {StackTrace}", ex.Message, ex.StackTrace);
                 return await InputFormatterResult.FailureAsync();
             }
 

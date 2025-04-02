@@ -40,8 +40,8 @@ namespace CdrAuthServer.Models
         [JsonProperty("scopes")]
         public IEnumerable<string> Scopes
         {
-            get 
-            { 
+            get
+            {
                 if (string.IsNullOrEmpty(Scope))
                 {
                     return Array.Empty<string>();
@@ -50,35 +50,5 @@ namespace CdrAuthServer.Models
                 return Scope.Split(' ').Distinct().OrderBy(x => x);
             }
         }
-    }
-
-    public class AuthorizeClaims
-    {
-        [JsonProperty(PropertyName = "cdr_arrangement_id")]
-        public string CdrArrangementId { get; set; } = string.Empty;
-
-        [JsonProperty(PropertyName = "sharing_duration")]
-        public int? SharingDuration { get; set; }
-
-        [JsonProperty(PropertyName = "id_token", Required = Required.Always)]
-        public IdToken IdToken { get; set; }
-    }
-
-    public class IdToken
-    {
-        [JsonProperty(PropertyName = "acr", Required = Required.Always)]
-        public Acr Acr { get; set; }
-    }
-
-    public class Acr
-    {
-        [JsonProperty(PropertyName = "essential")]
-        public bool Essential { get; set; }
-
-        [JsonProperty(PropertyName = "values")]
-        public string[] Values { get; set; } = [];
-
-        [JsonProperty(PropertyName = "value")]
-        public string Value { get; set; } = string.Empty;
     }
 }

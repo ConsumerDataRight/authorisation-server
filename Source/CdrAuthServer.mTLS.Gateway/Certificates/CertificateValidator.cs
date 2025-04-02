@@ -25,8 +25,14 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
                 throw new ArgumentNullException(nameof(clientCert));
             }
 
+            var rootCertLocation = _config.GetValue<string>("Certificates:RootCACertificate:Location");
+            if (string.IsNullOrEmpty(rootCertLocation))
+            {
+                throw new InvalidOperationException("Root certificate location is not configured.");
+            }
+
             // Validate that the certificate has been issued by the Mock CDR CA.
-            var rootCACertificate = new X509Certificate2(_config.GetValue<string>("Certificates:RootCACertificate:Location"));
+            var rootCACertificate = new X509Certificate2(rootCertLocation);
             _logger.LogDebug("Validating client certificate using: {RootCACertificate}", rootCACertificate);
 
             var ch = new X509Chain();
@@ -48,8 +54,8 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
 
             if (ch.ChainStatus.Any())
             {
-                _logger.LogError("An error occurred validating the client certificate: {Status}", ch.ChainStatus.First().StatusInformation);
-                throw new ClientCertificateException(ch.ChainStatus.First().StatusInformation);
+                _logger.LogError("An error occurred validating the client certificate: {Status}", ch.ChainStatus[0].StatusInformation);
+                throw new ClientCertificateException(ch.ChainStatus[0].StatusInformation);
             }
         }
     }

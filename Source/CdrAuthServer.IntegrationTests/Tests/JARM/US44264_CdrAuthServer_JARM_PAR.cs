@@ -1,4 +1,4 @@
-// #define DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
+﻿// #define DEBUG_WRITE_EXPECTED_AND_ACTUAL_JSON
 
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
@@ -44,19 +44,21 @@ namespace CdrAuthServer.IntegrationTests.JARM
         public class PARResponse
         {
             public string? request_uri { get; set; }
+
             public string? expires_in { get; set; }
         }
 
         public delegate void TestPOSTDelegate(HttpResponseMessage responseMessage);
+
         public async Task TestPOST(
             ResponseType? responseType = null,
-            ResponseMode? responseMode = ResponseMode.Fragment,
+            ResponseMode? responseMode = ResponseMode.Jwt,
             string? clientId = null,
             string? clientAssertionType = Constants.ClientAssertionType,
             string? clientAssertion = null,
             TestPOSTDelegate? testPostDelegate = null)
         {
-            // Arrange 
+            // Arrange
 
             // Act
             var responseMessage = await _dataHolderParService.SendRequest(
@@ -65,8 +67,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 responseMode: responseMode,
                 clientId: clientId,
                 clientAssertionType: clientAssertionType,
-                clientAssertion: clientAssertion
-            );
+                clientAssertion: clientAssertion);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -79,9 +80,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
         }
 
         [Theory]
-        [InlineData(ResponseType.CodeIdToken, ResponseMode.Fragment)] //Hybrid mode
-        [InlineData(ResponseType.CodeIdToken, ResponseMode.FormPost)] //Hybrid mode
-        [InlineData(ResponseType.Code, ResponseMode.Jwt)] //ACF mode
+        [InlineData(ResponseType.Code, ResponseMode.Jwt)] // ACF mode
         public async Task AC01_MDHPAR_AC01_HappyPath_ShouldRespondWith_201Created(ResponseType responseType, ResponseMode responseMode)
         {
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(responseType), responseType, nameof(responseMode), responseMode);
@@ -92,8 +91,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
             var response = await _dataHolderParService.SendRequest(
                 scope: _options.SCOPE,
                 responseType: responseType,
-                responseMode: responseMode
-            );
+                responseMode: responseMode);
 
             var responseText = await response.Content.ReadAsStringAsync();
 
@@ -115,13 +113,13 @@ namespace CdrAuthServer.IntegrationTests.JARM
         }
 
         // [Fact]
-        public async Task AC02_MDHPAR_AC04_HappyPath_AmendExistingArrangement_ShouldRespondWith_200OK()
+        public Task AC02_MDHPAR_AC04_HappyPath_AmendExistingArrangement_ShouldRespondWith_200OK()
         {
             throw new NotImplementedException();
         }
 
         // [Fact]
-        public async Task AC03_MDHPAR_AC06_WithUnownedArrangementId_ShouldRespondWith_400BadRequest()
+        public Task AC03_MDHPAR_AC06_WithUnownedArrangementId_ShouldRespondWith_400BadRequest()
         {
             throw new NotImplementedException();
         }
@@ -129,12 +127,13 @@ namespace CdrAuthServer.IntegrationTests.JARM
         [Fact]
         public async Task AC05_MDHPAR_AC08_WithUnknownClientId_ShouldRespondWith_400BadRequest()
         {
-            //Arrange
+            // Arrange
             var expectedError = new ClientNotFoundException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
-                //grantType: "client_credentials",
+
+                // grantType: "client_credentials",
                 clientId: "foo",
                 clientAssertionType: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 testPostDelegate: async (response) =>
@@ -146,12 +145,13 @@ namespace CdrAuthServer.IntegrationTests.JARM
         [Fact]
         public async Task AC06_MDHPAR_AC09_WithInvalidClientAssertion_ShouldRespondWith_400BadRequest()
         {
-            //Arrange
+            // Arrange
             var expectedError = new InvalidClientAssertionTypeException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
-                //grantType: "client_credentials",
+
+                // grantType: "client_credentials",
                 clientId: _options.LastRegisteredClientId,
                 clientAssertionType: "foo",
                 testPostDelegate: async (response) =>
@@ -163,12 +163,13 @@ namespace CdrAuthServer.IntegrationTests.JARM
         [Fact]
         public async Task AC07_MDHPAR_AC10_WithInvalidClientAssertion_ShouldRespondWith_400BadRequest()
         {
-            //Arrange
+            // Arrange
             var expectedError = new InvalidClientAssertionFormatException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
-                //grantType: "client_credentials",
+
+                // grantType: "client_credentials",
                 clientId: _options.LastRegisteredClientId,
                 clientAssertionType: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 clientAssertion: "foo",
@@ -179,35 +180,12 @@ namespace CdrAuthServer.IntegrationTests.JARM
         }
 
         // [Fact]
-        public async Task AC08_MDHPAR_AC11_WithClientAssertionAssociatedWithDifferentClientId_ShouldRespondWith_400BadRequest()
+        public Task AC08_MDHPAR_AC11_WithClientAssertionAssociatedWithDifferentClientId_ShouldRespondWith_400BadRequest()
         {
             throw new NotImplementedException();
         }
 
         [Theory]
-        [InlineData(ResponseMode.TestOnlyFoo)]
-        [InlineData(ResponseMode.QueryJwt)]
-        [InlineData(ResponseMode.FragmentJwt)]
-        [InlineData(ResponseMode.FormPostJwt)]
-        public async Task AC09_MDHPAR_AC12_HF_WithInvalidResponseMode_ShouldRespondWith_400BadRequest(ResponseMode responseMode)
-        {
-            Log.Information("Running test with Params: {P1}={V1}.", nameof(responseMode), responseMode);
-
-            //Arrange
-            var expectedError = new UnsupportedResponseModeException();
-
-            //Act-Assert
-            await TestPOST(
-                responseType: ResponseType.CodeIdToken,
-                responseMode: responseMode,
-                testPostDelegate: async (response) =>
-                {
-                    await Assertions.AssertErrorAsync(response, expectedError);
-                });
-        }
-
-        [Theory]
-        [InlineData(null)]
         [InlineData(ResponseMode.TestOnlyFoo)]
         [InlineData(ResponseMode.Query)]
         [InlineData(ResponseMode.QueryJwt)]
@@ -217,10 +195,10 @@ namespace CdrAuthServer.IntegrationTests.JARM
         {
             Log.Information("Running test with Params: {P1}={V1}.", nameof(responseMode), responseMode);
 
-            //Arrange
+            // Arrange
             var expectedError = new UnsupportedResponseModeException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
                 responseType: ResponseType.Code,
                 responseMode: responseMode,
@@ -230,20 +208,16 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 });
         }
 
-        [Theory]
-        [InlineData(ResponseMode.Fragment)]
-        [InlineData(ResponseMode.FormPost)]
-        public async Task AC10_MDHPAR_AC13_ACF_WithInvalidResponseMode_ShouldRespondWith_400BadRequest(ResponseMode responseMode)
+        [Fact]
+        public async Task AC10_MDHPAR_AC13b_ACF_WithMissingResponseMode_ShouldRespondWith_400BadRequest()
         {
-            Log.Information("Running test with Params: {P1}={V1}.", nameof(responseMode), responseMode);
+            // Arrange
+            var expectedError = new MissingResponseModeException();
 
-            //Arrange
-            var expectedError = new InvalidResponseModeForResponseTypeException();
-
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
                 responseType: ResponseType.Code,
-                responseMode: responseMode,
+                responseMode: null,
                 testPostDelegate: async (response) =>
                 {
                     await Assertions.AssertErrorAsync(response, expectedError);
@@ -251,6 +225,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
         }
 
         [Theory]
+        [InlineData(ResponseType.CodeIdToken)]
         [InlineData(ResponseType.TestOnlyFoo)]
         [InlineData(ResponseType.TestOnlyToken)]
         [InlineData(ResponseType.TestOnlyCodeToken)]
@@ -262,10 +237,10 @@ namespace CdrAuthServer.IntegrationTests.JARM
         {
             Log.Information("Running test with Params: {P1}={V1}.", nameof(responseType), responseType);
 
-            //Arrange
+            // Arrange
             var expectedError = new UnsupportedResponseTypeException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
                 responseType: responseType,
                 responseMode: ResponseMode.Fragment,
@@ -275,37 +250,17 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 });
         }
 
-        //TODO: Missing test for AC14
-
+        // TODO: Missing test for AC14
         [Fact]
         public async Task AC15_MDHPAR_AC16_WithMissingResponseType_ShouldRespondWith_400BadRequest()
         {
-            //Arrange
+            // Arrange
             var expectedError = new MissingResponseTypeException();
 
-            //Act-Assert
+            // Act-Assert
             await TestPOST(
                 responseType: null,
                 responseMode: ResponseMode.Fragment,
-                testPostDelegate: async (response) =>
-                {
-                    await Assertions.AssertErrorAsync(response, expectedError);
-                });
-        }
-
-        [Theory]
-        [InlineData(ResponseMode.Jwt)]
-        public async Task AC16_MDHPAR_AC17_HF_WithInvalidResponseMode_ShouldRespondWith_400BadRequest(ResponseMode responseMode)
-        {
-            Log.Information("Running test with Params: {P1}={V1}.", nameof(responseMode), responseMode);
-
-            //Arrange
-            var expectedError = new InvalidResponseModeForResponseTypeException();
-
-            //Act-Assert
-            await TestPOST(
-                responseType: ResponseType.CodeIdToken,
-                responseMode: responseMode,
                 testPostDelegate: async (response) =>
                 {
                     await Assertions.AssertErrorAsync(response, expectedError);

@@ -1,8 +1,8 @@
-﻿using CdrAuthServer.Extensions;
+﻿using System.IdentityModel.Tokens.Jwt;
+using CdrAuthServer.Extensions;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -40,6 +40,7 @@ namespace CdrAuthServer.Controllers
             if (refreshTokenGrant != null)
             {
                 _logger.LogInformation("Revoked the refresh token by removing the refresh token grant for clientId:{Id}", clientId);
+
                 // Revoke the refresh token by removing the refresh token grant.
                 await _grantService.Delete(clientId, GrantTypes.RefreshToken, token);
                 return Ok();
@@ -67,8 +68,13 @@ namespace CdrAuthServer.Controllers
 
                     if (clientId != null && clientId.Equals(clientIdFromAccessToken, StringComparison.OrdinalIgnoreCase))
                     {
-                        _logger.LogDebug("Revoking access token: {token}", token);
-                        await _tokenService.AddToBlacklist(securityToken.Claims.GetClaimValue(ClaimNames.JwtId));
+                        _logger.LogDebug("Revoking access token: {Token}", token);
+                        var cliamValue = securityToken.Claims.GetClaimValue(ClaimNames.JwtId);
+
+                        if (cliamValue != null)
+                        {
+                            await _tokenService.AddToBlacklist(cliamValue);
+                        }
 
                         return Ok();
                     }
@@ -76,12 +82,11 @@ namespace CdrAuthServer.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while revoking the access token: {token}", token);
+                _logger.LogError(ex, "An error occurred while revoking the access token: {Token}", token);
             }
 
             // Always return 200 OK.
             return Ok();
         }
-
     }
 }

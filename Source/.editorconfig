@@ -1,0 +1,548 @@
+# To learn more about .editorconfig see https://aka.ms/editorconfigdocs
+###############################
+# Core EditorConfig Options   #
+###############################
+# All files
+[*]
+indent_style = space
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:silent
+dotnet_style_prefer_auto_properties = true:silent
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+dotnet_style_explicit_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_compound_assignment = true:suggestion
+dotnet_style_prefer_simplified_interpolation = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+tab_width = 4
+indent_size = 4
+end_of_line = crlf
+# Code files
+[*.{cs,csx}]
+indent_size = 4
+insert_final_newline = true
+charset = utf-8-bom
+###############################
+# .NET Coding Conventions     #
+###############################
+[*.{cs}]
+# Organize usings
+dotnet_sort_system_directives_first = true
+# this. preferences
+dotnet_style_qualification_for_field = false:silent
+dotnet_style_qualification_for_property = false:silent
+dotnet_style_qualification_for_method = false:silent
+dotnet_style_qualification_for_event = false:silent
+# Language keywords vs BCL types preferences
+dotnet_style_predefined_type_for_locals_parameters_members = true:silent
+dotnet_style_predefined_type_for_member_access = true:silent
+# Parentheses preferences
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
+# Modifier preferences
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
+dotnet_style_readonly_field = true:suggestion
+# Expression-level preferences
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_explicit_tuple_names = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:silent
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_auto_properties = true:silent
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+###############################
+# Naming Conventions          #
+###############################
+# Style Definitions
+dotnet_naming_style.pascal_case_style.capitalization             = pascal_case
+# Use PascalCase for constant fields  
+dotnet_naming_rule.constant_fields_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.constant_fields_should_be_pascal_case.symbols  = constant_fields
+dotnet_naming_rule.constant_fields_should_be_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.constant_fields.applicable_kinds            = field
+dotnet_naming_symbols.constant_fields.applicable_accessibilities  = *
+dotnet_naming_symbols.constant_fields.required_modifiers          = const
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1310.severity = none
+###############################
+# C# Coding Conventions       #
+###############################
+[*.cs]
+# var preferences
+csharp_style_var_for_built_in_types = true:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_style_var_elsewhere = true:silent
+# Expression-bodied members
+csharp_style_expression_bodied_methods = false:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_operators = false:silent
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_indexers = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+# Pattern matching preferences
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+# Null-checking preferences
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+# Modifier preferences
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+# Expression-level preferences
+csharp_prefer_braces = true:silent
+csharp_style_deconstructed_variable_declaration = true:suggestion
+csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_pattern_local_over_anonymous_function = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+###############################
+# C# Formatting Rules         #
+###############################
+# New line preferences
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+# Indentation preferences
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = flush_left
+# Space preferences
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+# Wrapping preferences
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+csharp_using_directive_placement = outside_namespace:silent
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_namespace_declarations = block_scoped:silent
+csharp_style_prefer_method_group_conversion = true:silent
+csharp_style_prefer_top_level_statements = true:silent
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_local_functions = false:silent
+
+#Readability Rules
+
+#A call to an instance member of the local class or a base class is not prefixed with 'this.'
+dotnet_diagnostic.SA1101.severity = none
+
+#The parameter spans multiple lines
+dotnet_diagnostic.SA1118.severity = none
+
+#Spacing Rules
+dotnet_diagnostic.SA1010.severity = none
+
+
+#Documentation Rules
+
+# SA1600: Elements should be documented
+dotnet_diagnostic.SA1600.severity = none
+
+#file header is missing
+dotnet_diagnostic.SA1633.severity = none
+
+#Enumeration items should be documented
+dotnet_diagnostic.SA1602.severity = none
+
+# SA1623: summary text should begin with: 'Gets or sets'
+dotnet_diagnostic.SA1623.severity = none
+
+# documentation for parameter 'cdrArrangementId' is missing
+dotnet_diagnostic.SA1611.severity = none
+
+# Parameter '' has no matching param tag in the XML comment
+dotnet_diagnostic.CS1591.severity = none
+
+# Element return value should be documented
+dotnet_diagnostic.SA1615.severity = none
+
+#parameter has no matching tag in xml
+dotnet_diagnostic.CS1573.severity = none
+
+
+#Ordering Rules
+
+#static members should appear before non-static members
+dotnet_diagnostic.SA1204.severity = none
+
+# public members should come before private
+dotnet_diagnostic.SA1202.severity = none
+
+# 'public' members should come before 'private' members
+dotnet_diagnostic.SA1200.severity = none
+
+# using directive ordering
+dotnet_diagnostic.SA1208.severity = none
+
+# field should not follow class
+dotnet_diagnostic.SA1201.severity = none
+
+#Maintainability
+
+# S2325: Methods and properties that don't access instance data should be static
+dotnet_diagnostic.S2325.severity = none
+
+[ClientClaims.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+[AuthorizationRequestObject.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+[*Client.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+[DataRecipientRequest.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+[Introspection.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+[ClientAssertionValidatorTests.{cs}]
+# CS8618: Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+dotnet_diagnostic.CS8618.severity = silent
+
+
+[US12962_CDRAuthServer_OIDC_JWKS.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+
+[US15221_US12969_US15584_CdrAuthServer_Registration_POST.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+
+[US12964_CDRAuthServer_OIDC_JWKS.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.S1144.severity = silent
+
+[US12962_CdrAuthServer_OIDC_Configuration.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+
+[US44264_CdrAuthServer_JARM_OIDC.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.S1144.severity = silent
+
+[AuthorizationService.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+
+[DataHolderCDRArrangementRevocationService.{cs}]
+# CS8602: Dereference of a possibly null reference
+dotnet_diagnostic.CS8602.severity = silent
+
+[US44264_CdrAuthServer_JARM_Authorise.{cs}]
+# CS0649: never assigned and will always have default value
+dotnet_diagnostic.CS0649.severity = silent
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+
+[US12678_CdrAuthServer_Authorisation.{cs}]
+# CS0649: never assigned and will always have default value
+dotnet_diagnostic.CS0649.severity = silent
+dotnet_diagnostic.xUnit1026.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+dotnet_diagnostic.SA1210.severity = silent
+
+[US17652_CdrAuthServer_ArrangementRevocation.{cs}]
+dotnet_diagnostic.CS0649.severity = silent
+dotnet_diagnostic.CS8600.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+
+[DataHolderAccessToken.{cs}]
+dotnet_diagnostic.CS8601.severity = silent
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.CS8603.severity = silent
+
+[DataHolderCDRArrangementRevocationService.{cs}]
+dotnet_diagnostic.CS8601.severity = silent
+
+[US44264_CdrAuthServer_JARM_PAR.{cs}]
+dotnet_diagnostic.CS8604.severity = silent
+dotnet_diagnostic.xUnit1013.severity = silent
+
+[US12963_CdrAuthServer_Token.{cs}]
+dotnet_diagnostic.CS8600.severity = silent
+dotnet_diagnostic.CS8601.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+
+[US12968_CdrAuthServer_PAR.{cs}]
+dotnet_diagnostic.CS8625.severity = silent
+dotnet_diagnostic.CS8619.severity = silent
+
+[US15221_US12969_US15584_CdrAuthServer_Registration_POST.{cs}]
+dotnet_diagnostic.CS8604.severity = silent
+
+[US15221_US12969_US15586_CdrAuthServer_Registration_GET.{cs}]
+dotnet_diagnostic.CS8601.severity = silent
+
+[US18469_CdrAuthServer_TokenRevocation.{cs}]
+dotnet_diagnostic.CS8604.severity = silent
+
+[ClientRegistrationValidatorTests.{cs}]
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.CS8604.severity = silent
+dotnet_diagnostic.CS8620.severity = silent
+
+[JwtValidatorTest.{cs}]
+dotnet_diagnostic.CS8604.severity = silent
+dotnet_diagnostic.CS8602.severity = silent
+
+[StringExtensionsTests.{cs}]
+dotnet_diagnostic.CS8600.severity = silent
+
+[ClientAssertionValidatorTests.{cs}]
+dotnet_diagnostic.CS8601.severity = silent
+dotnet_diagnostic.CS8602.severity = silent
+dotnet_diagnostic.CS8620.severity = silent
+
+
+[ResourceController.{cs}]
+dotnet_diagnostic.S6932.severity = silent
+dotnet_diagnostic.S6934.severity = silent
+
+[ClientRegistrationResponse.{cs}]
+dotnet_diagnostic.S2094.severity = silent
+
+[ResourceController.{cs}]
+dotnet_diagnostic.S1135.severity = silent
+
+[*Controller.{cs}]
+dotnet_diagnostic.S6934.severity = silent
+dotnet_diagnostic.S6931.severity = silent
+
+[AesEncryptor.{cs}]
+dotnet_diagnostic.S3329.severity = silent
+
+[GetDataRecipientsFunction.{cs}]
+dotnet_diagnostic.S4830.severity = silent
+
+[CertificateValidator.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[ClientCertificateException.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[WebServerExtensions.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[ICertificateValidator.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[Pkce.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[JsonWebKey.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[JsonWebKeySet.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+
+[GetDataRecipients_IntegrationTestsHelper.{cs}]
+dotnet_diagnostic.SA1513.severity = silent
+dotnet_diagnostic.SA1028.severity = silent
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.SA1516.severity = silent
+dotnet_diagnostic.SA1508.severity = silent
+dotnet_diagnostic.SA1003.severity = silent
+dotnet_diagnostic.SA1137.severity = silent
+dotnet_diagnostic.SA1515.severity = silent
+
+[ClientRepository.{cs}]
+dotnet_diagnostic.S2139.severity = silent
+
+[SoftwareProductConfiguration.{cs}]
+dotnet_diagnostic.S1075.severity = silent
+
+[GrantRepository.{cs}]
+dotnet_diagnostic.S2139.severity = silent
+
+[US39327_CdrAuthServer_E2ETests.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+[US44264_CdrAuthServer_JARM_Authorise.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.S3459.severity = silent
+dotnet_diagnostic.SA1401.severity = silent
+dotnet_diagnostic.SA1307.severity = silent
+[US44264_CdrAuthServer_JARM_DCR.{cs}]
+dotnet_diagnostic.SA1601.severity = silent
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S4144.severity = silent
+dotnet_diagnostic.SA1115.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+dotnet_diagnostic.S3878.severity = silent
+[US44264_CdrAuthServer_JARM_OIDC.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S3459.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.S3878.severity = silent
+[US44264_CdrAuthServer_JARM_PAR.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.SA1114.severity = silent
+dotnet_diagnostic.S1135.severity = silent
+[US44264_CdrAuthServer_JARM_Authorise.{cs}]
+dotnet_diagnostic.S101.severity = silent
+[AuthorizationService.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+[BaseTest.{cs}]
+dotnet_diagnostic.SA1606.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+dotnet_diagnostic.SA1313.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+[ClientAssertionValidatorTests.{cs}]
+dotnet_diagnostic.SA1401.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+[ClientRegistrationValidatorTests.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.S1135.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+dotnet_diagnostic.S125.severity = silent
+[ConnectionStringCheck.{cs}]
+dotnet_diagnostic.S1135.severity = silent
+dotnet_diagnostic.SA1402.severity = silent
+[DatabaseSeeder.{cs}]
+dotnet_diagnostic.SA1117.severity = silent
+dotnet_diagnostic.S1172.severity = silent
+[DataHolderAccessToken.{cs}]
+dotnet_diagnostic.SA1402.severity = silent
+dotnet_diagnostic.SA1649.severity = silent
+[DataHolderCDRArrangementRevocationService.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+[DataHolderIntrospectionService.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+[DcrResponse.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+[IDataHolderCDRArrangementRevocationService.{cs}]
+dotnet_diagnostic.S101.severity = silent
+[JwtValidatorTests.{cs}]
+dotnet_diagnostic.SA1649.severity = silent
+dotnet_diagnostic.SA1306.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+[OpenIdConfiguration.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+[RequestObjectValidatorTests.{cs}]
+dotnet_diagnostic.SA1649.severity = silent
+[SkippableFactTestCase.{cs}]
+dotnet_diagnostic.S1133.severity = silent
+[SkippableTheoryTestCase.{cs}]
+dotnet_diagnostic.S1133.severity = silent
+[TokenRequestValidatorTests.{cs}]
+dotnet_diagnostic.SA1649.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1306.severity = silent
+[US12678_CdrAuthServer_Authorisation.{cs}]
+dotnet_diagnostic.SA1117.severity = silent
+dotnet_diagnostic.S2589.severity = silent
+dotnet_diagnostic.S1135.severity = silent
+[US12962_CdrAuthServer_OIDC_Configuration.{cs}]
+dotnet_diagnostic.SA1601.severity = silent
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S3878.severity = silent
+[US12963_CdrAuthServer_Token.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.SA1124.severity = silent
+dotnet_diagnostic.SA1413.severity = silent
+dotnet_diagnostic.S1135.severity = silent
+dotnet_diagnostic.S1481.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+[US12964_CDRAuthServer_OIDC_JWKS.{cs}]
+dotnet_diagnostic.SA1649.severity = silent
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S3459.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+[US12965_CdrAuthServer_UserInfo.{cs}]
+dotnet_diagnostic.S3459.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.S1172.severity = silent
+dotnet_diagnostic.S1144.severity = silent
+[US12966_CdrAuthServer_Introspection.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.S3459.severity = silent
+dotnet_diagnostic.SA1300.severity = silent
+dotnet_diagnostic.S1144.severity = silent
+[US12968_CdrAuthServer_PAR.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.S2589.severity = silent
+[US15221_US12969_US15584_CdrAuthServer_Registration_POST.{cs}]
+dotnet_diagnostic.S101.severity = silent
+[US15221_US12969_US15585_CdrAuthServer_Registration_PUT.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+[US15221_US12969_US15586_CdrAuthServer_Registration_GET.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+dotnet_diagnostic.SA1509.severity = silent
+dotnet_diagnostic.S1199.severity = silent
+dotnet_diagnostic.S1135.severity = silent
+[US15221_US12969_US15587_CdrAuthServer_Registration_DELETE.{cs}]
+dotnet_diagnostic.S101.severity = silent
+dotnet_diagnostic.SA1316.severity = silent
+dotnet_diagnostic.SA1117.severity = silent
+[US17652_CdrAuthServer_ArrangementRevocation.{cs}]
+dotnet_diagnostic.S4487.severity = silent
+dotnet_diagnostic.SA1509.severity = silent
+dotnet_diagnostic.S2699.severity = silent
+dotnet_diagnostic.S2589.severity = silent
+[US28391_GetDataRecipients.{cs}]
+dotnet_diagnostic.S1172.severity = silent
+dotnet_diagnostic.SA1312.severity = silent
+[US39327_CdrAuthServer_E2ETests.{cs}]
+dotnet_diagnostic.S2933.severity = silent
+dotnet_diagnostic.S1481.severity = silent
+[DisplayTestMethodNameAttribute.{cs}]
+dotnet_diagnostic.S3993.severity = silent
+[HttpHelperTests.{cs}]
+dotnet_diagnostic.SA1402.severity = silent
+dotnet_diagnostic.SA1601.severity = silent
+dotnet_diagnostic.S1144.severity = silent
+[ParValidatorTest.{cs}]
+dotnet_diagnostic.SA1300.severity = silent
+[SkippableFactAttribute.{cs}]
+dotnet_diagnostic.S3993.severity = silent
+[SkippableFactMessageBus.{cs}]
+dotnet_diagnostic.S3881.severity = silent
+[SkippableTheoryAttribute.{cs}]
+dotnet_diagnostic.S3993.severity = silent
+[StringExtensionsTests.{cs}]
+dotnet_diagnostic.S1186.severity = silent

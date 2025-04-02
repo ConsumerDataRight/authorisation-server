@@ -10,7 +10,8 @@ namespace CdrAuthServer.Models
         {
         }
 
-        public ClientRegistrationRequest(string jwt) : base(jwt)
+        public ClientRegistrationRequest(string jwt)
+            : base(jwt)
         {
             ClientRegistrationRequestJwt = jwt;
         }
@@ -19,9 +20,9 @@ namespace CdrAuthServer.Models
         /// Gets a Software Statement Assertion, as defined in [Dynamic Client Registration](https://cdr-register.github.io/register/#dynamic-client-registration).
         /// </summary>
         [Display(Name = "software_statement")]
-        public SoftwareStatement SoftwareStatement { get; set; }
+        public SoftwareStatement? SoftwareStatement { get; set; }
 
-        public string ClientRegistrationRequestJwt { get; }
+        public string ClientRegistrationRequestJwt { get; } = string.Empty;
 
         /// <summary>
         /// Gets the Key Identifier of this JWT.
@@ -126,25 +127,13 @@ namespace CdrAuthServer.Models
         public string? IdTokenSignedResponseAlg => Claims.FirstOrDefault(x => x.Type == ClientMetadata.IdTokenSignedResponseAlg)?.Value;
 
         /// <summary>
-        /// Gets a JWE &#x60;alg&#x60; algorithm with which an id_token is to be encrypted.
-        /// </summary>
-        [Display(Name = "id_token_encrypted_response_alg")]
-        public string? IdTokenEncryptedResponseAlg => Claims.FirstOrDefault(x => x.Type == ClientMetadata.IdTokenEncryptedResponseAlg)?.Value;
-
-        /// <summary>
-        /// Gets a JWE &#x60;enc&#x60; algorithm with which an id_token is to be encrypted.
-        /// </summary>
-        [Display(Name = "id_token_encrypted_response_enc")]
-        public string? IdTokenEncryptedResponseEnc => Claims.FirstOrDefault(x => x.Type == ClientMetadata.IdTokenEncryptedResponseEnc)?.Value;
-
-        /// <summary>
         /// Gets an algorithm which the ADR expects to sign the request object if a request object will be part of the authorization request sent to the Data Holder.
         /// </summary>
         [Display(Name = "request_object_signing_alg")]
         public string? RequestObjectSigningAlg => Claims.FirstOrDefault(x => x.Type == ClientMetadata.RequestObjectSigningAlg)?.Value;
 
         /// <summary>
-        /// Gets the Software Statement Assertion
+        /// Gets the Software Statement Assertion.
         /// </summary>
         [Display(Name = "software_statement")]
         public string? SoftwareStatementJwt => Claims.FirstOrDefault(x => x.Type == ClientMetadata.SoftwareStatement)?.Value;
@@ -166,6 +155,5 @@ namespace CdrAuthServer.Models
         /// </summary>
         [Display(Name = "authorization_encrypted_response_enc")]
         public string? AuthorizationEncryptedResponseEnc => Claims.FirstOrDefault(x => x.Type == ClientMetadata.AuthorizationEncryptedResponseEnc)?.Value;
-
     }
 }

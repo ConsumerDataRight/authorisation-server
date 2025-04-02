@@ -8,15 +8,14 @@ namespace CdrAuthServer.Services
     public interface ITokenService
     {
         Task<TokenResponse> IssueTokens(
-            TokenRequest tokenRequest, 
-            string cnf, 
+            TokenRequest tokenRequest,
+            string cnf,
             ConfigurationOptions configOptions);
 
         Task<string> IssueIdToken(
             string clientId,
             string subjectId,
             ConfigurationOptions configOptions,
-            bool encrypt,
             string? state = null,
             string? nonce = null,
             string? authCode = null,
@@ -29,7 +28,7 @@ namespace CdrAuthServer.Services
             string tokenType,
             int expirySeconds,
             ConfigurationOptions configOptions,
-            string? signingAlg = Constants.Algorithms.Signing.PS256,
+            string signingAlg = Constants.Algorithms.Signing.PS256,
             string? encryptedResponseAlg = null,
             string? encryptedResponseEnc = null,
             Microsoft.IdentityModel.Tokens.JsonWebKey? clientJwk = null,

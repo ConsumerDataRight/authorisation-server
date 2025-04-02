@@ -41,18 +41,18 @@ namespace CdrAuthServer.Validation
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_TOKEN_REQUEST);
             }
 
-            if (string.IsNullOrEmpty(tokenRequest.grant_type))
+            if (string.IsNullOrEmpty(tokenRequest.Grant_type))
             {
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.GRANT_TYPE_MISSING);
             }
 
-            if (configOptions.GrantTypesSupported?.Contains(tokenRequest.grant_type) is not true)
+            if (configOptions.GrantTypesSupported?.Contains(tokenRequest.Grant_type) is not true)
             {
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.UNSUPPORTED_GRANT_TYPE);
             }
 
             // If the client_id was passed, then it should match the client making the request.
-            if (!string.IsNullOrEmpty(tokenRequest.client_id) && !clientId.Equals(tokenRequest.client_id, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(tokenRequest.Client_id) && !clientId.Equals(tokenRequest.Client_id, StringComparison.OrdinalIgnoreCase))
             {
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CLIENT_ID_MISMATCH);
             }
@@ -65,13 +65,14 @@ namespace CdrAuthServer.Validation
             }
 
             // Check software product status (if configured).
-            if (configOptions.CdrRegister!= null && configOptions.CdrRegister.CheckSoftwareProductStatus)
+            if (configOptions.CdrRegister != null && configOptions.CdrRegister.CheckSoftwareProductStatus)
             {
                 var softwareProduct = await _cdrService.GetSoftwareProduct(client.SoftwareId);
                 if (softwareProduct == null)
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.SOFTWARE_PRODUCT_NOT_FOUND);
                 }
+
                 if (!softwareProduct.IsActive())
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.SOFTWARE_PRODUCT_STATUS_INACTIVE, softwareProduct.GetStatusDescription());
@@ -79,32 +80,31 @@ namespace CdrAuthServer.Validation
             }
 
             // Auth code request validation.
-            if (tokenRequest.grant_type == GrantTypes.AuthCode)
+            if (tokenRequest.Grant_type == GrantTypes.AuthCode)
             {
-                if (string.IsNullOrEmpty(tokenRequest.code))
+                if (string.IsNullOrEmpty(tokenRequest.Code))
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CODE_IS_MISSING);
-
                 }
 
                 // Redirect URI validation.
-                if (string.IsNullOrEmpty(tokenRequest.redirect_uri))
+                if (string.IsNullOrEmpty(tokenRequest.Redirect_uri))
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REDIRECT_URI_IS_MISSING);
                 }
 
                 // Code verifier validation.
-                if (string.IsNullOrEmpty(tokenRequest.code_verifier))
+                if (string.IsNullOrEmpty(tokenRequest.Code_verifier))
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.CODE_VERIFIER_IS_MISSING);
                 }
 
                 // Find the matching auth code grant.
-                var authCodeGrant = await _grantService.Get(GrantTypes.AuthCode, tokenRequest.code, clientId) as AuthorizationCodeGrant;
+                var authCodeGrant = await _grantService.Get(GrantTypes.AuthCode, tokenRequest.Code, clientId) as AuthorizationCodeGrant;
                 if (authCodeGrant == null)
                 {
                     // Blacklist the auth code as it may have been a re-use attempt.
-                    await _tokenService.AddToBlacklist($"{clientId}::{tokenRequest.code}");
+                    await _tokenService.AddToBlacklist($"{clientId}::{tokenRequest.Code}");
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_AUTHORIZATION_CODE);
                 }
 
@@ -114,17 +114,21 @@ namespace CdrAuthServer.Validation
                 }
 
                 // Get the original auth request object.
-                var authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);
+                AuthorizationRequestObject? authRequestObject = null;
+                if (authCodeGrant.Request != null)
+                {
+                    authRequestObject = JsonConvert.DeserializeObject<AuthorizationRequestObject>(authCodeGrant.Request);
+                }
 
                 // Verify the redirect_uri.
-                if (authRequestObject?.RedirectUri != tokenRequest.redirect_uri)
+                if (authRequestObject?.RedirectUri != tokenRequest.Redirect_uri)
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REDIRECT_URI_AUTHORIZATION_REQUEST_MISMATCH);
                 }
 
                 // Verify the code_verifier.
                 var expectedCodeChallenge = authRequestObject.CodeChallenge;
-                var codeChallenge = CreatePkceChallenge(tokenRequest.code_verifier);
+                var codeChallenge = CreatePkceChallenge(tokenRequest.Code_verifier);
 
                 if (expectedCodeChallenge != codeChallenge)
                 {
@@ -133,15 +137,15 @@ namespace CdrAuthServer.Validation
             }
 
             // Refresh token request validation.
-            if (tokenRequest.grant_type == GrantTypes.RefreshToken)
+            if (tokenRequest.Grant_type == GrantTypes.RefreshToken)
             {
-                if (string.IsNullOrEmpty(tokenRequest.refresh_token))
+                if (string.IsNullOrEmpty(tokenRequest.Refresh_token))
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REFRESH_TOKEN_MISSING);
                 }
 
                 // Find the matching refresh token grant.
-                var refreshTokenGrant = await _grantService.Get(GrantTypes.RefreshToken, tokenRequest.refresh_token, clientId);
+                var refreshTokenGrant = await _grantService.Get(GrantTypes.RefreshToken, tokenRequest.Refresh_token, clientId);
                 if (refreshTokenGrant == null)
                 {
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_REFRESH_TOKEN);

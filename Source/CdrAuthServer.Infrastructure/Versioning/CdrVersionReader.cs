@@ -29,12 +29,14 @@ namespace CdrAuthServer.Infrastructure.Versioning
 
             if (endpointOption == null)
             {
-                //handle any endpoint that hasn't been defined in options
+                // handle any endpoint that hasn't been defined in options
                 endpointOption = new CdrApiEndpointVersionOptions(string.Empty, false, int.Parse(_options.DefaultVersion));
             }
             else if (!endpointOption.IsVersioned)
             {
-                return _options.DefaultVersion; //TODO: Check if we want to return a version at all
+#pragma warning disable S1135 // Track uses of "TODO" tags
+                return _options.DefaultVersion; // TODO: Check if we want to return a version at all
+#pragma warning restore S1135 // Track uses of "TODO" tags
             }
 
             // If x-min-v is passed in, we expect it to be a Positive Integer, the x-v value is parsed out of the header and will be validated by the Package itself

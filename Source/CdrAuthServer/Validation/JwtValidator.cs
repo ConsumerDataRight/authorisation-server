@@ -1,9 +1,10 @@
-﻿using CdrAuthServer.Configuration;
+﻿using System.IdentityModel.Tokens.Jwt;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Exceptions;
+using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Validation
@@ -22,7 +23,7 @@ namespace CdrAuthServer.Validation
             _clientService = clientService;
         }
 
-        public async Task<(ValidationResult, JwtSecurityToken?)> Validate(
+        public async Task<(ValidationResult ValidationResult, JwtSecurityToken? JwtSecurityToken)> Validate(
             string jwt,
             Client client,
             JwtValidationContext context,
@@ -36,13 +37,14 @@ namespace CdrAuthServer.Validation
                 var signingKeys = await _clientService.GetSigningKeys(client);
 
                 // Validate the jwt.
-                var coreValidAudiences = new List<string> {
+                var coreValidAudiences = new List<string>
+                {
                     configOptions.Issuer,
                     configOptions.TokenEndpoint,
                     configOptions.PushedAuthorizationEndpoint,
                     configOptions.IntrospectionEndpoint,
                     configOptions.RevocationEndpoint,
-                    configOptions.ArrangementRevocationEndpoint
+                    configOptions.ArrangementRevocationEndpoint,
                 };
 
                 if (validAudiences != null && validAudiences.Any())
@@ -67,7 +69,7 @@ namespace CdrAuthServer.Validation
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(configOptions.ClockSkewSeconds),
 
-                    ValidAlgorithms = validAlgorithms ?? new List<string>() { Algorithms.Signing.PS256, Algorithms.Signing.ES256 }
+                    ValidAlgorithms = validAlgorithms ?? new List<string>() { Algorithms.Signing.PS256, Algorithms.Signing.ES256 },
                 };
 
                 var handler = new JwtSecurityTokenHandler();
@@ -78,22 +80,22 @@ namespace CdrAuthServer.Validation
             catch (SecurityTokenInvalidAudienceException audException)
             {
                 _logger.LogError(audException, "Invalid audience");
-                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_INVALID_AUDIENCE, context.ToString()), null);
+                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_INVALID_AUDIENCE, context.GetDisplayName() ?? context.ToString()), null);
             }
             catch (SecurityTokenExpiredException expException)
             {
                 _logger.LogError(expException, "JWT has expired");
-                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_EXPIRED, context.ToString()), null);
+                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_EXPIRED, context.GetDisplayName() ?? context.ToString()), null);
             }
             catch (JwksException jwksException)
             {
                 _logger.LogError(jwksException, "Invalid {Context} - jwks error", context);
-                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWKS_ERROR, context.ToString()), null);
+                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWKS_ERROR, context.GetDisplayName() ?? context.ToString()), null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Invalid {Context} - token validation error", context);
-                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_VALIDATION_ERROR, context.ToString()), null);
+                return (ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.JWT_VALIDATION_ERROR, context.GetDisplayName() ?? context.ToString()), null);
             }
         }
     }

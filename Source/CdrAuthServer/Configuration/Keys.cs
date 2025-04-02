@@ -26,6 +26,6 @@
         public const string IdTokenEncryptionEncValuesSupported = "CdrAuthServer:IdTokenEncryptionEncValuesSupported";
         public const string PS256SigningCertificate = "CdrAuthServer:PS256SigningCertificate";
         public const string ES256SigningCertificate = "CdrAuthServer:ES256SigningCertificate";
-        public const string SeedDataFilePath = "CdrAuthServer:SeedData:FilePath";        
+        public const string SeedDataFilePath = "CdrAuthServer:SeedData:FilePath";
     }
 }

@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CdrAuthServer.Repository.Migrations
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "S1192:Define a constant instead of using this literal 'nvarchar(50)' 5 times", Justification = "Auto-generated migration file.")]
+#pragma warning disable SA1601 // Partial elements should be documented
     public partial class V002CreateLogEventsDrService : Migration
+#pragma warning restore SA1601 // Partial elements should be documented
     {
         protected override void Up(MigrationBuilder migrationBuilder)
-        {            
+        {
             migrationBuilder.CreateTable(
                 name: "LogEvents-DrService",
                 columns: table => new
@@ -24,7 +26,7 @@ namespace CdrAuthServer.Repository.Migrations
                     ProcessName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ThreadId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     MethodName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    SourceContext = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    SourceContext = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                 },
                 constraints: table =>
                 {

@@ -1,4 +1,4 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Fixtures;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Models.Options;
@@ -18,7 +18,7 @@ namespace CdrAuthServer.IntegrationTests
         private readonly TestAutomationAuthServerOptions _authServerOptions;
         private readonly ISqlQueryService _sqlQueryService;
         private readonly IApiServiceDirector _apiServiceDirector;
-        private readonly string _clientId;
+        private readonly string _clientId = null!;
 
         public US15221_US12969_US15586_CdrAuthServer_Registration_GET(IOptions<TestAutomationOptions> options, IOptions<TestAutomationAuthServerOptions> authServerOptions, ISqlQueryService sqlQueryService, IApiServiceDirector apiServiceDirector, ITestOutputHelperAccessor testOutputHelperAccessor, IConfiguration config)
             : base(testOutputHelperAccessor, config)
@@ -70,7 +70,8 @@ namespace CdrAuthServer.IntegrationTests
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     // Assert - Check WWWAutheticate header
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_token"", error_description=""The token expired at '05/16/2022 03:04:03'""",
                         response.Headers, "WWW-Authenticate");
                 }
             }
@@ -93,9 +94,10 @@ namespace CdrAuthServer.IntegrationTests
                 response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
                 {
-                    // Assert - Check error response 
+                    // Assert - Check error response
                     // TODO - replace with authorise exception
-                    Assertions.AssertHasHeader(@"Bearer error=""invalid_request"", error_description=""The client is unknown""",
+                    Assertions.AssertHasHeader(
+                        @"Bearer error=""invalid_request"", error_description=""The client is unknown""",
                         response.Headers,
                         "WWW-Authenticate",
                         true); // starts with

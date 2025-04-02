@@ -1,4 +1,4 @@
-using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
+﻿using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.APIs;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
@@ -51,6 +51,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Call PAR endpoint, with request, to get a RequestUri
         public async Task AC01_Post_ShouldRespondWith_201Created_RequestUri()
         {
@@ -58,8 +59,6 @@ namespace CdrAuthServer.IntegrationTests
 
             // Act
             var response = await _dataHolderParService.SendRequest(_options.SCOPE);
-
-            //var responseText = await response.Content.ReadAsStringAsync();
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -156,6 +155,7 @@ namespace CdrAuthServer.IntegrationTests
 
             // Arrange
             var expectedErrror = new InvalidClientAssertionTypeException();
+
             // Act
             var response = await _dataHolderParService.SendRequest(_options.SCOPE, clientAssertionType: clientAssertionType);
 
@@ -189,7 +189,8 @@ namespace CdrAuthServer.IntegrationTests
         public async Task AC11_Post_WitCurrentHolderOfKey_Success_Created()
         {
             // Act
-            var response = await _dataHolderParService.SendRequest(_options.SCOPE,
+            var response = await _dataHolderParService.SendRequest(
+                _options.SCOPE,
                 jwtCertificateForClientAssertionFilename: Constants.Certificates.JwtCertificateFilename,
                 jwtCertificateForClientAssertionPassword: Constants.Certificates.JwtCertificatePassword);
 
@@ -206,11 +207,12 @@ namespace CdrAuthServer.IntegrationTests
         {
             Log.Information("Running test with Params: {P1}={V1}, {P2}={V2}.", nameof(jwtCertificateFilename), jwtCertificateFilename, nameof(jwtCertificatePassword), jwtCertificatePassword);
 
-            //Arrange
+            // Arrange
             var expectedError = new TokenValidationClientAssertionException();
 
             // Act
-            var response = await _dataHolderParService.SendRequest(_options.SCOPE,
+            var response = await _dataHolderParService.SendRequest(
+                _options.SCOPE,
                 jwtCertificateForClientAssertionFilename: jwtCertificateFilename,
                 jwtCertificateForClientAssertionPassword: jwtCertificatePassword);
 
@@ -222,16 +224,27 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Call Authorisaton endpoint, with requestUri issued by PAR endpoint, to create CdrArrangement
         public async Task AC02_Post_AuthorisationEndpoint_WithRequestUri_ShouldRespondWith_200OK_CdrArrangementId()
         {
             // Arrange
             var response = await _dataHolderParService.SendRequest(_options.SCOPE);
-            if (response.StatusCode != HttpStatusCode.Created) throw new Exception("Error with PAR request - StatusCode");
-            var parResponse = await _dataHolderParService.DeserializeResponse(response);
-            if (string.IsNullOrEmpty(parResponse?.RequestURI)) throw new Exception("Error with PAR request - RequestURI");
-            if (parResponse?.ExpiresIn != 90) throw new Exception("Error with PAR request - ExpiresIn");
+            if (response.StatusCode != HttpStatusCode.Created)
+            {
+                throw new Exception("Error with PAR request - StatusCode");
+            }
 
+            var parResponse = await _dataHolderParService.DeserializeResponse(response);
+            if (string.IsNullOrEmpty(parResponse?.RequestURI))
+            {
+                throw new Exception("Error with PAR request - RequestURI");
+            }
+
+            if (parResponse?.ExpiresIn != 90)
+            {
+                throw new Exception("Error with PAR request - ExpiresIn");
+            }
 
             // Act - Authorise with PAR RequestURI
             var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
@@ -241,7 +254,7 @@ namespace CdrAuthServer.IntegrationTests
                .WithRequestUri(parResponse.RequestURI)
                .BuildAsync();
 
-            (var authCode, var idToken) = await authService.Authorise();
+            (var authCode, _) = await authService.Authorise();
 
             // Assert - Check we got an authCode and idToken
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -270,22 +283,33 @@ namespace CdrAuthServer.IntegrationTests
         {
             var expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
             var expectedError = new ExpiredRequestUriException();
-         
+
             const int PAR_EXPIRY_SECONDS = 90;
 
             var clientId = _options.LastRegisteredClientId ?? throw new NullReferenceException("Could not find Client Id.");
 
             // Arrange
             var response = await _dataHolderParService.SendRequest(_options.SCOPE, clientId: clientId);
-            if (response.StatusCode != HttpStatusCode.Created) throw new Exception("Error with PAR request - StatusCode");
+            if (response.StatusCode != HttpStatusCode.Created)
+            {
+                throw new Exception("Error with PAR request - StatusCode");
+            }
+
             var parResponse = await _dataHolderParService.DeserializeResponse(response);
-            if (string.IsNullOrEmpty(parResponse?.RequestURI)) throw new Exception("Error with PAR request - RequestURI");
-            if (parResponse?.ExpiresIn != PAR_EXPIRY_SECONDS) throw new Exception("Error with PAR request - ExpiresIn");
+            if (string.IsNullOrEmpty(parResponse?.RequestURI))
+            {
+                throw new Exception("Error with PAR request - RequestURI");
+            }
+
+            if (parResponse.ExpiresIn != PAR_EXPIRY_SECONDS)
+            {
+                throw new Exception("Error with PAR request - ExpiresIn");
+            }
 
             // Wait until PAR expires
             await Task.Delay((PAR_EXPIRY_SECONDS + 10) * 1000);
 
-            //May need to provide a clientId here!
+            // May need to provide a clientId here!
             var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
                 .WithRequestUri(parResponse.RequestURI)
                 .WithClientId(clientId)
@@ -307,14 +331,14 @@ namespace CdrAuthServer.IntegrationTests
                 authResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
 
                 // Check redirect path
-                var redirectPath = authResponse?.Headers?.Location?.GetLeftPart(UriPartial.Path);
+                var redirectPath = authResponse.Headers?.Location?.GetLeftPart(UriPartial.Path);
                 redirectPath.Should().Be(expectedRedirectPath);
 
-                var queryValues = HttpUtility.ParseQueryString(authResponse?.Headers.Location?.Query ?? throw new NullReferenceException());
+                var queryValues = HttpUtility.ParseQueryString(authResponse.Headers?.Location?.Query ?? throw new NullReferenceException());
 
                 // Check query has "response" param
                 var queryValueResponse = queryValues["response"];
-                
+
                 var encodedJwt = queryValueResponse;
                 queryValueResponse.Should().NotBeNullOrEmpty();
 
@@ -331,15 +355,15 @@ namespace CdrAuthServer.IntegrationTests
                 var jwt = new JwtSecurityTokenHandler().ReadJwtToken(encodedJwt);
                 jwt.Claim("error").Value.Should().Be(expectedError.Error);
                 jwt.Claim("error_description").Value.Should().Be(expectedError.ErrorDescription);
-
             }
         }
 
         [Fact]
+
         // Call PAR endpoint, with existing CdrArrangementId, to get requestUri
         public async Task AC04_Post_WithCdrArrangementId_ShouldRespondWith_201Created_RequestUri()
         {
-            // Arrange 
+            // Arrange
             var cdrArrangementId = await CreateCDRArrangement();
 
             // Act - PAR with existing CdrArrangementId
@@ -358,6 +382,7 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Call Authorisaton endpoint, with requestUri issued by PAR endpoint, to update existing CdrArrangement
         public async Task AC05_Post_AuthorisationEndpoint_WithRequestUri_ShouldRespondWith_200OK_CdrArrangementId()
         {
@@ -365,11 +390,14 @@ namespace CdrAuthServer.IntegrationTests
             // Create CDR arrangement, call PAR and get RequestURI
             var cdrArrangementId = await CreateCDRArrangement();
 
-            //call PAR with existing CdrArrangementId and get RequestURI
+            // call PAR with existing CdrArrangementId and get RequestURI
             var response = await _dataHolderParService.SendRequest(US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS, cdrArrangementId: cdrArrangementId);
             var parResponse = await _dataHolderParService.DeserializeResponse(response);
 
-            if (string.IsNullOrEmpty(parResponse?.RequestURI)) throw new Exception("requestUri is null");
+            if (string.IsNullOrEmpty(parResponse?.RequestURI))
+            {
+                throw new Exception("requestUri is null");
+            }
 
             // Act - Authorise using requestURI
             var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
@@ -397,11 +425,12 @@ namespace CdrAuthServer.IntegrationTests
         }
 
         [Fact]
+
         // Call PAR endpoint, with existing CdrArrangementId, to get requestUri
         public async Task AC04_Post_WithCdrArrangementId_AmendingConsent_ShouldInvalidateRefreshTokenn()
         {
             // Create a CDR arrangement
-            async Task<(string cdrArrangementId, string refreshToken)> CreateCDRArrangement(string cdrArrangementId = null)
+            async Task<(string CdrArrangementId, string RefreshToken)> CreateCDRArrangement(string cdrArrangementId = null)
             {
                 // Authorise
                 var authService = await new DataHolderAuthoriseServiceBuilder(_options, _dataHolderParService, _apiServiceDirector, false, _authServerOptions)
@@ -415,13 +444,16 @@ namespace CdrAuthServer.IntegrationTests
 
                 // Get token
                 var tokenResponse = await _dataHolderTokenService.GetResponse(authCode, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
-                if (tokenResponse == null || tokenResponse?.CdrArrangementId == null) throw new Exception("Error getting CDRArrangementId");
+                if (tokenResponse == null || tokenResponse?.CdrArrangementId == null)
+                {
+                    throw new Exception("Error getting CDRArrangementId");
+                }
 
                 // Return CdrArrangementId
                 return (tokenResponse.CdrArrangementId, tokenResponse.RefreshToken);
             }
 
-            // Arrange 
+            // Arrange
             var (cdrArrangementId, refreshToken) = await CreateCDRArrangement();
 
             // Amend consent.
@@ -447,7 +479,10 @@ namespace CdrAuthServer.IntegrationTests
 
             // Get token
             var tokenResponse = await _dataHolderTokenService.GetResponse(authCode, scope: US12963_CdrAuthServer_Token.SCOPE_TOKEN_ACCOUNTS);
-            if (tokenResponse == null || tokenResponse?.CdrArrangementId == null) throw new Exception("Error getting CDRArrangementId");
+            if (tokenResponse == null || tokenResponse.CdrArrangementId == null)
+            {
+                throw new Exception("Error getting CDRArrangementId");
+            }
 
             // Return CdrArrangementId
             return tokenResponse.CdrArrangementId;

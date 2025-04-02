@@ -5,14 +5,17 @@
         Raw,
         File,
         Url,
-        KeyVault
+        KeyVault,
     }
 
     public class CertificateLoadDetails
     {
         public CertificateSource Source { get; set; }
+
         public string Content { get; set; } = string.Empty;
-        public string Location { get; set; } = String.Empty;
-        public string Password { get; set; } = String.Empty;
+
+        public string Location { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
     }
 }

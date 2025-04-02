@@ -1,4 +1,4 @@
-using CdrAuthServer.IntegrationTests.Interfaces;
+﻿using CdrAuthServer.IntegrationTests.Interfaces;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Enums;
 using ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Exceptions.AuthoriseExceptions;
@@ -39,12 +39,15 @@ namespace CdrAuthServer.IntegrationTests
             Helpers.AuthServer.PurgeAuthServerForDataholder(_options, true);
         }
 
-        class IntrospectionResponse
+        private class IntrospectionResponse
         {
 #pragma warning disable IDE1006
             public bool? active { get; set; }
+
             public string? scope { get; set; }
+
             public int? exp { get; set; }
+
             public string? cdr_arrangement_id { get; set; }
 #pragma warning restore IDE1006
         }
@@ -61,7 +64,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Array.Sort(array);
 
-            return String.Join(' ', array);
+            return string.Join(' ', array);
         }
 
         [Theory]
@@ -75,7 +78,7 @@ namespace CdrAuthServer.IntegrationTests
 
             // Arrange
             Arrange();
-            var approximateGrantTime_Epoch = (Int32)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds;
+            var approximateGrantTime_Epoch = (int)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds;
             var tokenResponse = await _authorizationService.GetToken(tokenType);
 
             // Act
@@ -95,9 +98,10 @@ namespace CdrAuthServer.IntegrationTests
                 Sort(actual?.scope).Should().Be(Sort(tokenResponse.Scope));
                 actual?.cdr_arrangement_id.Should().Be(tokenResponse.CdrArrangementId);
 
-                // Check expiry of refresh token. 
+                // Check expiry of refresh token.
                 // Since we only know approximate time that refresh token was granted, we can only know approximate time refresh token will expire
                 var approximateExpiryTime_Epoch = approximateGrantTime_Epoch + REFRESHTOKEN_LIFETIME_SECONDS;
+
                 // So expiry time is approximated, check that actual expiry is within small window of the approximate expiry time
                 actual?.exp.Should().BeInRange(
                     approximateExpiryTime_Epoch - EXPIRY_GRACE_SECONDS,
@@ -118,8 +122,7 @@ namespace CdrAuthServer.IntegrationTests
 
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
-                token: invalidRefreshToken ? "foo" : tokenResponse.RefreshToken
-            );
+                token: invalidRefreshToken ? "foo" : tokenResponse.RefreshToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -148,8 +151,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: missingRefreshToken ? null : tokenResponse.RefreshToken,
-                tokenTypeHint: missingRefreshToken ? null : "refresh_token"
-             );
+                tokenTypeHint: missingRefreshToken ? null : "refresh_token");
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -213,14 +215,12 @@ namespace CdrAuthServer.IntegrationTests
             // Arrange
             Arrange();
             var tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith);
-
-            var expectedError = new ClientNotFoundException();
+            _ = new ClientNotFoundException();
 
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientId: clientId
-            );
+                clientId: clientId);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -245,8 +245,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientId: clientId
-            );
+                clientId: clientId);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -265,8 +264,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientAssertionType: Constants.ClientAssertionType
-            );
+                clientAssertionType: Constants.ClientAssertionType);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -291,8 +289,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientAssertionType: clientAssertionType
-            );
+                clientAssertionType: clientAssertionType);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -311,8 +308,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientAssertion: null
-            );
+                clientAssertion: null);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -337,8 +333,7 @@ namespace CdrAuthServer.IntegrationTests
             // Act
             var response = await _dataHolderIntrospectionService.SendRequest(
                 token: tokenResponse.RefreshToken,
-                clientAssertion: clientAssertion
-            );
+                clientAssertion: clientAssertion);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
