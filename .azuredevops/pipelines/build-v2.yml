@@ -10,19 +10,19 @@ schedules:
 
 trigger:
   - develop  
-  - main  
+  - main
+
+parameters:
+  # https://github.com/microsoft/azure-pipelines-yaml/blob/master/design/runtime-parameters.md#syntax
+  - name: MockRegisterOverrideDependentImageTag
+    type: string
+    default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime  
 
 variables:
 - group: artifacts
 - name: baseSourceDirectory
   value: $(Build.SourcesDirectory)/Source
-- name: mockRegisterContainerTag
-  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
-      value: main
-  ${{ elseif contains(variables['Build.SourceBranch'], 'releases/') }}:
-      value: $(MockRegisterReleaseContainerTag)
-  ${{ else }}:
-      value: develop
+
 
 pool:
   vmImage: ubuntu-latest
@@ -31,54 +31,12 @@ jobs:
   - job: Build
     timeoutInMinutes: 120
     steps:
-
-    ###################################################################################################
-      # Set obligation date container tags
-    ###################################################################################################
-
-      - task: PowerShell@2
-        displayName: Update Obligation date
-        inputs:
-          targetType: 'inline'
-          script: |     
-            $AuthServerObligationDate = "$(ObligationDate)"
-            if (-not [string]::IsNullOrWhiteSpace( $AuthServerObligationDate )) {
-              Write-Host "##vso[task.setvariable variable=ObligationDateTag]$AuthServerObligationDate"
-            }
-            else {
-              Write-Host "##vso[task.setvariable variable=ObligationDateTag]23-3"        
-            }
-
-      # Set release version variables for release tags
-      - task: PowerShell@2
-        name: 'splitBranchName'
-        displayName: 'Split Branch Name'  
-        inputs:
-          targetType: 'inline'
-          script: |
-            $branchParts = "$(Build.SourceBranchName)" -split '\.'
-            # Write-Host "Branch Name: $branchParts"
-            $majorVersion = $branchParts[0]
-            $minorVersion = $branchParts[1]
-            # Write-Host "Major Name: $majorVersion"
-            Write-Host "##vso[task.setvariable variable=majorVersion]$majorVersion"
-            Write-Host "##vso[task.setvariable variable=minorVersion]$minorVersion"      
-            Write-Host "##vso[task.setvariable variable=majorMinorVersion]$majorVersion.$minorVersion"
-
-      ###################################################################################################
-      # Build images
-      ###################################################################################################
-
-      #!DF: This image is not used anywhere, so don't build.
-      # Build cdr-auth-server
-      # - task: Docker@2
-      #   displayName: Build cdr-auth-server image
-      #   inputs:
-      #     command: build
-      #     Dockerfile: $(baseSourceDirectory)/Dockerfile
-      #     buildContext: $(baseSourceDirectory)
-      #     repository: cdr-auth-server
-      #     tags: latest
+      # set the register tag to use based on the logic in the template file
+      - template: set-tag-name.yml
+        parameters:
+          name: RegisterTag
+          input: ${{ parameters.MockRegisterOverrideDependentImageTag }}
+          context: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
 
       ###################################################################################################
       # Unit tests 
@@ -137,14 +95,6 @@ jobs:
       # Login to ACR and pull mock solution containers 
       ###################################################################################################
 
-      # Login to ACR
-      - task: Docker@2
-        displayName: Login to ACR
-        condition: always()
-        inputs:
-          command: login
-          containerRegistry: $(AcrBaseUrl)
-
       # Login to Shared ACR
       - task: Docker@2
         displayName: Login to Shared ACR
@@ -158,8 +108,8 @@ jobs:
         inputs:
           targetType: inline
           script: |
-            docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag)
-            docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(mockRegisterContainerTag) mock-register:latest
+            docker pull $(SharedAcrBaseUrl).azurecr.io/mock-register:$(RegisterTag)
+            docker tag $(SharedAcrBaseUrl).azurecr.io/mock-register:$(RegisterTag) mock-register:latest
 
       ###################################################################################################
       # Build Standalone container 
@@ -210,7 +160,7 @@ jobs:
           docker run \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-integration-tests-standalone/testresults/results.trx:/app/results.trx:ro \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-integration-tests-standalone/testresults/formatted/:/app/out/:rw \
-            $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone" --outputprefix "CAS-Standalone" -o out/
+            $(SharedAcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone" --outputprefix "CAS-Standalone" -o out/
         displayName: "Run trx-formatter (Standalone)"
         condition: always()
 
@@ -261,7 +211,7 @@ jobs:
           docker run \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-integration-tests-standalone/testresults/results.trx:/app/results.trx:ro \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-integration-tests-standalone/testresults/formatted/:/app/out/:rw \
-            $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone" --outputprefix "CAS-Standalone" -o out/
+            $(SharedAcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone" --outputprefix "CAS-Standalone" -o out/
         displayName: "Run trx-formatter (Standalone)"
         condition: always()
 
@@ -330,7 +280,7 @@ jobs:
           docker run \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-e2e-tests-standalone/testresults/results.trx:/app/results.trx:ro \
             -v=$(baseSourceDirectory)/_temp/cdr-auth-server-e2e-tests-standalone/testresults/formatted/:/app/out/:rw \
-            $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone-E2E" --outputprefix "CAS-Standalone-E2E" -o out/
+            $(SharedAcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "CAS-Standalone-E2E" --outputprefix "CAS-Standalone-E2E" -o out/
         displayName: "Run trx-formatter (Standalone)"
         condition: always()
 
@@ -455,203 +405,37 @@ jobs:
       # Tag images and push to ACR
       ###################################################################################################
 
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container image with :branch-name'
+      - task: Bash@3
+        displayName: 'Tag and push Authorisation Server image with Source Branch Name for any successful builds.'
+        condition: succeeded()
         inputs:
-          containerRegistry: $(AcrBaseUrl)
-          repository: 'cdr-auth-server-standalone'
-          command: tag
-          arguments: 'cdr-auth-server-standalone $(AcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)'
+          targetType: inline
+          script: |
+            echo Tagging cdr-auth-server-standalone with Source Branch Name: $(Build.SourceBranchName)
+            docker tag cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)
 
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) API image with :latest (for develop branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          containerRegistry: $(AcrBaseUrl)
-          repository: 'cdr-auth-server-standalone'
-          command: tag
-          arguments: 'cdr-auth-server-standalone $(AcrBaseUrl).azurecr.io/cdr-auth-server-standalone:latest'
+            echo Pushing all tags to $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone
+            docker image push --all-tags $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone
 
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container image with :branch-name tag to ACR'
+      - task: Bash@3
+        displayName: 'Tag and Push Authorisation Server images for develop, main and release branches.'
+        condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')))
         inputs:
-          script: 'docker push $(AcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)' 
+          targetType: inline
+          script: |
+            echo Tagging cdr-auth-server-standalone with latest tag
+            docker tag cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:latest
 
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container image with :latest tag to ACR (develop branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          script: 'docker push $(AcrBaseUrl).azurecr.io/cdr-auth-server-standalone:latest'
+            echo Tagging cdr-auth-server-standalone with Source Branch Name-latest: $(Build.SourceBranchName)-latest
+            docker tag cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)-latest
 
-      ###################################################################################################
-      # Tag images and push to Shared ACR
-      ###################################################################################################
-      # Pipeline variables are required : SharedAcrBaseUrl and SpSharedAcr
+            if [ -n "$(ObligationDate)" ]; then
+              echo Tagging cdr-auth-server-standalone with obligation date: $(Build.SourceBranchName)-$(ObligationDate)
+              docker tag cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)-$(ObligationDate)
+            fi
 
-      # develop branch tags
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with develop-latest (for develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))  
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:develop-latest'
+            echo Tagging cdr-auth-server-standalone with build id: $(Build.BuildId)
+            docker tag cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.BuildId)
 
-      # develop-latest-obligation-date tag
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with develop-latest-{obligation-date} (for develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag        
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:develop-latest-$(ObligationDateTag)'
-    
-      # develop branch> build number tag only
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with build number (for develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.BuildId)'
-
-      # main branch tags
-      # Pipeline variables are required : SharedAcrBaseUrl
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with main-latest (for main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:main-latest'
-
-      # main-latest-obligation-date tag
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with main-latest-{obligation-date} (for main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:main-latest-$(ObligationDateTag)'
-
-      # Build number tag
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with build number (for main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.BuildId)'
-
-      # Re tag for full version for releases branch
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with full version for releases branch'  
-        # Cannot use releases/* wildcard 
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)'
-
-      # Re tag release full version and obligation date
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container API image with releases-{obligation-date} for releases branch'    
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)-$(ObligationDateTag)'
-
-      #  Re tag Major and Mnior Tags using above variables
-      - task: Docker@2
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container image with major and minor tags for releases branch'    
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag    
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:"$(majorMinorVersion)"'
-
-      #  Re tag Major release Tag using above variables
-      - task: Docker@2  
-        displayName: 'Re-Tag CDRAuthServer (Standalone) container image with major tag for releases branch'    
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          containerRegistry: $(SpSharedAcr)
-          repository: 'cdr-auth-server-standalone'
-          command: tag
-          arguments: 'cdr-auth-server-standalone $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:"$(majorVersion)"'
-
-      # Pushing develop branch tags changes to the ACR
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :develop-latest tag to ACR (develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:develop-latest' 
-
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :develop-latest-obligation-date tag to ACR (develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:    
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:develop-latest-$(ObligationDateTag)'
-    
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :build id tag to ACR (develop branch only)'  
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.BuildId)'
-
-      # Pushing main branch tags changes to the ACR
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :main-latest tag to ACR (main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:main-latest'
-
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :main-latest-obligation-date tag to ACR (main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:main-latest-$(ObligationDateTag)'
-    
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with :build id tag to ACR (main branch only)'
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.BuildId)'
-        
-      # Push  release full version Tag
-      - task: CmdLine@2
-        displayName: 'Push CDRAuthServer (Standalone) container container image with releases tags to ACR (releases branch only)'  
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)'
-
-      # Push  release full version Tag and obligation date
-      - task: CmdLine@2  
-        displayName: 'Push CDRAuthServer (Standalone) container container image with releases tags to ACR (releases branch only)'  
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:$(Build.SourceBranchName)-$(ObligationDateTag)'
-
-      # Push Major and Minor release Tags using above variables
-      - task: CmdLine@2  
-        displayName: 'Push CDRAuthServer (Standalone) container container image with releases tags to ACR (releases branch only)'
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:    
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:"$(majorMinorVersion)"'
-  
-      # Push Major release Tag using above variables
-      - task: CmdLine@2  
-        displayName: 'Push CDRAuthServer (Standalone) container container image with releases tags to ACR (releases branch only)'
-        condition: eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'True')
-        inputs:
-          script: 'docker push $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone:"$(majorVersion)"'
+            echo Pushing all tags to $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone
+            docker image push --all-tags $(SharedAcrBaseUrl).azurecr.io/cdr-auth-server-standalone
