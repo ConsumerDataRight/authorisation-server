@@ -26,10 +26,13 @@ using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Extensions.Http;
 using Serilog;
 using Serilog.Settings.Configuration;
 using static CdrAuthServer.Infrastructure.Constants;
 
+var app = WebApplication.Create();
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddSingleton<ICertificateLoader, CertificateLoader>();
@@ -69,7 +72,9 @@ builder.Services.AddTransient<HttpLoggingDelegatingHandler>();
 
 builder.Services.AddHttpClient<IJwksService, JwksService>()
     .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration))
-    .AddHttpMessageHandler<HttpLoggingDelegatingHandler>();
+    .AddHttpMessageHandler<HttpLoggingDelegatingHandler>()
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+    .AddPolicyHandler(GetRetryPolicy());
 
 builder.Services.AddHttpClient<IConsentRevocationService, ConsentRevocationService>()
     .ConfigurePrimaryHttpMessageHandler(s => HttpHelper.CreateHttpClientHandler(builder.Configuration))
@@ -114,10 +119,11 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(async options =>
     {
+        var jwksService = app.Services.GetRequiredService<IJwksService>();
         options.Configuration = new OpenIdConnectConfiguration()
         {
             JwksUri = $"{metadataAddress}/jwks",
-            JsonWebKeySet = await LoadJwks($"{metadataAddress}/jwks", HttpHelper.CreateHttpClientHandler(builder.Configuration)),
+            JsonWebKeySet = await jwksService.GetJwks(new Uri($"{metadataAddress}/jwks")),
         };
 
         options.TokenValidationParameters = BuildTokenValidationParameters(options, validIssuers, validAudiences, clockSkew);
@@ -242,7 +248,7 @@ builder.Services
     .AddCheck("migration", () => healthCheckMigration ? HealthCheckResult.Healthy(healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(healthCheckMigrationMessage))
     .AddCheck("seed-data", () => healthCheckSeedData ? HealthCheckResult.Healthy(healthCheckSeedDataMessage) : HealthCheckResult.Unhealthy(healthCheckSeedDataMessage));
 
-var app = builder.Build();
+app = builder.Build();
 app.UseStaticFiles();
 
 // A static base path can be set by the CdrAuthServer:BasePath app setting.
@@ -349,13 +355,6 @@ static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
     return context.Response.WriteAsync(result);
 }
 
-static async Task<JsonWebKeySet?> LoadJwks(string jwksUri, HttpMessageHandler httpMessageHandler)
-{
-    var httpClient = new HttpClient(httpMessageHandler);
-    var httpResponse = await httpClient.GetAsync(jwksUri);
-    return await httpResponse.Content.ReadAsJson<JsonWebKeySet>();
-}
-
 void MigrateDatabase()
 {
     var optionsBuilder = new DbContextOptionsBuilder<CdrAuthServerDatabaseContext>();
@@ -404,24 +403,24 @@ static TokenValidationParameters BuildTokenValidationParameters(
         ValidateAudience = true,
         ValidAudiences = validAudiences,
         AudienceValidator = (IEnumerable<string> audiences, SecurityToken securityToken, TokenValidationParameters validationParameters) =>
-                    {
-                        var validAudiences = new HashSet<string>(validationParameters.ValidAudiences, StringComparer.OrdinalIgnoreCase);
+        {
+            var validAudiences = new HashSet<string>(validationParameters.ValidAudiences, StringComparer.OrdinalIgnoreCase);
 
-                        bool isValid = audiences.Any(audience =>
-                            validAudiences.Contains(audience) ||
-                            validAudiences.Any(validAudience => audience.StartsWith(validAudience, StringComparison.OrdinalIgnoreCase)));
+            bool isValid = audiences.Any(audience =>
+                validAudiences.Contains(audience) ||
+                validAudiences.Any(validAudience => audience.StartsWith(validAudience, StringComparison.OrdinalIgnoreCase)));
 
-                        if (!isValid)
-                        {
-                            string errorMessage = $"IDX10214: Audience validation failed. Audiences: '{string.Join(',', audiences)}'. Did not match: '{string.Join(',', validationParameters.ValidAudiences)}'.";
-                            throw new SecurityTokenInvalidAudienceException(errorMessage)
-                            {
-                                InvalidAudience = string.Join(',', audiences),
-                            };
-                        }
+            if (!isValid)
+            {
+                string errorMessage = $"IDX10214: Audience validation failed. Audiences: '{string.Join(',', audiences)}'. Did not match: '{string.Join(',', validationParameters.ValidAudiences)}'.";
+                throw new SecurityTokenInvalidAudienceException(errorMessage)
+                {
+                    InvalidAudience = string.Join(',', audiences),
+                };
+            }
 
-                        return isValid;
-                    },
+            return isValid;
+        },
 
         ValidateLifetime = true,
         ClockSkew = TimeSpan.FromSeconds(clockSkew),
@@ -429,4 +428,22 @@ static TokenValidationParameters BuildTokenValidationParameters(
         RequireSignedTokens = true,
         IssuerSigningKeys = options.Configuration!.JsonWebKeySet.Keys,
     };
+}
+
+static Polly.Retry.AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy()
+{
+    // Handles HttpRequestException, Http status codes >= 500 (server errors) and status code 408 (request timeout)
+    int maxRetryCount = 5;
+    int retryDelaySeconds = 5;
+    return HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .WaitAndRetryAsync(
+            maxRetryCount,
+            (retryAttempt) => TimeSpan.FromSeconds(retryAttempt * retryDelaySeconds),
+            (exception, timeSpan, retryCount, context) =>
+                Log.Logger.Warning(
+                    "Request failed. Retrying in {Seconds}s (attempt {RetryCount} of {MaxRetryCount}).",
+                    timeSpan.TotalSeconds,
+                    retryCount,
+                    maxRetryCount));
 }
