@@ -144,7 +144,7 @@ builder.Services.AddMvcCore().AddAuthorization(options =>
     {
         options.AddPolicy(pol.Name, policy =>
         {
-            if (pol.ScopeRequirement != null && !pol.ScopeRequirement.IsNullOrEmpty())
+            if (pol.ScopeRequirement != null && !string.IsNullOrEmpty(pol.ScopeRequirement))
             {
                 policy.Requirements.Add(new ScopeRequirement(pol.ScopeRequirement));
             }
@@ -330,6 +330,7 @@ static void ConfigureSerilog(IConfiguration configuration, bool isDatabaseReady 
 {
     var loggerConfiguration = new LoggerConfiguration()
         .ReadFrom.Configuration(configuration)
+        .AddOpenTelemetry(configuration)
         .Enrich.FromLogContext();
 
     // If the database is ready, configure the SQL Server sink

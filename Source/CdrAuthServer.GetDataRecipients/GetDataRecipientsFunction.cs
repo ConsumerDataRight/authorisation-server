@@ -93,7 +93,7 @@ namespace CdrAuthServer.GetDataRecipients
         {
             log.LogInformation("Loading the certificate...");
             byte[] certBytes = Convert.FromBase64String(cert);
-            X509Certificate2 certificate = new (certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 certificate = new(certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);
             return certificate;
         }
 
@@ -161,7 +161,7 @@ namespace CdrAuthServer.GetDataRecipients
         /// Get the list of Data Recipients from the Register.
         /// </summary>
         /// <returns>Raw data.</returns>
-        private async Task<(string, System.Net.HttpStatusCode)> GetDataRecipients(
+        private async Task<(string Data, System.Net.HttpStatusCode StatusCode)> GetDataRecipients(
             string dataRecipientsEndpoint,
             string accessToken,
             X509Certificate2 clientCertificate,
@@ -236,7 +236,7 @@ namespace CdrAuthServer.GetDataRecipients
             if (exMsg != null)
             {
                 Exception innerException = exMsg;
-                StringBuilder innerMsg = new ();
+                StringBuilder innerMsg = new();
                 int ctr = 0;
 
                 do
@@ -277,7 +277,7 @@ namespace CdrAuthServer.GetDataRecipients
                 exMessage = exMessage.Replace("'", string.Empty);
             }
 
-            using SqlConnection db = new (dbConnString);
+            using SqlConnection db = new(dbConnString);
             await db.OpenAsync();
             var cmdText = string.Empty;
 

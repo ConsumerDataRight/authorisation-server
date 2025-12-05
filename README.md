@@ -232,6 +232,24 @@ The information below lists the customisation required for each endpoint:
 # Testing
 Automated tests have been created as part of this solution. See the [Test Automation Execution Guide](./Help/testing/HELP.md) documentation for more information.
 
+# Logging
+By default the application logs to console as well as into tables within the application database. 
+
+However, OpenTelemetry can be configured by setting the [environment variables](https://opentelemetry.io/docs/specs/otel/protocol/exporter/#configuration-options) appropriately.
+
+> The example below uses [Seq](https://datalust.co/seq) for simplicity, we do not endorse any particular product. Choose an [OpenTelemetry vendor](https://opentelemetry.io/ecosystem/vendors/) is suitable for your needs.
+
+For example, you may set up a local OTLP ingestion endpoint
+`docker run -e ACCEPT_EULA=Y --rm -p 4318:80 5341:5341 datalust/seq`
+and then set the following
+
+| Environment variable | Value |
+| --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:5341/ingest/otlp` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
+
+After which you should be able to [view telemetry](http://localhost:4318/).
+
 # Contribute
 We encourage contributions from the community.  See our [contributing guidelines](./CONTRIBUTING.md).
 

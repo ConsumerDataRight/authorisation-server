@@ -275,15 +275,12 @@ namespace CdrAuthServer.Services
                 var newScopes = tokenRequest.Scope.Split(' ');
 
                 // Verify that the client has not requested additional scopes that exceed the original request.
-                foreach (var newScope in newScopes)
+                if (!newScopes.All(currentScopes.Contains))
                 {
-                    if (!currentScopes.Contains(newScope))
+                    return new TokenResponse()
                     {
-                        return new TokenResponse()
-                        {
-                            Error = new Error(ErrorCodes.Generic.InvalidScope, "Additional scopes were requested in the refresh_token request"),
-                        };
-                    }
+                        Error = new Error(ErrorCodes.Generic.InvalidScope, "Additional scopes were requested in the refresh_token request"),
+                    };
                 }
 
                 // Additional scopes were not requested, so return the same or subset of scopes.
