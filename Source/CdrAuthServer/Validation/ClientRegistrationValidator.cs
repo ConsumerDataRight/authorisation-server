@@ -46,6 +46,8 @@ namespace CdrAuthServer.Validation
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.EMPTY_REGISTRATION_REQUEST);
             }
 
+            _logger.LogInformation("Validate - Start Validate SSA");
+
             // 1. SSA validation first.  If it fails, then exit as no point in validating anything else.
             var ssaResult = await ValidateSSA(clientRegistrationRequest, configOptions);
             if (!ssaResult.IsValid)
@@ -53,6 +55,9 @@ namespace CdrAuthServer.Validation
                 _logger.LogError("SSA validation failed: {Error} {ErrorDescription}", ssaResult.Error, ssaResult.ErrorDescription);
                 return ssaResult;
             }
+
+            _logger.LogInformation("Validate - End Validate SSA");
+            _logger.LogInformation("Validate - Start Validate Request Signature");
 
             // 2. Signature validation to determine if we can rely on the contents of the registration request jwt.
             var signatureResult = await ValidateRequestSignature(clientRegistrationRequest, configOptions);
@@ -62,6 +67,9 @@ namespace CdrAuthServer.Validation
                 return signatureResult;
             }
 
+            _logger.LogInformation("Validate - End Validate Request Signature");
+            _logger.LogInformation("Validate - Start Validate Sector Uri Identifier");
+
             // 3. Validate the sector identifier uri
             var sectorIdentifierResult = await ValidateSectorIdentifierUri(clientRegistrationRequest.SoftwareStatement?.SectorIdentifierUri);
             if (!sectorIdentifierResult.IsValid)
@@ -69,6 +77,9 @@ namespace CdrAuthServer.Validation
                 _logger.LogError("Sector Identifier validation failed: {Error} {ErrorDescription}", sectorIdentifierResult.Error, sectorIdentifierResult.ErrorDescription);
                 return sectorIdentifierResult;
             }
+
+            _logger.LogInformation("Validate - End Validate Sector Uri Identifier");
+            _logger.LogInformation("Validate - Start Basic Validation");
 
             // Signature validation has been completed successfully.
             //
@@ -124,6 +135,9 @@ namespace CdrAuthServer.Validation
                 MustEqual(clientRegistrationRequest.ApplicationType, nameof(clientRegistrationRequest.ApplicationType), "web");
             }
 
+            _logger.LogInformation("Validate - End Basic Validation");
+            _logger.LogInformation("Validate - Start Redirect Uri Validation");
+
             // redirect_uri validation.
             foreach (var redirectUri in clientRegistrationRequest.RedirectUris)
             {
@@ -139,6 +153,8 @@ namespace CdrAuthServer.Validation
                     return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.INVALID_REDIRECT_URI);
                 }
             }
+
+            _logger.LogInformation("Validate - End Redirect Uri Validation");
 
             if (_validationResults.Count != 0)
             {
@@ -224,32 +240,42 @@ namespace CdrAuthServer.Validation
 
             _logger.LogInformation("Data Recipient JWKS: {Jwks}", JsonConvert.SerializeObject(jwks));
 
-            // Assert - Validate Registration Request Signature
-            var validationParameters = new TokenValidationParameters()
-            {
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(configOptions.ClockSkewSeconds),
-
-                RequireSignedTokens = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKeys = jwks.Keys,
-
-                ValidateAudience = true,
-                ValidAudience = configOptions.Issuer,
-
-                ValidateIssuer = true,
-                ValidIssuer = request.SoftwareStatement.SoftwareId,
-            };
-
-            // Validate token.
             try
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                tokenHandler.ValidateToken(request.ClientRegistrationRequestJwt, validationParameters, out var _);
+                // Assert - Validate Registration Request Signature
+                var validationParameters = new TokenValidationParameters()
+                {
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(configOptions.ClockSkewSeconds),
+
+                    RequireSignedTokens = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKeys = jwks.Keys,
+
+                    ValidateAudience = true,
+                    ValidAudience = configOptions.Issuer,
+
+                    ValidateIssuer = true,
+                    ValidIssuer = request.SoftwareStatement.SoftwareId,
+                };
+                _logger.LogInformation("Start JWT Token Validation");
+
+                // Validate token.
+                try
+                {
+                    var tokenHandler = new JwtSecurityTokenHandler();
+                    tokenHandler.ValidateToken(request.ClientRegistrationRequestJwt, validationParameters, out var _);
+                    _logger.LogInformation("End JWT Token Validation");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Client Registration Request validation failed - {Message}", ex.Message);
+                    return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REGISTRATION_REQUEST_VALIDATION_FAILED);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Client Registration Request validation failed - {Message}", ex.Message);
+                _logger.LogError(ex, "JWT validation parameters failed - {Message}", ex.Message);
                 return ErrorCatalogue.Catalogue().GetValidationResult(ErrorCatalogue.REGISTRATION_REQUEST_VALIDATION_FAILED);
             }
 
