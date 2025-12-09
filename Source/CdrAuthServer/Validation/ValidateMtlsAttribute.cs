@@ -78,24 +78,39 @@ namespace CdrAuthServer.Validation
                     // Build the OCSP request URL from the client cert
                     var ocspResponderUrl = cert.GetOCSPUrlFromCertificate();
 
-                    // Read the CA PEM from configuration.
-                    var clientCertCAPem = _configuration.GetValue<string>("Certificates:Ocsp:MtlsOcspResponderPem");
+                    // Read the CA PEMs from configuration. Multiple CA PEMs can be passed in to handle auth-server supporting more than one certificate trust chains
+                    var clientCertCAPems = _configuration.GetValue<string>("Certificates:Ocsp:MtlsOcspResponderPem");
 
-                    if (string.IsNullOrEmpty(clientCertCAPem))
+                    if (string.IsNullOrEmpty(clientCertCAPems))
                     {
                         _logger.LogError("Certificates:Ocsp:MtlsOcspResponderPem value is either null or empty");
                         throw new ConfigurationErrorsException("Certificates:Ocsp:MtlsOcspResponderPem value is either null or empty");
                     }
 
-                    // create request object for ocsp.
-                    var ocspRequester = new OcspRequester(ocspResponderUrl, clientCertCAPem, _logger, _httpClient);
+                    var clientCertCAPemList = clientCertCAPems.Split(";", StringSplitOptions.RemoveEmptyEntries);
+                    OcspRequester.OcspResult ocspResult = OcspRequester.OcspResult.Unknown;
 
-                    _logger.LogInformation("mTLS certificate check - calling OCSP Responder at {OcspResponderUrl}", ocspResponderUrl);
+                    foreach (var clientCertCAPem in clientCertCAPemList)
+                    {
+                        if (string.IsNullOrEmpty(clientCertCAPem))
+                        {
+                            continue;
+                        }
 
-                    // Call the OCSP responder to get the status of the certificate.
-                    var ocspResult = ocspRequester.GetResult(cert.GetSerialNumberString()).Result;
+                        // create request object for ocsp.
+                        var ocspRequester = new OcspRequester(ocspResponderUrl, clientCertCAPem, _logger, _httpClient);
 
-                    _logger.LogInformation("mTLS certificate check - OCSP Response for {SerialNumber} = {OcspResult}", cert.GetSerialNumberString(), ocspResult);
+                        _logger.LogInformation("mTLS certificate check - calling OCSP Responder at {OcspResponderUrl}", ocspResponderUrl);
+
+                        // Call the OCSP responder to get the status of the certificate.
+                        ocspResult = ocspRequester.GetResult(cert.GetSerialNumberString()).Result;
+
+                        _logger.LogInformation("mTLS certificate check - OCSP Response for {SerialNumber} = {OcspResult}", cert.GetSerialNumberString(), ocspResult);
+                        if (ocspResult != OcspRequester.OcspResult.Unknown)
+                        {
+                            break;
+                        }
+                    }
 
                     if (ocspResult != OcspRequester.OcspResult.Good)
                     {
