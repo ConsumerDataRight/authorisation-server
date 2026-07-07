@@ -72,19 +72,24 @@ export default function SelectAccount() {
 
     return (
         <PageLayout>
-            <Typography color="inherit" variant="h5" pb={2}>
+            <Typography color="inherit" variant="h5" sx={{
+                pb: 2
+            }}>
                 Select your accounts
             </Typography>
             <Typography color="inherit" variant="body2">
                 {dataRecipientName} is requesting your data. Please select the accounts you would like to share data from.
             </Typography>
-            <Box my={3}>
+            <Box sx={{ my: 3 }}>
                 <Stack
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                >
-                    <Typography color={'text.secondary'} variant="subtitle2">
+                    sx={{
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}>
+                    <Typography variant="subtitle2" sx={{
+                        color: 'text.secondary'
+                    }}>
                         Accounts
                     </Typography>
 
@@ -113,7 +118,9 @@ export default function SelectAccount() {
                                             checked={selectedAccountIds.indexOf(account.AccountId) !== -1}
                                             tabIndex={-1}
                                             disableRipple
-                                            inputProps={{ 'aria-labelledby': labelId }}
+                                            slotProps={{
+                                                input: { 'aria-labelledby': labelId }
+                                            }}                                            
                                         />
                                     </ListItemIcon>
                                     <ListItemText id={labelId} primary={<Typography variant="subtitle1">{account.DisplayName}</Typography>} secondary={account?.MaskedName ?? account?.AccountNumber} />
@@ -124,15 +131,19 @@ export default function SelectAccount() {
                 </List>
                 {isSubmitted === true && selectedAccountIds.length === 0 && <FormHelperText error>Please select one or more Accounts</FormHelperText>}
             </Box>
-            <Grid container mt={4}>
-                <Grid item xs={12}>
+            <Grid container sx={{
+                mt: 4
+            }}>
+                <Grid size={{ xs: 12 }}>
                     <Typography color="inherit" variant="body2">
                         If you have any questions or concerns about sharing data go to <a href={cdrFaqLink} target="_blank">{cdrFaqLink}</a>
                     </Typography>
                 </Grid>
-                <Grid item xs={12} mt={5}>
+                <Grid size={{ xs: 12 }} sx={{
+                    mt: 5
+                }}>
                     <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 variant="outlined"
                                 color="primary"
@@ -145,7 +156,7 @@ export default function SelectAccount() {
                                 Cancel
                             </Button>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 type='submit'
                                 variant="contained"
@@ -162,7 +173,6 @@ export default function SelectAccount() {
                     </Grid>
                 </Grid>
             </Grid>
-
             <Dialog open={accountDetails.open} maxWidth='xs'>
                 <DialogActions sx={{ p: 0 }}>
                     <Button autoFocus onClick={onAccountDetailsClose} startIcon={<Close />} variant="contained" sx={{ borderRadius: 0 }}>
@@ -173,7 +183,6 @@ export default function SelectAccount() {
                     <AccountInfo account={accountDetails.account} />
                 </DialogContent>
             </Dialog>
-
         </PageLayout>
     );
 }

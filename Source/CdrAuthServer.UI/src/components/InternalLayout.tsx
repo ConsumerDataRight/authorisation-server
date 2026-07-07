@@ -18,21 +18,23 @@ export function InternalLayout({ children, selectedMenu, pageTitle="" }: { child
             <AppBar color="inherit">
                 <Container maxWidth={'xs'}>
                     <Toolbar disableGutters component={Grid} container>
-                        <Grid item xs={3}>
+                        <Grid size={{ xs: 3 }}>
                             <Button sx={{ p: 0 }} component={Link} startIcon={<ArrowBack />} underline="always" onClick={goBack}>Back</Button>
                         </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="h6" textAlign={'center'}>{pageTitle}</Typography>
+                        <Grid size={{ xs: 6 }}>
+                            <Typography variant="h6" sx={{ textAlign:'center' }}>{pageTitle}</Typography>
                         </Grid>
-                        <Grid item xs={3}>
+                        <Grid size={{ xs: 3 }}>
                             <Typography>&nbsp;</Typography>
                         </Grid>
                     </Toolbar>
                 </Container>
             </AppBar>
             <Toolbar />
-            <Grid py={2}>
-                <Grid item xs={12}>
+            <Grid sx={{
+                py: 2
+            }}>
+                <Grid size={{ xs: 12 }}>
                     {children}
                 </Grid>
             </Grid>

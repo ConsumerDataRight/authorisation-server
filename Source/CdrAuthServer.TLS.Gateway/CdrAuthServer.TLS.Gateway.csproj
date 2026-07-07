@@ -50,5 +50,5 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\CdrAuthServer.Infrastructure\CdrAuthServer.Infrastructure.csproj" />
-    </ItemGroup>
+    </ItemGroup>  
 </Project>

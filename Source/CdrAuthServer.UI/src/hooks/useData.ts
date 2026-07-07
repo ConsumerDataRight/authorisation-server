@@ -29,7 +29,8 @@ export function useData() {
         if (dataUrl?.startsWith('http')) {
             return dataUrl;
         }
-        return `${settings.PUBLIC_URL}/${dataUrl}`;
+        return `${import.meta.env.BASE_URL}/${dataUrl}`;
+        
     }
 
     const submitConsentRequest = () => {

@@ -57,6 +57,7 @@ namespace CdrAuthServer.Domain
             public const string ErrorDescription = "error_description";
             public const string AuthTime = "auth_time";
             public const string UpdatedAt = "updated_at";
+            public const string RecipientBaseUri = "recipient_base_uri";
         }
 
         public static class TokenTypes

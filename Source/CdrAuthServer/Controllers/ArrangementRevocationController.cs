@@ -79,7 +79,7 @@ namespace CdrAuthServer.Controllers
 
             if (await _grantService.Get(GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId) is not CdrArrangementGrant cdrArrangementGrant)
             {
-                _logger.LogError("{Arrangement} with id:{Id} not found for client:{Clientid}", GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId);
+                _logger.LogError("{Arrangement} with id:{Id} not found for client:{ClientId}", GrantTypes.CdrArrangement, cdrArrangementId, client.ClientId);
                 return UnprocessableEntity(new ResponseErrorList().AddInvalidConsentArrangement(cdrArrangementId));
             }
 

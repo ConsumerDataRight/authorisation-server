@@ -58,44 +58,84 @@ export default function Confirmation() {
         }
 
         return (
-        <>
-            <Typography pt={2} pb={2}>{sharingInformation}</Typography>
-            {consentDays > 365 && <Typography pt={2} pb={2} sx={{ fontStyle: 'italic' }}>* Sharing Period is a maximum of 12 months</Typography>}
-        </>);
+            <>
+                <Typography
+                    sx={{
+                        pt: 2,
+                        pb: 2
+                    }}>{sharingInformation}</Typography>
+                {consentDays > 365 && <Typography
+                    sx={{
+                        pt: 2,
+                        pb: 2,
+                        fontStyle: 'italic'
+                    }}>* Sharing Period is a maximum of 12 months</Typography>}
+            </>
+        );
     }
 
     return (
         <PageLayout>
-            <Typography color="inherit" variant="h5" pb={2}>
+            <Typography color="inherit" variant="h5" sx={{
+                pb: 2
+            }}>
                 Confirm what we'll share
             </Typography>
-            <Typography color="inherit" variant="body2" pb={2}>
+            <Typography color="inherit" variant="body2" sx={{
+                pb: 2
+            }}>
                 Please confirm that you agree to share the following data with {dataRecipientName}.
             </Typography>
-            <Typography color="inherit" variant="h6" pt={2} pb={1}>
+            <Typography
+                color="inherit"
+                variant="h6"
+                sx={{
+                    pt: 2,
+                    pb: 1
+                }}>
                 Data requested
             </Typography>
             <ClusterList scopes={commonState.inputParams?.scope ?? ""} />
-
-            <Typography color="inherit" variant="h6" mt={4} mb={1}>
+            <Typography
+                color="inherit"
+                variant="h6"
+                sx={{
+                    mt: 4,
+                    mb: 1
+                }}>
                 Sharing period
             </Typography>
-            <Box mb={3} sx={{ p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
-                {isConsentOneoff && <Typography pb={1}>Once</Typography>}
+            <Box sx={{mb:3, p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
+                {isConsentOneoff && <Typography sx={{
+                    pb: 1
+                }}>Once</Typography>}
 
-                {!isConsentOneoff && <Typography pb={1}>[{new Date().toLocaleString('en-au', { day: 'numeric', month: 'long', year: 'numeric' })} -
+                {!isConsentOneoff && <Typography sx={{
+                    pb: 1
+                }}>[{new Date().toLocaleString('en-au', { day: 'numeric', month: 'long', year: 'numeric' })} -
                     {new Date(new Date().getTime() + (1000 * sharingDuration)).toLocaleString('en-au', { day: 'numeric', month: 'long', year: 'numeric' })}]</Typography>}
 
                 {openedClusterIds.includes("sharing.period") && <SharingClusterMoreInformation />}
                 <Link underline="always" onClick={toggleClusters("sharing.period")}>See {openedClusterIds.includes("sharing.period") ? "less" : "more"}</Link>
             </Box>
-
-            <Typography color="inherit" variant="h6" mt={4} mb={1}>
+            <Typography
+                color="inherit"
+                variant="h6"
+                sx={{
+                    mt: 4,
+                    mb: 1
+                }}>
                 Manage your data sharing
             </Typography>
-            <Box mb={3} sx={{ p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
-                <Typography pb={1}>Go to 'Settings&gt;Data sharing' to review this arrangement and stop sharing your data.</Typography>
-                {openedClusterIds.includes("sharing.manage") && <><Typography pt={2} pb={2}>
+            <Box sx={{mb:3, p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
+                <Typography sx={{
+                    pb: 1
+                }}>Go to 'Settings&gt;Data sharing' to review this arrangement and stop sharing your data.</Typography>
+                {openedClusterIds.includes("sharing.manage") && <><Typography
+                    sx={{
+                        pt: 2,
+                        pb: 2
+                    }}>
                     You can do this at any time in online banking or on the {dataHolderName} app.
                 </Typography>
                     <Typography>
@@ -103,20 +143,30 @@ export default function Confirmation() {
                     </Typography></>}
                 <Link underline="always" onClick={toggleClusters("sharing.manage")}>See {openedClusterIds.includes("sharing.manage") ? "less" : "more"}</Link>
             </Box>
-
-            <Typography color="inherit" variant="body2" mt={4}>
+            <Typography color="inherit" variant="body2" sx={{
+                mt: 4
+            }}>
                 <a href={"#"} tabIndex={5}>View our CDR policy (2 min read) &nbsp;<OpenInNew sx={{ fontSize: 8 }} /></a>
             </Typography>
-
-            <Grid container mt={4} justifyContent="center" bgcolor={grey[100]}>
-                <Grid item xs={12} p={2}>
+            <Grid
+                container
+                sx={{
+                    mt: 4,
+                    justifyContent: "center",
+                    bgcolor: grey[100]
+                }}>
+                <Grid size={{ xs: 12 }} sx={{
+                    p: 2
+                }}>
                     <Typography color="inherit" variant="h6">
                         Do you allow us to share your data with {dataRecipientName}?
                     </Typography>
                 </Grid>
-                <Grid item xs={12} p={2}>
+                <Grid size={{ xs: 12 }} sx={{
+                    p: 2
+                }}>
                     <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -129,7 +179,7 @@ export default function Confirmation() {
                                 Deny
                             </Button>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 type='submit'
                                 variant="contained"

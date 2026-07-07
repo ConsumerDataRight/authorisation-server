@@ -10,22 +10,29 @@ export function AccountInfo({ account, isBasic = true }: { account?: AccountMode
             {(account?.MaskedName || account?.AccountNumber) && <Typography color="inherit" variant="body1">
                 {account?.MaskedName ?? account?.AccountNumber}
             </Typography>}
-            {account?.ProductName && <Typography color="inherit" variant="body2" pb={2}>
+            {account?.ProductName && <Typography color="inherit" variant="body2" sx={{pb: 2}}>
                 This account refers to {account?.ProductName}
             </Typography>}
             {isBasic === false && <>
                 <Alert variant="outlined" severity="success">
-                    <Typography color="text.primary" variant="body1" fontWeight={'bold'} >
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: "text.primary",
+                            fontWeight:'bold'
+                        }}>
                         [ADR Brand] is accessing data from this account
                     </Typography>
                 </Alert>
-                <Typography color="inherit" variant="body2" pt={1}>
+                <Typography color="inherit" variant="body2" sx={{pt: 1}}>
                     Access granted on 01 June 2020
                 </Typography>
-                <Typography color={'text.secondary'} variant="body2">
+                <Typography variant="body2" sx={{
+                    color: 'text.secondary'
+                }}>
                     Expires on 31 May 2021
                 </Typography>
             </>}
         </>
-    )
+    );
 }

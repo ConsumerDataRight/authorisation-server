@@ -38,7 +38,7 @@
         {
             HttpResponseMessage? response = null;
 
-            using (logger.BeginScope("Calling {Method}{Uri}", request.Method, request.RequestUri))
+            using (logger.BeginScope("Calling {Method} {Uri}", request.Method, request.RequestUri?.AbsoluteUri))
             {
                 await Log(request, cancellationToken);
 

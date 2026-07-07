@@ -39,7 +39,7 @@ export default function Login() {
                 // Go to a error page
                 setCommonState({
                     ...commonState,
-                    errors: [...commonState.errors ?? [], { title: "Login Failed", code: "Invalid Token", detail: "The token provided is invalid. Please provide a valid token and re-start the application." }]
+                    errors: [...(commonState.errors ?? []), { title: "Login Failed", code: "Invalid Token", detail: "The token provided is invalid. Please provide a valid token and re-start the application." }]
                 });
                 return;
             }
@@ -68,12 +68,26 @@ export default function Login() {
     return (
         <PageLayout>
             {!loginState || loginState.customerId === "" ? <LoginForm customerId={customerIdState} /> : <OtpForm otp={otpState} onComplete={onLoginComplete} />}
-            <Grid container justifyContent="center" mt={4}>
-                <Grid item xs={12} bgcolor={grey[100]} p={2}>
-                    <Typography color="inherit" variant="body2" pb={2}>
+            <Grid
+                container
+                sx={{
+                    justifyContent: "center",
+                    mt: 4
+                }}>
+                <Grid
+                    size={{ xs: 12 }}
+                    sx={{
+                        bgcolor: grey[100],
+                        p: 2
+                    }}>
+                    <Typography color="inherit" variant="body2" sx={{
+                        pb: 2
+                    }}>
                         We will never share your login details with {commonState?.dataRecipient?.BrandName} or ask you to provide your real password to share CDR data.
                     </Typography>
-                    <Typography color="inherit" variant="body2" pb={2}>
+                    <Typography color="inherit" variant="body2" sx={{
+                        pb: 2
+                    }}>
                         For more information view our <a href={"#"} tabIndex={5}>CDR Policy&nbsp;<OpenInNew sx={{ fontSize: 8 }} /></a> (2 min read)
                     </Typography>
                     <Typography color="inherit" variant="body2">
@@ -82,5 +96,5 @@ export default function Login() {
                 </Grid>
             </Grid>
         </PageLayout>
-    )
+    );
 }

@@ -8,6 +8,8 @@
 
         public string GetDataRecipientsEndpoint { get; set; } = string.Empty;
 
+        public bool RevokeRemovedSoftwareProductConsents { get; set; } = false;
+
         public int Version { get; set; }
     }
 }
