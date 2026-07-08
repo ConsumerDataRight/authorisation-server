@@ -1,79 +1,54 @@
 {
   "name": "cdr-auth-server-ui",
   "version": "1.1.1",
-  "homepage": "/ui",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "@hookform/resolvers": "^3.3.2",
-    "@mui/icons-material": "^5.14.19",
-    "@mui/lab": "latest",
-    "@mui/material": "latest",
-    "@mui/styled-engine-sc": "latest",
-    "caniuse-lite": "^1.0.30001566",
-    "jsonwebtoken": "^9.0.2",
-    "jwk-to-pem": "^2.0.5",
+    "@hookform/resolvers": "^5.4.0",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/lab": "^9.0.0-beta.3",
+    "@mui/material": "^9.0.1",
+    "@mui/styled-engine-sc": "^9.0.1",
+    "caniuse-lite": "^1.0.30001793",
+    "jsonwebtoken": "^9.0.3",
+    "jwk-to-pem": "^2.0.7",
     "node-jose": "^2.2.0",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-hook-form": "^7.48.2",
-    "react-idle-timer": "^5.7.2",
-    "react-router-dom": "^6.20.1",
-    "styled-components": "latest",
-    "yup": "^1.3.2"
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-ga4": "^3.0.1",
+    "react-hook-form": "^7.76.1",
+    "react-idle-timer": "^5.7.3",
+    "react-router-dom": "^7.16.0",
+    "styled-components": "^6.4.2",
+    "yup": "^1.7.1"
   },
   "scripts": {
-    "tsc": "./node_modules/.bin/tsc",
-    "start": "craco start",
-    "start-local": "craco --openssl-legacy-provider start",
-    "build": "craco build",
-    "build:dev": "(npm run copy-env-dev-to-local) && craco build && (npm run delete-env-local)",
-    "build:test": "(npm run copy-env-test-to-local) && craco build && (npm run delete-env-local)",
-    "build:prod": "(npm run copy-env-prod-to-local) && craco build && (npm run delete-env-local)",
-    "copy-env-dev-to-local": "copy .env.sandbox.dev .env.local",
-    "copy-env-test-to-local": "copy .env.sandbox.test .env.local",
-    "copy-env-prod-to-local": "copy .env.sandbox.prod .env.local",
-    "delete-env-local": "del -f .env.local",
-    "test": "craco test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "tsc": "tsc",
+    "start": "vite",
+    "start-local": "vite",
+    "build": "tsc && vite build",
+    "build:dev": "tsc && vite build --mode sandbox.dev",
+    "build:test": "tsc && vite build --mode sandbox.test",
+    "build:prod": "tsc && vite build --mode sandbox.prod",
+    "test": "vitest",
+    "preview": "vite preview",
+    "serve": "vite preview"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "latest",
-    "@craco/craco": "latest",
-    "@types/jest": "^29.5.11",
-    "@types/jsonwebtoken": "^9.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/jwk-to-pem": "^2.0.3",
-    "@types/node": "^20.10.3",
+    "@types/node": "^25.9.1",
     "@types/node-jose": "^1.1.13",
-    "@types/react": "^18.2.42",
-    "@types/react-dom": "^18.2.17",
-    "@types/react-router-dom": "^5.3.3",
-    "@types/styled-components": "latest",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "base64url": "^3.0.1",
     "buffer": "^6.0.3",
-    "craco-alias": "^3.0.1",
-    "crypto-browserify": "^3.12.0",
     "process": "^0.11.10",
     "react-inject-env": "^2.1.0",
-    "react-scripts": "latest",
-    "stream-browserify": "^3.0.0",
-    "util": "^0.12.5"
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "vite-plugin-node-polyfills": "^0.28.0",
+    "vitest": "^4.1.7"
   }
 }

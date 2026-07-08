@@ -56,7 +56,7 @@ services:
     # volumes:
     #   - "./_temp/cdr-auth-server-standalone/tmp:/tmp"      
     healthcheck:
-      test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8001/health) && (wget --no-check-certificate --no-verbose --spider http://localhost:3000)) || exit 1      
+      test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8001/health) && (wget --no-check-certificate --no-verbose --spider http://localhost:3000/ui)) || exit 1      
       timeout: 5s
       interval: 5s
       retries: 50

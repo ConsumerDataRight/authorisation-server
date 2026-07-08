@@ -7,7 +7,9 @@ variables:
   - group: PT-Pipeline-Common
 
 pool:
-  vmImage: $(Pipeline_Host_Image)
+ name: mdp-mgmt-shared
+ demands:
+   - ImageOverride -equals $(PipelineHostLinuxImage)
 
 steps:
   - task: UseDotNet@2

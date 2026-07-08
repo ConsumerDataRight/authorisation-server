@@ -25,8 +25,6 @@
 
         public DbSet<Token> Tokens { get; set; }
 
-        public DbSet<LogEventsDrService> LogEventsDrService { get; set; }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new ClientConfiguration());

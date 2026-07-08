@@ -4,8 +4,13 @@
 trigger:
   - none
 
+variables:
+  - group: PT-Pipeline-Common
+
 pool:
-  vmImage: ubuntu-latest
+ name: mdp-mgmt-shared
+ demands:
+   - ImageOverride -equals $(PipelineHostLinuxImage)
 
 jobs:
   - job: Build

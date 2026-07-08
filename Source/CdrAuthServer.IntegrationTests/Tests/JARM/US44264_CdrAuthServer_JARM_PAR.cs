@@ -15,7 +15,6 @@ using Serilog;
 using System.Net;
 using Xunit;
 using Xunit.DependencyInjection;
-using static IdentityModel.OidcConstants;
 using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
 
 namespace CdrAuthServer.IntegrationTests.JARM

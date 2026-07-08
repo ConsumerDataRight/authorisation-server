@@ -17,37 +17,43 @@ export default function ArrangementDetails() {
                 <CardContent>
                     <Stack
                         direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
                         spacing={2}
-                    >
-                        <Typography color="inherit" variant="h5" pb={1}>
+                        sx={{
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+                        <Typography color="inherit" variant="h5" sx={{pb:1}}>
                             [ADR Brand]
                         </Typography>
                         <Chip icon={<CheckCircle />} label="Active" variant="outlined" color="success" size="small" />
                     </Stack>
 
-                    <Typography color="inherit" variant="body1" pb={2}>
+                    <Typography color="inherit" variant="body1" sx={{pb:2}}>
                         [software product]
                     </Typography>
                     <Typography color="inherit" variant="body2">
                         Access granted on [01 June 2020]
                     </Typography>
-                    <Typography color={'text.secondary'} variant="body2">
+                    <Typography variant="body2" sx={{
+                        color: 'text.secondary'
+                    }}>
                         Expires on [31 May 2021]
                     </Typography>
 
                 </CardContent>
             </Card>
-            <Box my={3}>
-                <Typography color={'text.secondary'} variant="body2">
+            <Box sx={{ my: 3 }}>
+                <Typography variant="body2" sx={{
+                    color: 'text.secondary'
+                }}>
                     You should check with the [ADR Brand] app or website for more information on how they are handling your data.
                 </Typography>
 
             </Box>
-
-            <Box my={3}>
-                <Typography color={'text.secondary'} variant="button">
+            <Box sx={{ my: 3 }}>
+                <Typography variant="button" sx={{
+                    color: 'text.secondary'
+                }}>
                     SHARING ARRANGEMENTS
                 </Typography>
                 <List
@@ -108,18 +114,20 @@ export default function ArrangementDetails() {
                     {/* <Divider component="li" /> */}
                 </List>
             </Box>
-
-            <Box my={3} sx={{ p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
+            <Box sx={{my: 3, p: 2, borderTop: `1px solid ${grey[300]}`, borderBottom: `1px solid ${grey[300]}` }}>
                 <Link underline="always">Send this sharing arrangement to your email</Link>
             </Box>
-
-            <Box my={3}>
+            <Box sx={{ my: 3 }}>
                 <Button variant="outlined" fullWidth size="large" sx={{ py: 1 }} onClick={() => setStopSharingOpen(true)} >Stop sharing</Button>
-                <Typography color={'text.secondary'} variant="body2" my={2}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: 'text.secondary',
+                        my:2
+                    }}>
                     This means [ADR brand] will no londer have access your your data.
                 </Typography>
             </Box>
-
             <Dialog open={stopSharingOpen} maxWidth='xs' scroll="paper">
 
                 <DialogActions sx={{ p: 0 }}>
@@ -129,14 +137,14 @@ export default function ArrangementDetails() {
                 </DialogActions>
                 <DialogTitle>Stop sharing</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body1" my={1}>
+                    <Typography variant="body1" sx={{my: 1}}>
                         This means [ADR brand] will no londer have access your your data. this may affect your current services to you may want to check with your [ADR brand] before continuing.
                     </Typography>
-                    <Typography variant="body1" mt={2} mb={4}>
+                    <Typography variant="body1" sx={{mt: 2, mb: 4}}>
                         Are you sure you want to continue?
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 variant="outlined"
                                 color="primary"
@@ -149,7 +157,7 @@ export default function ArrangementDetails() {
                                 Cancel
                             </Button>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                             <Button
                                 variant="outlined"
                                 color="primary"
@@ -166,7 +174,7 @@ export default function ArrangementDetails() {
                 </DialogContent>
             </Dialog>
         </InternalLayout >
-    )
+    );
 }
 
 {/* TODO: body2 font size should be a bit smaller, override dialog to show at the bottom */ }

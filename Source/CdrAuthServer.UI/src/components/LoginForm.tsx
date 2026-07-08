@@ -66,7 +66,9 @@ export function LoginForm({ customerId }: { customerId: string }) {
 
     return (
         <>
-            <Typography color="inherit" variant="h5" pb={2}>
+            <Typography color="inherit" variant="h5" sx={{
+                pb: 2
+            }}>
                 Login
             </Typography>
             <Typography color="inherit" variant="body1">
@@ -74,8 +76,14 @@ export function LoginForm({ customerId }: { customerId: string }) {
             </Typography>
             <InfoPanel />
             <form onSubmit={handleSubmit(onSubmit)}>
-                <Grid container rowSpacing={2} mt={1} mb={2}>
-                    <Grid item xs={12}>
+                <Grid
+                    container
+                    rowSpacing={2}
+                    sx={{
+                        mt: 1,
+                        mb: 2
+                    }}>
+                    <Grid size={{ xs: 12 }}>
                         <Controller
                             name="customerId"
                             control={control}
@@ -87,19 +95,21 @@ export function LoginForm({ customerId }: { customerId: string }) {
                                 onChange={onChange}
                                 error={errors.customerId ? true : false}
                                 helperText={errors.customerId?.message}
-                                inputProps={{ tabIndex: 1 }}
+                                slotProps={{
+                                    input: { tabIndex: 1 }
+                                }}                                
                                 id="customerId"
                             />}
                         />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Typography color="inherit" variant="body2">
                             Having trouble with your details? Contact {dataHolderName} for assistance.
                         </Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Button
                                     variant="outlined"
                                     color="primary"
@@ -112,7 +122,7 @@ export function LoginForm({ customerId }: { customerId: string }) {
                                     Cancel
                                 </Button>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Button
                                     type='submit'
                                     variant="contained"
@@ -130,5 +140,6 @@ export function LoginForm({ customerId }: { customerId: string }) {
                     </Grid>
                 </Grid>
             </form>
-        </>)
+        </>
+    );
 }

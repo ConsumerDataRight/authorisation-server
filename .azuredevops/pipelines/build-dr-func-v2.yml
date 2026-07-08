@@ -21,10 +21,13 @@ trigger:
   - releases/*
   
 pool:
-  vmImage: ubuntu-latest
+ name: mdp-mgmt-shared
+ demands:
+   - ImageOverride -equals $(PipelineHostLinuxImage)
 
 variables:
 - group: artifacts
+- group: PT-Pipeline-Common
 
 steps:
 

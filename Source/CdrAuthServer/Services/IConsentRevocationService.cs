@@ -26,5 +26,13 @@ namespace CdrAuthServer.Services
         /// The request and response, as well as an exception if one was thrown.
         /// </returns>
         Task<OutboundCallDetails> RevokeAdrArrangement(Client client, string arrangementId, TimeSpan revocationTimeout, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Revokes ADR Arrangements that are related to the provided <paramref name="softwareProductIds"/>.
+        /// </summary>
+        /// <param name="softwareProductIds">The software products identifiers.</param>
+        /// <param name="revocationTimeout">The timeout for the revocation.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task RevokeAdrArrangementsForSoftwareProducts(IEnumerable<string> softwareProductIds, TimeSpan revocationTimeout, CancellationToken cancellationToken = default);
     }
 }

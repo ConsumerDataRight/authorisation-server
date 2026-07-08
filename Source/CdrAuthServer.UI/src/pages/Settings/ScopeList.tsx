@@ -6,7 +6,7 @@ export default function ScopeList() {
 
     return (
         <InternalLayout selectedMenu="settings" pageTitle="Data requested">
-            <Box my={3}>
+            <Box sx={{ my: 3 }}>
                 <ClusterList scopes={"bank:accounts.basic:read bank:accounts.detail:read email profile name"} />
             </Box>
         </InternalLayout>
