@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Controllers;
 using CdrAuthServer.Models;
 using CdrAuthServer.Models.Json;
@@ -10,6 +12,7 @@ using CdrAuthServer.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
 using static CdrAuthServer.Domain.Constants;
@@ -21,7 +24,9 @@ namespace CdrAuthServer.UnitTests.Controllers
         private readonly Mock<ILogger<AdminController>> _logger = new();
         private readonly Mock<IRegisterClientService> _registerClientService = new();
         private readonly Mock<IClientService> _clientService = new();
+        private readonly Mock<IConsentRevocationService> _consentRevocationService = new();
         private readonly Mock<ICdrService> _cdrService = new();
+        private readonly IOptions<CdrRegisterConfiguration> _cdrRegisterConfig = Options.Create(new CdrRegisterConfiguration { RevokeRemovedSoftwareProductConsents = false });
 
         [Test]
         public async Task RefreshDataRecipientsReturnsUnauthorizedForInvalidClient()
@@ -34,7 +39,7 @@ namespace CdrAuthServer.UnitTests.Controllers
                 },
             };
 
-            var controller = new AdminController(_cdrService.Object, _clientService.Object, _logger.Object, _registerClientService.Object)
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, _cdrRegisterConfig)
             {
                 ControllerContext = context,
             };
@@ -61,7 +66,7 @@ namespace CdrAuthServer.UnitTests.Controllers
 
             _clientService.Setup(x => x.Get(clientId)).ReturnsAsync(new Client());
 
-            var controller = new AdminController(_cdrService.Object, _clientService.Object, _logger.Object, _registerClientService.Object)
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, _cdrRegisterConfig)
             {
                 ControllerContext = context,
             };
@@ -90,7 +95,7 @@ namespace CdrAuthServer.UnitTests.Controllers
 
             _clientService.Setup(x => x.Get(clientId)).ReturnsAsync(new Client());
 
-            var controller = new AdminController(_cdrService.Object, _clientService.Object, _logger.Object, _registerClientService.Object)
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, _cdrRegisterConfig)
             {
                 ControllerContext = context,
             };
@@ -119,7 +124,7 @@ namespace CdrAuthServer.UnitTests.Controllers
             _clientService.Setup(x => x.Get(clientId)).ReturnsAsync(new Client());
             _registerClientService.Setup(x => x.GetDataRecipients(default)).ReturnsAsync(new RegisterResponse<LegalEntity> { Data = GenerateEntities(3), Links = new Links { Self = new Uri(self) } });
 
-            var controller = new AdminController(_cdrService.Object, _clientService.Object, _logger.Object, _registerClientService.Object)
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, _cdrRegisterConfig)
             {
                 ControllerContext = context,
             };
@@ -129,6 +134,7 @@ namespace CdrAuthServer.UnitTests.Controllers
             var result = await controller.RefreshDataRecipients(request, default);
             _cdrService.Verify(x => x.PurgeDataRecipients(), Times.Once);
             _cdrService.Verify(x => x.InsertDataRecipients(It.IsAny<List<SoftwareProduct>>()), Times.Once);
+            _consentRevocationService.Verify(x => x.RevokeAdrArrangementsForSoftwareProducts(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
             ResultHelper.AssertInstanceOf<ObjectResult>(result, out var converted);
             Assert.AreEqual(StatusCodes.Status200OK, converted.StatusCode);
             Assert.AreEqual($"Data recipient records refreshed from {self}.", converted.Value);
@@ -150,7 +156,7 @@ namespace CdrAuthServer.UnitTests.Controllers
             _clientService.Setup(x => x.Get(clientId)).ReturnsAsync(new Client());
             _registerClientService.Setup(x => x.GetDataRecipients(default)).ReturnsAsync(new RegisterResponse<LegalEntity> { Data = GenerateEntities(0), Links = new Links { Self = new Uri(self) } });
 
-            var controller = new AdminController(_cdrService.Object, _clientService.Object, _logger.Object, _registerClientService.Object)
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, _cdrRegisterConfig)
             {
                 ControllerContext = context,
             };
@@ -164,6 +170,40 @@ namespace CdrAuthServer.UnitTests.Controllers
             ResultHelper.AssertInstanceOf<ObjectResult>(result, out var converted);
             Assert.AreEqual(StatusCodes.Status500InternalServerError, converted.StatusCode);
             Assert.AreEqual("Data recipient data could not be refreshed.", converted.Value);
+        }
+
+        [Test]
+        public async Task RefreshDataRecipientsRevokesConsentsWhenEnabled()
+        {
+            var clientId = "valid";
+            var self = "http://inception/cdr-register/v1/all/data-recipients";
+            var context = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal([new ClaimsIdentity([new Claim(ClaimNames.ClientId, clientId)])]),
+                },
+            };
+
+            _clientService.Setup(x => x.Get(clientId)).ReturnsAsync(new Client());
+            _registerClientService.Setup(x => x.GetDataRecipients(default)).ReturnsAsync(new RegisterResponse<LegalEntity> { Data = GenerateEntities(3), Links = new Links { Self = new Uri(self) } });
+
+            var cdrRegisterConfig = Options.Create(new CdrRegisterConfiguration { RevokeRemovedSoftwareProductConsents = true });
+
+            var controller = new AdminController(_cdrService.Object, _clientService.Object, _consentRevocationService.Object, _logger.Object, _registerClientService.Object, cdrRegisterConfig)
+            {
+                ControllerContext = context,
+            };
+
+            var request = new DataRecipientRequest { Data = new Data { Action = "REFRESH" } };
+
+            var result = await controller.RefreshDataRecipients(request, default);
+            _cdrService.Verify(x => x.PurgeDataRecipients(), Times.Once);
+            _cdrService.Verify(x => x.InsertDataRecipients(It.IsAny<List<SoftwareProduct>>()), Times.Once);
+            _consentRevocationService.Verify(x => x.RevokeAdrArrangementsForSoftwareProducts(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+            ResultHelper.AssertInstanceOf<ObjectResult>(result, out var converted);
+            Assert.AreEqual(StatusCodes.Status200OK, converted.StatusCode);
+            Assert.AreEqual($"Data recipient records refreshed from {self}.", converted.Value);
         }
 
         [TearDown]

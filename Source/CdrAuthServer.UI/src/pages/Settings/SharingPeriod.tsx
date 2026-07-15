@@ -10,8 +10,10 @@ export default function SharingPeriod() {
 
     return (
         <InternalLayout selectedMenu="settings" pageTitle="Sharing period">
-            <Box my={3}>
-                <Typography color={'text.secondary'} variant="button">
+            <Box sx={{ my: 3 }}>
+                <Typography variant="button" sx={{
+                    color: 'text.secondary'
+                }}>
                     CONSENT SHARING PERIOD
                 </Typography>
                 <List sx={{ width: '100%', mt: 1, borderTop: `1px solid ${grey[300]}` }}>
@@ -24,12 +26,16 @@ export default function SharingPeriod() {
                         <Typography variant="body1">31 May 2021</Typography>
                     </ListItem>
                     <ListItem disableGutters divider={true}>
-                        <ListItemText primary={<Typography color={'text.secondary'} variant="body2">{dataRecipientName} can access the data you've authorised on an ongoing basis for 12 months.</Typography>} />
+                        <ListItemText primary={<Typography variant="body2" sx={{
+                            color: 'text.secondary'
+                        }}>{dataRecipientName} can access the data you've authorised on an ongoing basis for 12 months.</Typography>} />
                     </ListItem>
                 </List>
             </Box>
-            <Box my={3}>
-                <Typography color={'text.secondary'} variant="button">
+            <Box sx={{ my: 3 }}>
+                <Typography variant="button" sx={{
+                    color: 'text.secondary'
+                }}>
                     HISTORICAL DATA
                 </Typography>
                 <List sx={{ width: '100%', mt: 1, borderTop: `1px solid ${grey[300]}` }}>
@@ -41,5 +47,5 @@ export default function SharingPeriod() {
                 </List>
             </Box>
         </InternalLayout >
-    )
+    );
 }

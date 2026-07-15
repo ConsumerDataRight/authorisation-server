@@ -1,5 +1,7 @@
 ﻿using System.Net.Http.Headers;
+using AutoMapper;
 using CdrAuthServer.Configuration;
+using CdrAuthServer.Domain.Repositories;
 using CdrAuthServer.Infrastructure.Certificates;
 using CdrAuthServer.Models;
 using Microsoft.Extensions.Options;
@@ -16,7 +18,7 @@ namespace CdrAuthServer.Services
     /// <param name="httpClient">The managed http client.</param>
     /// <param name="configurationOptions">The configuration.</param>
     /// <param name="logger">The logger.</param>
-    public class ConsentRevocationService(HttpClient httpClient, IOptions<ConfigurationOptions> configurationOptions, ICertificateLoader certificateLoader, ILogger<ConsentRevocationService> logger) : IConsentRevocationService
+    public class ConsentRevocationService(HttpClient httpClient, IOptions<ConfigurationOptions> configurationOptions, ICertificateLoader certificateLoader, IArrangementsRepository arrangementsRepository, IMapper mapper, ILogger<ConsentRevocationService> logger) : IConsentRevocationService
     {
         private readonly ConfigurationOptions _configurationOptions = configurationOptions.Value;
         private readonly Task<SigningCredentials> signingCredentialsTask = CreateSigningCredentials(configurationOptions, certificateLoader);
@@ -36,6 +38,7 @@ namespace CdrAuthServer.Services
         /// <inheritdoc />
         public async Task<OutboundCallDetails> RevokeAdrArrangement(Client client, string arrangementId, TimeSpan revocationTimeout, CancellationToken cancellationToken = default)
         {
+            logger.LogInformation("Revoking ADR Arrangement for: {CdrArrangementId}", arrangementId);
             Exception? exception = null;
             HttpResponseMessage? response = null;
             var request = await PopulateRequestMessageForRevocationCall(client, arrangementId);
@@ -56,6 +59,27 @@ namespace CdrAuthServer.Services
             }
 
             return new OutboundCallDetails(request, response, exception);
+        }
+
+        /// <inheritdoc />
+        public async Task RevokeAdrArrangementsForSoftwareProducts(IEnumerable<string> softwareProductIds, TimeSpan revocationTimeout, CancellationToken cancellationToken = default)
+        {
+            logger.LogInformation("Finding Arrangements for the following Software Products: {@SoftwareProducts}", softwareProductIds);
+            var arrangements = await arrangementsRepository.GetArrangementIdsForSoftwareProducts(softwareProductIds);
+
+            foreach (var a in arrangements)
+            {
+                var client = mapper.Map<Client>(a.Client);
+                logger.LogInformation("Calling ADR Arrangement revocation endpoint for arrangement {Arrangement} and client {@Client}", a.ArrangementId, client);
+                var result = await RevokeAdrArrangement(client, a.ArrangementId, revocationTimeout, cancellationToken);
+
+                if (result.Response is null || !result.Response!.IsSuccessStatusCode)
+                {
+#pragma warning disable S112 // General or reserved exceptions should never be thrown
+                    throw new Exception($"Unable to revoke arrangement {a.ArrangementId} with ADR");
+#pragma warning restore S112 // General or reserved exceptions should never be thrown
+                }
+            }
         }
 
         /// <summary>

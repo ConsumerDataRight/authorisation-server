@@ -20,7 +20,7 @@ export default function AccountList() {
 
     return (
         <InternalLayout selectedMenu="settings" pageTitle="Accounts">
-            <Box my={3}>
+            <Box sx={{ my: 3 }}>
                 <List
                     sx={{ width: '100%', mt: 2, borderTop: `1px solid ${grey[300]}` }}
                 >

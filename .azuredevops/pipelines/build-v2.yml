@@ -8,29 +8,57 @@ schedules:
     include:
     - develop
 
+resources:
+  repositories: 
+    - repository: shared-code-scanning
+      type: git
+      name: Common/shared-code-scanning
+      ref: refs/heads/main
+      trigger: none
+
 trigger:
   - develop  
   - main
+  - releases/*
 
 parameters:
   # https://github.com/microsoft/azure-pipelines-yaml/blob/master/design/runtime-parameters.md#syntax
   - name: MockRegisterOverrideDependentImageTag
     type: string
     default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime  
+  - name: forcePublish
+    type: boolean
+    displayName: |
+      Force publishing of image to ACR. When this is unticked, only builds of the main/develop branch will publish an image to ACR.
+    default: false
 
 variables:
 - group: artifacts
+- group: PT-Pipeline-Common
 - name: baseSourceDirectory
   value: $(Build.SourcesDirectory)/Source
 
 
 pool:
-  vmImage: ubuntu-latest
+ name: mdp-mgmt-shared
+ demands:
+   - ImageOverride -equals $(PipelineHostLinuxImage)
+   
 
 jobs:
   - job: Build
     timeoutInMinutes: 120
     steps:
+      - script: | 
+            echo "Cleaning auth-server folder in temp"
+            ls $(Agent.BuildDirectory)/s/Source/_temp/cdr-auth-server-* 2>/dev/null || "No matching folders found"
+            sudo rm -rf $(Agent.BuildDirectory)/s/Source/_temp/cdr-auth-server-* 2> /dev/null  
+        displayName: Clean temp auth-server folders
+        condition: always()
+
+      - checkout : self
+        clean: true
+
       # set the register tag to use based on the logic in the template file
       - template: set-tag-name.yml
         parameters:
@@ -122,6 +150,11 @@ jobs:
           script: |
             docker build $(baseSourceDirectory) -f $(baseSourceDirectory)/Dockerfile.standalone -t cdr-auth-server-standalone:latest
             docker image ls
+
+      - template: templates/scan-image.yml@shared-code-scanning
+        parameters:
+          Repository: cdr-auth-server-standalone
+          Tag: latest
 
       ###################################################################################################
       # Integration tests
@@ -407,7 +440,15 @@ jobs:
 
       - task: Bash@3
         displayName: 'Tag and push Authorisation Server image with Source Branch Name for any successful builds.'
-        condition: succeeded()
+        condition: and(
+            succeeded(),
+            or(
+              ${{ eq(parameters.forcePublish, true) }},
+              eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+              eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+              startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')
+            )
+          )
         inputs:
           targetType: inline
           script: |

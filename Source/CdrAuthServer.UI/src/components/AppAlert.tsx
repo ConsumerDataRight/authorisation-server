@@ -20,7 +20,7 @@ export function AppAlert() {
                 return (
                     <Alert icon={<Sms />} severity="error" color='warning' sx={{ width: '100%' }} onClose={closeAlert}>
                         <AlertTitle>NEW MESSAGE</AlertTitle>
-                        <Typography color="inherit" variant="body2" pb={2}>
+                        <Typography color="inherit" variant="body2" sx={{ pb:2 }}>
                             <b>{alert?.title && <span>{alert?.title}<br /></span>}</b>
                             {alert.message}
                         </Typography>

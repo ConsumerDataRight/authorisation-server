@@ -15,6 +15,7 @@ using CdrAuthServer.Repository;
 using CdrAuthServer.Repository.Infrastructure;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
@@ -44,9 +45,8 @@ await builder.Services.ConfigureWebServer(
     httpsPort: builder.Configuration.GetValue<int>("CdrAuthServer:HttpsPort", 8001));
 
 // Add logging provider.
-ConfigureSerilog(builder.Configuration);
-builder.Logging.ClearProviders();
-builder.Logging.AddSerilog();
+builder.Host.UseSerilog((context, services, loggerConfiguration) => ConfigureSerilog(context.Configuration, services, loggerConfiguration));
+Log.Logger = ConfigureSerilog(builder.Configuration, null, new LoggerConfiguration()).CreateBootstrapLogger();
 IdentityModelEventSource.ShowPII = true;
 
 // Turn off default model validation so that it can be handled according to standards.
@@ -67,6 +67,11 @@ builder.Services
                                                     .GetSection(ConfigurationOptions.ConfigurationSectionName)
                                                     .GetSection(nameof(ConfigurationOptions.CdrRegister))
                                                     .Bind(options));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+});
 
 builder.Services.AddTransient<HttpLoggingDelegatingHandler>();
 
@@ -196,6 +201,7 @@ builder.Services.AddTransient<ITokenService, TokenService>();
 builder.Services.AddTransient<IGrantService, GrantService>();
 builder.Services.AddTransient<ICustomerService, CustomerService>();
 builder.Services.AddTransient<ICdrService, CdrService>();
+builder.Services.AddTransient<IArrangementsRepository, ArrangementsRepository>();
 builder.Services.AddTransient<IClientRepository, ClientRepository>();
 builder.Services.AddTransient<ITokenRepository, TokenRepository>();
 builder.Services.AddTransient<IGrantRepository, GrantRepository>();
@@ -238,6 +244,8 @@ builder.Services
         options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
     });
 
+builder.Services.AddCdrApplicationInsights();
+
 bool healthCheckMigration = false;
 string? healthCheckMigrationMessage = null;
 bool healthCheckSeedData = false;
@@ -249,6 +257,7 @@ builder.Services
     .AddCheck("seed-data", () => healthCheckSeedData ? HealthCheckResult.Healthy(healthCheckSeedDataMessage) : HealthCheckResult.Unhealthy(healthCheckSeedDataMessage));
 
 app = builder.Build();
+app.UseForwardedHeaders();
 app.UseStaticFiles();
 
 // A static base path can be set by the CdrAuthServer:BasePath app setting.
@@ -291,7 +300,7 @@ if (enableSwagger)
 
 app.MapControllers();
 
-// Unhandled excecptions.
+// Unhandled exceptions.
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
@@ -313,9 +322,6 @@ MigrateDatabase();
 healthCheckMigration = true;
 healthCheckMigrationMessage = "Migration completed";
 
-// Reconfigure Serilog with DB
-ConfigureSerilog(builder.Configuration, true);
-
 healthCheckSeedData = true;
 healthCheckSeedDataMessage = "Seeding of data completed";
 
@@ -326,20 +332,23 @@ app.UseHealthChecks("/health", new HealthCheckOptions()
 
 await app.RunAsync();
 
-static void ConfigureSerilog(IConfiguration configuration, bool isDatabaseReady = false)
+static LoggerConfiguration ConfigureSerilog(IConfiguration configuration, IServiceProvider? services, LoggerConfiguration loggerConfiguration)
 {
-    var loggerConfiguration = new LoggerConfiguration()
+    loggerConfiguration
         .ReadFrom.Configuration(configuration)
         .AddOpenTelemetry(configuration)
         .Enrich.FromLogContext();
 
-    // If the database is ready, configure the SQL Server sink
-    if (isDatabaseReady)
+    // services will only be provided after the app is ready to start, we should expect the database to have migrated by now and be available.
+    if (services != null)
     {
-        loggerConfiguration.ReadFrom.Configuration(configuration, new ConfigurationReaderOptions() { SectionName = "SerilogMSSqlServerWriteTo" });
+        var telemetryConfiguration = services.GetRequiredService<TelemetryConfiguration>();
+        loggerConfiguration
+            .AddApplicationInsights(telemetryConfiguration, configuration)
+            .ReadFrom.Configuration(configuration, new ConfigurationReaderOptions() { SectionName = "SerilogMSSqlServerWriteTo" });
     }
 
-    Log.Logger = loggerConfiguration.CreateLogger();
+    return loggerConfiguration;
 }
 
 static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)

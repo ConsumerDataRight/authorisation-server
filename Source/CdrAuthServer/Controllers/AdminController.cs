@@ -1,4 +1,5 @@
 ﻿using CdrAuthServer.Authorisation;
+using CdrAuthServer.Configuration;
 using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Attributes;
 using CdrAuthServer.Infrastructure.Authorisation;
@@ -9,6 +10,7 @@ using CdrAuthServer.Validation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using static CdrAuthServer.Domain.Constants;
 
 namespace CdrAuthServer.Controllers
@@ -18,19 +20,25 @@ namespace CdrAuthServer.Controllers
     {
         private readonly ICdrService _cdrService;
         private readonly IClientService _clientService;
+        private readonly IConsentRevocationService _consentRevocationService;
         private readonly ILogger<AdminController> _logger;
         private readonly IRegisterClientService _registerClientService;
+        private readonly CdrRegisterConfiguration _cdrRegisterOptions;
 
         public AdminController(
             ICdrService cdrService,
             IClientService clientService,
+            IConsentRevocationService consentRevocationService,
             ILogger<AdminController> logger,
-            IRegisterClientService registerClientService)
+            IRegisterClientService registerClientService,
+            IOptions<CdrRegisterConfiguration> cdrRegisterOptions)
         {
             _cdrService = cdrService;
             _clientService = clientService;
+            _consentRevocationService = consentRevocationService;
             _logger = logger;
             _registerClientService = registerClientService;
+            _cdrRegisterOptions = cdrRegisterOptions.Value;
         }
 
         [HttpPost]
@@ -65,6 +73,14 @@ namespace CdrAuthServer.Controllers
                 if (response != null)
                 {
                     List<SoftwareProduct> softwareProducts = MapSoftwareProductList(response.Data.ToList());
+
+                    if (_cdrRegisterOptions.RevokeRemovedSoftwareProductConsents)
+                    {
+                        // Emulate DH revoking consent for removed software products
+                        var removedSoftwareProducts = softwareProducts.Where(sp => sp.Status == "REMOVED").Select(x => x.SoftwareProductId);
+
+                        await _consentRevocationService.RevokeAdrArrangementsForSoftwareProducts(removedSoftwareProducts, TimeSpan.FromSeconds(30), cancellationToken);
+                    }
 
                     // Purge Data Recipients
                     await _cdrService.PurgeDataRecipients();

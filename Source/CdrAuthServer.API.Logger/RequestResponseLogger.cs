@@ -14,13 +14,14 @@
             get { return _logger; }
         }
 
-        public RequestResponseLogger(IConfiguration configuration)
+        public RequestResponseLogger(IConfiguration configuration, Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration telemetryConfiguration)
         {
             var loggerConfiguration = new LoggerConfiguration();
 
             // If the Serilog response loggins is disabled, do not configure it using the appsettings.
             var isSerilogRequestResponseLoggerDisabled =
                 configuration.GetValue<bool>("SerilogRequestResponseLogger:IsDisabled", false);
+
             if (isSerilogRequestResponseLoggerDisabled)
             {
                 _logger = loggerConfiguration.CreateLogger();
@@ -30,6 +31,8 @@
             var options = new ConfigurationReaderOptions { SectionName = "SerilogRequestResponseLogger" };
             _logger = loggerConfiguration
                 .ReadFrom.Configuration(configuration, options)
+                .AddOpenTelemetry(configuration)
+                .AddApplicationInsights(telemetryConfiguration, configuration)
                 .Enrich.WithProperty("RequestMethod", string.Empty)
                 .Enrich.WithProperty("RequestBody", string.Empty)
                 .Enrich.WithProperty("RequestHeaders", string.Empty)

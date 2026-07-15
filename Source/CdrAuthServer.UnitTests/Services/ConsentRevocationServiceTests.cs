@@ -5,7 +5,9 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
 using CdrAuthServer.Configuration;
+using CdrAuthServer.Domain.Repositories;
 using CdrAuthServer.Infrastructure.Certificates;
 using CdrAuthServer.Models;
 using CdrAuthServer.Services;
@@ -35,6 +37,10 @@ namespace CdrAuthServer.UnitTests.Services
 
         private readonly X509Certificate2 _ps256SigningCertificate = CertificateHelper.CreateSigning();
 
+        private readonly Mock<IMapper> _mapper = new();
+
+        private readonly Mock<IArrangementsRepository> _arrangementsRepo = new();
+
         public ConsentRevocationServiceTests()
         {
             _certificateLoader.Setup(x => x.Load(It.IsAny<CertificateLoadDetails>())).ReturnsAsync(_ps256SigningCertificate);
@@ -55,7 +61,7 @@ namespace CdrAuthServer.UnitTests.Services
                     Content = new StringContent(string.Empty),
                 });
 
-            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _logger.Object);
+            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _arrangementsRepo.Object, _mapper.Object, _logger.Object);
 
             // Act
             var (request, response, exception) = await service.RevokeAdrArrangement(_client, _arrangementId, TimeSpan.FromSeconds(5));
@@ -81,7 +87,7 @@ namespace CdrAuthServer.UnitTests.Services
                 .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new NotImplementedException("Emulate an exception thrown that isn't due to cancellation"));
 
-            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _logger.Object);
+            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _arrangementsRepo.Object, _mapper.Object, _logger.Object);
 
             // Act
             var (request, response, exception) = await service.RevokeAdrArrangement(_client, _arrangementId, TimeSpan.FromSeconds(5));
@@ -115,7 +121,7 @@ namespace CdrAuthServer.UnitTests.Services
                     return new HttpResponseMessage();
                 });
 
-            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _logger.Object);
+            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _arrangementsRepo.Object, _mapper.Object, _logger.Object);
 
             // Act
             stopWatch.Start();
@@ -153,7 +159,7 @@ namespace CdrAuthServer.UnitTests.Services
                     return new HttpResponseMessage();
                 });
 
-            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _logger.Object);
+            var service = new ConsentRevocationService(_mockHttpClient.Object, _configurationOptions, _certificateLoader.Object, _arrangementsRepo.Object, _mapper.Object, _logger.Object);
 
             using var cts = new CancellationTokenSource();
             cts.CancelAfter(requestorTimeoutMs);

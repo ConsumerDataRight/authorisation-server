@@ -1,10 +1,11 @@
 ﻿using System.Reflection;
 using CdrAuthServer.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace Serilog
 {
     /// <summary>
-    /// Extension functionality for configuration OpenTelemetry.
+    /// Extension functionality for configuring OpenTelemetry.
     /// </summary>
     public static class OpenTelemetryConfigurationExtensions
     {

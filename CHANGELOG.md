@@ -3,7 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
+## [3.1.0] - 2026-06-01
+### Changed
+- Migrated CDR Auth Server Standalone (CdrAuthServer.UI) from CRA to Vite
+- Updated docker build (Dockerfile.standalone) to use Node 24.x
+- Upgraded UI to use mui9
+- Updated NuGet packages to address vulnerabilities
+
+## [3.0.6] - 2026-06-17
+### Fixed
+- Patched vulnerabilities
+
+### Added
+- Enable Application insights as a logging destination
+
+## [3.0.5] - 2026-03-18
+### Changed
+- Rebuild project to fix vulnerabilities in base image
 
 ## [3.0.4] - 2025-12-10
 ### Changed

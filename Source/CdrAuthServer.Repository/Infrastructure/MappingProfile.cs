@@ -10,27 +10,32 @@
     public class MappingProfile : Profile
     {
         private const char MultiStringSeparator = ';';
+        private const int AutoMapperMaxDepth = 32;
 
         public MappingProfile()
         {
             CreateMap<Client, DomainEntities.Client>()
-            .AfterMap(MapEntityClientClaimsToDomainClient);
+            .AfterMap(MapEntityClientClaimsToDomainClient).MaxDepth(AutoMapperMaxDepth);
 
             CreateMap<DomainEntities.Client, Client>()
                 .ForMember(dest => dest.ClientClaims, opt => opt.Ignore())
-                .AfterMap(MapDomainClientToEntityClientClaims);
+                .AfterMap(MapDomainClientToEntityClientClaims)
+                .MaxDepth(AutoMapperMaxDepth);
 
             CreateMap<Grant, DomainEntities.Grant>()
-                .ForMember(g => g.Data, cfg => cfg.MapFrom((grant, _) => JsonConvert.DeserializeObject<Dictionary<string, object>>(grant.Data)));
+                .ForMember(g => g.Data, cfg => cfg.MapFrom((grant, _) => JsonConvert.DeserializeObject<Dictionary<string, object>>(grant.Data)))
+                .MaxDepth(AutoMapperMaxDepth);
 
             CreateMap<DomainEntities.Grant, Grant>()
-                .ForMember(g => g.Data, cfg => cfg.MapFrom((grant, _) => JsonConvert.SerializeObject(grant.Data)));
+                .ForMember(g => g.Data, cfg => cfg.MapFrom((grant, _) => JsonConvert.SerializeObject(grant.Data)))
+                .MaxDepth(AutoMapperMaxDepth);
 
-            CreateMap<SoftwareProduct, DomainEntities.SoftwareProduct>().ReverseMap();
+            CreateMap<SoftwareProduct, DomainEntities.SoftwareProduct>().ReverseMap().MaxDepth(AutoMapperMaxDepth);
 
             CreateMap<Client, Client>()
                 .ForMember(dest => dest.ClientId, cfg => cfg.Ignore())
-                .ForMember(dest => dest.ClientIdIssuedAt, cfg => cfg.Ignore());
+                .ForMember(dest => dest.ClientIdIssuedAt, cfg => cfg.Ignore())
+                .MaxDepth(AutoMapperMaxDepth);
         }
 
         private static PropertyInfo? GetProperyByAttributeNameOrProperyName(object obj, string flagName)
