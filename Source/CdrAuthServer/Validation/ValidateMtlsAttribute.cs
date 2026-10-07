@@ -71,7 +71,7 @@ namespace CdrAuthServer.Validation
                 _logger.LogInformation("Cert after cleanup for OCSP - {Processed}", processedCertString);
 
                 // Load the certificate into an X509Certificate object.
-                var cert = new X509Certificate2(processedCertString);
+                var cert = X509CertificateLoader.LoadCertificate(processedCertString);
 
                 try
                 {

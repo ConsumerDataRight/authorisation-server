@@ -1,6 +1,6 @@
-﻿using CdrAuthServer.Infrastructure.Models;
+﻿using Asp.Versioning;
+using CdrAuthServer.Infrastructure.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.Primitives;
 
 namespace CdrAuthServer.Infrastructure.Versioning
@@ -23,7 +23,7 @@ namespace CdrAuthServer.Infrastructure.Versioning
             context.AddParameter("x-min-v", ApiVersionParameterLocation.Header);
         }
 
-        public string? Read(HttpRequest request)
+        public IReadOnlyList<string> Read(HttpRequest request)
         {
             var endpointOption = _options.GetApiEndpointVersionOption(request.Path);
 
@@ -35,18 +35,18 @@ namespace CdrAuthServer.Infrastructure.Versioning
             else if (!endpointOption.IsVersioned)
             {
 #pragma warning disable S1135 // Track uses of "TODO" tags
-                return _options.DefaultVersion; // TODO: Check if we want to return a version at all
+                return new[] { _options.DefaultVersion }; // TODO: Check if we want to return a version at all
 #pragma warning restore S1135 // Track uses of "TODO" tags
             }
 
             // If x-min-v is passed in, we expect it to be a Positive Integer, the x-v value is parsed out of the header and will be validated by the Package itself
             // Refer to Standards here - https://consumerdatastandardsaustralia.github.io/standards/#http-headers
-            // When there is error in x-min-v, we return custom String x-min-v '<value>' this is then manipulated in ApiVersionErrorResponse for a user friendly error message.
+            // When there is error in x-min-v, we return custom String x-min-v '<value>' this is then manipulated by the caller for a user friendly error message.
             if (!request.Headers.TryGetValue("x-v", out var xvValue) || string.IsNullOrWhiteSpace(xvValue))
             {
                 if (endpointOption.IsXVHeaderMandatory)
                 {
-                    return Domain.Constants.ErrorTitles.MissingVersion;
+                    return new[] { Domain.Constants.ErrorTitles.MissingVersion };
                 }
 
                 xvValue = endpointOption.CurrentMinVersion.ToString();
@@ -60,12 +60,12 @@ namespace CdrAuthServer.Infrastructure.Versioning
 
                 var xvMinString = xvMinValue.FirstOrDefault() ?? string.Empty;
 
-                xvValue = CalculateVersion(xvInt, xvMinString, endpointOption);
+                var calculatedVersion = CalculateVersion(xvInt, xvMinString, endpointOption);
 
-                return xvValue;
+                return new[] { calculatedVersion ?? string.Empty };
             }
 
-            return Domain.Constants.ErrorTitles.InvalidVersion;
+            return new[] { Domain.Constants.ErrorTitles.InvalidVersion };
         }
 
         private static string? CalculateVersion(int xvInt, string xvMinString, CdrApiEndpointVersionOptions endpointOption)

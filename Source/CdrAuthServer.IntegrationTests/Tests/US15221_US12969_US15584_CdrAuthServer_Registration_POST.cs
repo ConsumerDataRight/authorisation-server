@@ -76,7 +76,7 @@ namespace CdrAuthServer.IntegrationTests
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseContent = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 response.StatusCode.Should().Be(
                     HttpStatusCode.Created,
                     $"NB: response.Content is {responseContent}");
@@ -120,7 +120,7 @@ namespace CdrAuthServer.IntegrationTests
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseContent = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 response.StatusCode.Should().Be(
                     HttpStatusCode.Created,
                     $"NB: response.Content is {responseContent}");
