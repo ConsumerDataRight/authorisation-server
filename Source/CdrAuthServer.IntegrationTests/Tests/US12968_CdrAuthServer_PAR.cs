@@ -307,7 +307,7 @@ namespace CdrAuthServer.IntegrationTests
             }
 
             // Wait until PAR expires
-            await Task.Delay((PAR_EXPIRY_SECONDS + 10) * 1000);
+            await Task.Delay((PAR_EXPIRY_SECONDS + 10) * 1000, TestContext.Current.CancellationToken);
 
             // May need to provide a clientId here!
             var authorisationURL = new AuthoriseUrl.AuthoriseUrlBuilder(_options)
@@ -322,7 +322,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request);
+            var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -345,7 +345,7 @@ namespace CdrAuthServer.IntegrationTests
                 if (_authServerOptions.JARM_ENCRYPTION_ON)
                 {
                     // Decrypt the JARM JWT.
-                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKeyCertificate = X509CertificateLoader.LoadPkcs12FromFile(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();
                     JweToken token = JWE.Decrypt(queryValueResponse, privateKey);
                     encodedJwt = token.Plaintext;

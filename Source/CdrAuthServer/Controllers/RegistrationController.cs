@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Asp.Versioning;
 using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;

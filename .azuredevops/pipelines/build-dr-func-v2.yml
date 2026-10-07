@@ -159,10 +159,10 @@ steps:
   # Tests have passed, so now build/publish the azure function
 
   - task: UseDotNet@2
-    displayName: 'Install .NET 8 SDK'
+    displayName: 'Install .NET 10 SDK'
     inputs:
       packageType: 'sdk'
-      version: '8.0.x'
+      version: '10.0.x'
       performMultiLevelLookup: true
   
   - script: |

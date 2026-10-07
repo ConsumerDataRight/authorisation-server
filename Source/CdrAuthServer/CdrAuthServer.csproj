@@ -40,6 +40,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
     <PackageReference Include="jose-jwt" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" />

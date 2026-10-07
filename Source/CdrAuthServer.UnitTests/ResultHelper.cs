@@ -46,7 +46,7 @@ namespace CdrAuthServer.UnitTests
 
         public static void AssertErrorExpectation(ObjectResult objectResult, string errorCode, string errorTitle, string errorDetail)
         {
-            Assert.IsInstanceOf<ResponseErrorList>(objectResult!.Value);
+            Assert.IsInstanceOf<ResponseErrorList>(objectResult.Value);
             var errors = objectResult.Value as ResponseErrorList;
             Assert.IsNotNull(errors);
             Assert.AreEqual(1, errors!.Errors.Count);

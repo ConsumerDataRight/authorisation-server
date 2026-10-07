@@ -62,7 +62,7 @@ namespace CdrAuthServer.IntegrationTests
                 Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                 // Assert - Check JWKS
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<AC01_Expected>(actualJson);
                 actual.Keys.Should().NotBeNull();
                 actual.Keys?.Length.Should().Be(2);

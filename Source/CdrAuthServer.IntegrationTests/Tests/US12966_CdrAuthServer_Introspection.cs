@@ -90,7 +90,7 @@ namespace CdrAuthServer.IntegrationTests
                 // Assert - Check status code
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<IntrospectionResponse>(actualJson);
 
                 actual.Should().NotBeNull();
@@ -129,7 +129,7 @@ namespace CdrAuthServer.IntegrationTests
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<IntrospectionResponse>(actualJson);
 
                 actual.Should().NotBeNull();
@@ -158,7 +158,7 @@ namespace CdrAuthServer.IntegrationTests
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<IntrospectionResponse>(actualJson);
 
                 actual.Should().NotBeNull();
@@ -184,7 +184,7 @@ namespace CdrAuthServer.IntegrationTests
                 tokenResponse = await _authorizationService.GetToken(TokenType.KamillaSmith, tokenLifetime: EXPIRED_LIFETIME_SECONDS, sharingDuration: EXPIRED_LIFETIME_SECONDS);
 
                 // Wait for token to expire
-                await Task.Delay((EXPIRED_LIFETIME_SECONDS + 5) * 1000);
+                await Task.Delay((EXPIRED_LIFETIME_SECONDS + 5) * 1000, TestContext.Current.CancellationToken);
             }
             else
             {
@@ -199,7 +199,7 @@ namespace CdrAuthServer.IntegrationTests
             {
                 response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<IntrospectionResponse>(actualJson);
 
                 actual.Should().NotBeNull();
