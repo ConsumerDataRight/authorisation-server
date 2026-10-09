@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Asp.Versioning;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Services;
 using CdrAuthServer.Validation;

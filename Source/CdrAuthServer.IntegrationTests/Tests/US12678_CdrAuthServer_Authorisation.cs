@@ -19,7 +19,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Xunit;
-using XUnit_Skippable;
 using Xunit.DependencyInjection;
 using static ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Services.DataHolderAuthoriseService;
 using Constants = ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.Constants;
@@ -155,7 +154,7 @@ namespace CdrAuthServer.IntegrationTests
 
                 var request = new HttpRequestMessage(HttpMethod.Get, authorisationURL);
 
-                var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request);
+                var authResponse = await Helpers.Web.CreateHttpClient(allowAutoRedirect: false).SendAsync(request, TestContext.Current.CancellationToken);
 
                 // Check query has "response" param
                 var queryValues = HttpUtility.ParseQueryString(authResponse?.Headers.Location?.Query ?? throw new NullReferenceException());
@@ -166,7 +165,7 @@ namespace CdrAuthServer.IntegrationTests
                 if (_authServerOptions.JARM_ENCRYPTION_ON)
                 {
                     // Decrypt the JARM JWT.
-                    var privateKeyCertificate = new X509Certificate2(
+                    var privateKeyCertificate = X509CertificateLoader.LoadPkcs12FromFile(
                         Constants.Certificates.JwtCertificateFilename,
                         Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();
@@ -185,7 +184,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData("code id_token", HttpStatusCode.Redirect, true)]
         [InlineData("foo", HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
         public async Task AC02_Get_WithInvalidResponseType_ShouldRespondWith_302Redirect_ErrorResponse(string responseType, HttpStatusCode expectedStatusCode, bool useSpecificRedirectUrl)
@@ -194,7 +193,7 @@ namespace CdrAuthServer.IntegrationTests
 
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             string? expectedRedirectFragment = null;
@@ -221,7 +220,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -242,7 +241,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData(null, HttpStatusCode.Redirect, true)]
         [InlineData("foo", HttpStatusCode.BadRequest)]
         public async Task AC03_Get_WithInvalidRequestBody_ShouldRespondWith_400BadRequest_ErrorResponse(string requestBody, HttpStatusCode expectedStatusCode, bool useSpecificUrl = false)
@@ -251,7 +250,7 @@ namespace CdrAuthServer.IntegrationTests
 
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedRedirectPath = string.Empty;
@@ -271,7 +270,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -289,7 +288,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData(false, HttpStatusCode.Redirect)] // Successful request should redirect to the DH login URI
         [InlineData(
             true, // Additional unsupported scope should be ignored
@@ -300,7 +299,7 @@ namespace CdrAuthServer.IntegrationTests
 
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedRedirectPath = _accountLoginUrl;
@@ -323,7 +322,7 @@ namespace CdrAuthServer.IntegrationTests
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
             // Act
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -337,7 +336,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData(Constants.Scopes.ScopeBanking, HttpStatusCode.Redirect, false)]
         [InlineData(Constants.Scopes.ScopeBankingWithoutOpenId, HttpStatusCode.Redirect, true)]
         public async Task AC05_Get_WithScopeMissingOpenId_ShouldRespondWith_302Redirect_ErrorResponse(
@@ -349,7 +348,7 @@ namespace CdrAuthServer.IntegrationTests
 
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedError = new MissingOpenIdScopeException();
@@ -378,7 +377,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -399,14 +398,14 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData(Constants.SoftwareProducts.SoftwareProductId, HttpStatusCode.Redirect, true)]
         [InlineData(Constants.GuidFoo, HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
         public async Task AC06_Get_WithInvalidClientID_ShouldRespondWith_302Redirect_ErrorResponse(string softwareProductId, HttpStatusCode expectedStatusCode, bool useSpecificUrl)
         {
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             string? expectedRedirectFragment = null;
@@ -436,7 +435,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -457,12 +456,12 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task AC07_Get_WithValidRedirectURI_Success()
         {
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedRedirectPath = _options.SOFTWAREPRODUCT_REDIRECT_URI_FOR_INTEGRATION_TESTS;
@@ -478,7 +477,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -488,12 +487,12 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task AC07_Get_WithInvalidRedirectURI_ShouldRespondWith_400BadRequest_ErrorResponse()
         {
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedError = new InvalidRequestException(string.Empty); // TODO: Why doesn't this use a description? Bug 64158
@@ -510,7 +509,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))
@@ -519,7 +518,7 @@ namespace CdrAuthServer.IntegrationTests
             }
         }
 
-        [SkippableTheory]
+        [Theory]
         [InlineData(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, HttpStatusCode.Redirect, true)]
         [InlineData(Constants.Certificates.InvalidCertificateFilename, Constants.Certificates.InvalidCertificatePassword, HttpStatusCode.Redirect, false)] // Unsuccessful request should redirect back to DR
         public async Task AC08_Get_WithUnsignedRequestBody_ShouldRespondWith_302Redirect_ErrorResponse(
@@ -530,7 +529,7 @@ namespace CdrAuthServer.IntegrationTests
         {
             if (_authServerOptions.HEADLESSMODE)
             {
-                throw new SkipTestException("Test not applicable for headless mode.");
+                Assert.Skip("Test not applicable for headless mode.");
             }
 
             var expectedError = new InvalidJwtException();
@@ -556,7 +555,7 @@ namespace CdrAuthServer.IntegrationTests
 
             Helpers.AuthServer.AttachHeadersForStandAlone(request.RequestUri?.AbsoluteUri ?? throw new NullReferenceException(), request.Headers, _options.DH_MTLS_GATEWAY_URL, _authServerOptions.XTLSCLIENTCERTTHUMBPRINT, _authServerOptions.STANDALONE);
 
-            var response = await CreateHttpClient().SendAsync(request);
+            var response = await CreateHttpClient().SendAsync(request, TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))

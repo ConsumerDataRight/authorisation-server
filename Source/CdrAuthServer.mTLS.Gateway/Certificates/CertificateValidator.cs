@@ -32,7 +32,7 @@ namespace CdrAuthServer.mTLS.Gateway.Certificates
             }
 
             // Validate that the certificate has been issued by the Mock CDR CA.
-            var rootCACertificate = new X509Certificate2(rootCertLocation);
+            var rootCACertificate = X509CertificateLoader.LoadCertificateFromFile(rootCertLocation);
             _logger.LogDebug("Validating client certificate using: {RootCACertificate}", rootCACertificate);
 
             var ch = new X509Chain();

@@ -184,7 +184,7 @@ namespace CdrAuthServer.UnitTests.Services
         private async Task AssertBearerTokenIsValid(HttpRequestMessage request)
         {
             var handler = new JsonWebTokenHandler();
-            var publicKey = new X509Certificate2(_ps256SigningCertificate.GetRawCertData());
+            var publicKey = X509CertificateLoader.LoadCertificate(_ps256SigningCertificate.GetRawCertData());
 
             var authHeader = request.Headers.Authorization;
 
@@ -220,24 +220,25 @@ namespace CdrAuthServer.UnitTests.Services
         private async Task AssertArrangementIsValid(HttpRequestMessage request)
         {
             var handler = new JsonWebTokenHandler();
-            var publicKey = new X509Certificate2(_ps256SigningCertificate.GetRawCertData());
+            var publicKey = X509CertificateLoader.LoadCertificate(_ps256SigningCertificate.GetRawCertData());
 
             Assert.AreEqual("application/x-www-form-urlencoded", request.Content?.Headers.ContentType?.MediaType);
-
-            using var reader = new Microsoft.AspNetCore.WebUtilities.FormReader(await request.Content!.ReadAsStreamAsync());
-            var formValues = await reader.ReadFormAsync();
-
-            Assert.True(formValues.TryGetValue("cdr_arrangement_jwt", out StringValues cdrArrangementJwt));
-
-            var validationResult = await handler.ValidateTokenAsync(cdrArrangementJwt, new TokenValidationParameters
+            if (request.Content != null)
             {
-                ValidIssuer = _configurationOptions.Value.BrandId,
-                ValidAudience = _client.RecipientBaseUri + "/arrangements/revoke",
-                IssuerSigningKey = new X509SecurityKey(publicKey),
-            });
+                using var reader = new Microsoft.AspNetCore.WebUtilities.FormReader(await request.Content.ReadAsStreamAsync());
+                var formValues = await reader.ReadFormAsync();
 
-            Assert.IsTrue(validationResult.IsValid, validationResult.Exception != null ? validationResult.Exception.Message : string.Empty);
-            Assert.AreEqual(_arrangementId, validationResult.Claims.FirstOrDefault(x => x.Key == "cdr_arrangement_id").Value);
+                Assert.True(formValues.TryGetValue("cdr_arrangement_jwt", out StringValues cdrArrangementJwt));
+                var validationResult = await handler.ValidateTokenAsync(cdrArrangementJwt, new TokenValidationParameters
+                {
+                    ValidIssuer = _configurationOptions.Value.BrandId,
+                    ValidAudience = _client.RecipientBaseUri + "/arrangements/revoke",
+                    IssuerSigningKey = new X509SecurityKey(publicKey),
+                });
+
+                Assert.IsTrue(validationResult.IsValid, validationResult.Exception != null ? validationResult.Exception.Message : string.Empty);
+                Assert.AreEqual(_arrangementId, validationResult.Claims.FirstOrDefault(x => x.Key == "cdr_arrangement_id").Value);
+            }
         }
     }
 }

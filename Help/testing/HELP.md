@@ -169,7 +169,7 @@ Tests can now be run using Microsoft Visual Studio.
 
 The following steps detail the process of running tests using Microsoft Visual Studio's Test Explorer:
 
-1. Open the [CdrAuthServer.sln](../../Source/CdrAuthServer.sln) solution file in Microsoft Visual Studio.
+1. Open the [CdrAuthServer.slnx](../../Source/CdrAuthServer.slnx) solution file in Microsoft Visual Studio.
 2. Build the solution.
 3. Open the Test Explorer. If Test Explorer is not visible, choose 'Test' on the Visual Studio menu and then choose 'Test Explorer'.
    
@@ -191,7 +191,7 @@ This repository can be cloned using following command:
 git clone https://github.com/ConsumerDataRight/mock-solution-test-automation.git
 ```
 
-The [CdrAuthServer_Shared.sln](../../Source/CdrAuthServer_Shared.sln) solution has been created to allow for debugging and stepping through the source code used in Mock Solution Test Automation project. 
+The [CdrAuthServer_Shared.slnx](../../Source/CdrAuthServer_Shared.slnx) solution has been created to allow for debugging and stepping through the source code used in Mock Solution Test Automation project. 
 
    [<img src="./images/MS-Visual-Studio-View-Cdr-Auth-Server-Shared-Solution.png" width='400' alt="Authorisation Server Shared Solution in Microsoft Visual Studio"/>](./images/MS-Visual-Studio-View-Cdr-Auth-Server-Shared-Solution.png)
 

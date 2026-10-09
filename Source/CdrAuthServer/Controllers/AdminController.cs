@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Authorisation;
+﻿using Asp.Versioning;
+using CdrAuthServer.Authorisation;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Infrastructure;
 using CdrAuthServer.Infrastructure.Attributes;

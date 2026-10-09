@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using Serilog;
 using System;
@@ -68,21 +69,25 @@ namespace CdrAuthServer.UnitTests.Helpers
 
         public string CertificatePassword { get; init; }
 
-        private IWebHost? _host;
+        private IHost? _host;
 
         public void Start()
         {
             Log.Information("Calling {FUNCTION} in {ClassName}.", nameof(Start), nameof(MockEndpoint));
 
-            _host = new WebHostBuilder()
-                .UseKestrel(opts =>
-        {
-            opts.ListenAnyIP(
-                UrlPort,
-                opts => opts.UseHttps(new X509Certificate2(CertificatePath, CertificatePassword, X509KeyStorageFlags.Exportable)));
-        })
-               .UseStartup(_ => new MockEndpointStartup())
-               .Build();
+            _host = Host.CreateDefaultBuilder()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder
+                        .UseKestrel(opts =>
+                        {
+                            opts.ListenAnyIP(
+                                UrlPort,
+                                opts => opts.UseHttps(X509CertificateLoader.LoadPkcs12FromFile(CertificatePath, CertificatePassword)));
+                        })
+                        .UseStartup(_ => new MockEndpointStartup());
+                })
+                .Build();
 
             _host.RunAsync();
         }

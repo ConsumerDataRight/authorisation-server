@@ -174,7 +174,7 @@ namespace CdrAuthServer.IntegrationTests.Tests.JARM
             // Check it was registered
             if (responseMessageSetup.StatusCode != HttpStatusCode.Created)
             {
-                throw new Exception($"expected Created - {await responseMessageSetup.Content.ReadAsStringAsync()}");
+                throw new Exception($"expected Created - {await responseMessageSetup.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)}");
             }
 
             // Act - Now try and register it again

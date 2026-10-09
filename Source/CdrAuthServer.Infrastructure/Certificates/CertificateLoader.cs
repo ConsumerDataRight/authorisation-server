@@ -38,10 +38,10 @@ namespace CdrAuthServer.Infrastructure.Certificates
         {
             if (string.IsNullOrEmpty(password))
             {
-                return new X509Certificate2(certBytes);
+                return X509CertificateLoader.LoadCertificate(certBytes);
             }
 
-            return new X509Certificate2(certBytes, password, X509KeyStorageFlags.Exportable);
+            return X509CertificateLoader.LoadPkcs12(certBytes, password, X509KeyStorageFlags.Exportable);
         }
 
         private static async Task<byte[]> DownloadData(string url)

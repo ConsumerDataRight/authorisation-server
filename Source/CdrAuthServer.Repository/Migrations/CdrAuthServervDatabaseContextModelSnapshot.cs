@@ -17,7 +17,7 @@ namespace CdrAuthServer.Repository.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.22")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -134,9 +134,9 @@ namespace CdrAuthServer.Repository.Migrations
                         {
                             Key = "12345678-1234-1234-1234-111122223333",
                             ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                            CreatedAt = new DateTime(2026, 5, 8, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(6478),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Data = "{\"refresh_token\":\"valid-refresh-token\",\"account_id\":[\"123\",\"456\",\"789\"]}",
-                            ExpiresAt = new DateTime(2027, 5, 8, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(6481),
+                            ExpiresAt = new DateTime(2024, 12, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             GrantType = "cdr_arrangement",
                             Scope = "openid profile cdr:registration common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:payees:read bank:regular_payments:read energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.usage:read energy:electricity.der:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.paymentschedule:read energy:accounts.concessions:read energy:billing:read",
                             SubjectId = "customer1"
@@ -145,9 +145,9 @@ namespace CdrAuthServer.Repository.Migrations
                         {
                             Key = "valid-refresh-token",
                             ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                            CreatedAt = new DateTime(2026, 5, 8, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(7014),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Data = "{\"response_type\":\"code\",\"CdrArrangementId\":\"12345678-1234-1234-1234-111122223333\"}",
-                            ExpiresAt = new DateTime(2027, 5, 8, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(7015),
+                            ExpiresAt = new DateTime(2024, 12, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             GrantType = "refresh_token",
                             Scope = "openid profile cdr:registration common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:payees:read bank:regular_payments:read energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.usage:read energy:electricity.der:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.paymentschedule:read energy:accounts.concessions:read energy:billing:read",
                             SubjectId = "customer1"
@@ -156,62 +156,13 @@ namespace CdrAuthServer.Repository.Migrations
                         {
                             Key = "expired-refresh-token",
                             ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                            CreatedAt = new DateTime(2025, 5, 7, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(7048),
-                            Data = "{\"response_type\":\"code\",\"CdrArrangementId\":\"bff2d629-cf6c-47e2-85ca-a30d0be8661d\"}",
-                            ExpiresAt = new DateTime(2026, 5, 7, 3, 21, 37, 552, DateTimeKind.Utc).AddTicks(7049),
+                            CreatedAt = new DateTime(2022, 12, 31, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Data = "{\"response_type\":\"code\",\"CdrArrangementId\":\"87654321-4321-4321-4321-333344445555\"}",
+                            ExpiresAt = new DateTime(2023, 12, 31, 0, 0, 0, 0, DateTimeKind.Utc),
                             GrantType = "refresh_token",
                             Scope = "openid profile cdr:registration common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:payees:read bank:regular_payments:read",
                             SubjectId = "customer1"
                         });
-                });
-
-            modelBuilder.Entity("CdrAuthServer.Repository.Entities.LogEventsDrService", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Environment")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Exception")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Level")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MethodName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ProcessId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ProcessName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("SourceContext")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ThreadId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("TimeStamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LogEventsDrService");
                 });
 
             modelBuilder.Entity("CdrAuthServer.Repository.Entities.SoftwareProduct", b =>

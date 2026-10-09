@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Extensions;
+﻿using Asp.Versioning;
+using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;

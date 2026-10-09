@@ -1,0 +1,64 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Shared" />
+  </Configurations>
+  <Folder Name="/Artefacts/">
+    <File Path="../.gitignore" />
+    <File Path="../README.md" />
+    <File Path=".dockerignore" />
+    <File Path="docker-compose.E2ETests.Standalone.yml" />
+    <File Path="docker-compose.E2ETests.yml" />
+    <File Path="docker-compose.IntegrationTests.Standalone.yml" />
+    <File Path="docker-compose.IntegrationTests.yml" />
+    <File Path="Dockerfile" />
+    <File Path="Dockerfile.e2e-tests" />
+    <File Path="Dockerfile.integration-tests" />
+    <File Path="Dockerfile.standalone" />
+    <File Path="Dockerfile.unit-tests" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="CdrAuthServer.Domain/CdrAuthServer.Domain.csproj">
+      <BuildType Solution="Shared|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/Shared/" />
+  <Folder Name="/Shared/TestAutomation/">
+    <Project Path="../../sb-mock-solution-test-automation/Source/ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation/ConsumerDataRight.ParticipantTooling.MockSolution.TestAutomation.csproj">
+      <BuildType Solution="Shared|*" Project="Release" />
+      <Build Solution="Debug|*" Project="false" />
+      <Build Solution="Release|*" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Solution Items/" />
+  <Project Path="CdrAuthServer.API.Logger/CdrAuthServer.API.Logger.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.E2ETests/CdrAuthServer.E2ETests.csproj" />
+  <Project Path="CdrAuthServer.GetDataRecipients.IntegrationTests/CdrAuthServer.GetDataRecipients.IntegrationTests.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.GetDataRecipients/CdrAuthServer.GetDataRecipients.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.Infrastructure/CdrAuthServer.Infrastructure.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.IntegrationTests/CdrAuthServer.IntegrationTests.csproj" />
+  <Project Path="CdrAuthServer.mTLS.Gateway/CdrAuthServer.mTLS.Gateway.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.Repository/CdrAuthServer.Repository.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.TLS.Gateway/CdrAuthServer.TLS.Gateway.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer.UnitTests/CdrAuthServer.UnitTests.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+  <Project Path="CdrAuthServer/CdrAuthServer.csproj">
+    <BuildType Solution="Shared|*" Project="Release" />
+  </Project>
+</Solution>
