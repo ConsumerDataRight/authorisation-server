@@ -73,7 +73,7 @@ namespace CdrAuthServer.Services
                 logger.LogInformation("Calling ADR Arrangement revocation endpoint for arrangement {Arrangement} and client {@Client}", a.ArrangementId, client);
                 var result = await RevokeAdrArrangement(client, a.ArrangementId, revocationTimeout, cancellationToken);
 
-                if (result.Response is null || !result.Response!.IsSuccessStatusCode)
+                if (result.Response is null || !result.Response.IsSuccessStatusCode)
                 {
 #pragma warning disable S112 // General or reserved exceptions should never be thrown
                     throw new Exception($"Unable to revoke arrangement {a.ArrangementId} with ADR");

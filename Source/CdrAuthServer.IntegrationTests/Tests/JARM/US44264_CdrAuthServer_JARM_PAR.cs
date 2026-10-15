@@ -92,7 +92,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 responseType: responseType,
                 responseMode: responseMode);
 
-            var responseText = await response.Content.ReadAsStringAsync();
+            var responseText = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
             // Assert
             using (new AssertionScope(BaseTestAssertionStrategy))

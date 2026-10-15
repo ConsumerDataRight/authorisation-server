@@ -179,9 +179,11 @@ builder.Services.AddCors(options =>
         "AllOrigins",
         policy =>
         {
+#pragma warning disable S5122 // Cross-Origin Resource Sharing (CORS) policy should be restricted to trusted origins
             policy.WithOrigins("*")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
+#pragma warning restore S5122 // Cross-Origin Resource Sharing (CORS) policy should be restricted to trusted origins
         });
 });
 
@@ -208,7 +210,7 @@ builder.Services.AddTransient<IGrantRepository, GrantRepository>();
 builder.Services.AddTransient<ICustomerRepository, CustomerRepository>();
 builder.Services.AddTransient<ICdrRepository, CdrRepository>();
 
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddScoped<ValidateMtlsAttribute>();
 builder.Services.AddHttpClient<ValidateMtlsAttribute>();

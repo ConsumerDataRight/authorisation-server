@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Infrastructure.Configuration;
+﻿using Asp.Versioning;
+using CdrAuthServer.Infrastructure.Configuration;
 using CdrAuthServer.Infrastructure.Models;
 using CdrAuthServer.SwaggerFilters;
 using Microsoft.Extensions.Options;
@@ -21,10 +22,15 @@ namespace CdrAuthServer.Extensions
                 services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
                 // Required for our Swagger setup to work when endpoints have been versioned
-                services.AddVersionedApiExplorer(opt =>
-                {
-                    opt.GroupNameFormat = options.VersionedApiGroupNameFormat;
-                });
+                services.AddApiVersioning(versioningOptions =>
+                    {
+                        versioningOptions.ApiVersionReader = new QueryStringApiVersionReader();
+                    })
+                    .AddMvc()
+                    .AddApiExplorer(opt =>
+                    {
+                        opt.GroupNameFormat = options.VersionedApiGroupNameFormat;
+                    });
             }
             else
             {

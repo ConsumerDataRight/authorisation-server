@@ -98,7 +98,7 @@ namespace CdrAuthServer.IntegrationTests
                 if (!string.IsNullOrEmpty(handler.ReadJwtToken(idToken).Header.Enc))
                 {
                     // Decrypt the id token.
-                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKeyCertificate = X509CertificateLoader.LoadPkcs12FromFile(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();
                     JweToken token = JWE.Decrypt(idToken, privateKey);
                     decryptedIdToken = token.Plaintext;
@@ -826,7 +826,7 @@ namespace CdrAuthServer.IntegrationTests
                     _ = new JwtSecurityTokenHandler().ReadJwtToken(tokenResponse?.AccessToken);
 
                     // Arrange - wait until refresh token has expired
-                    await Task.Delay((SHARING_DURATION_FOR_EXPIRED_REFRESHTOKEN + 10) * 1000);
+                    await Task.Delay((SHARING_DURATION_FOR_EXPIRED_REFRESHTOKEN + 10) * 1000, TestContext.Current.CancellationToken);
                 }
 
                 // Act - Use refresh token to get access token and refresh token
@@ -899,7 +899,7 @@ namespace CdrAuthServer.IntegrationTests
                 expires = now.AddMinutes(10);
             }
 
-            var certificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+            var certificate = X509CertificateLoader.LoadPkcs12FromFile(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
             var x509SigningCredentials = new X509SigningCredentials(certificate, SecurityAlgorithms.RsaSsaPssSha256);
 
             var jwt = new JwtSecurityToken(

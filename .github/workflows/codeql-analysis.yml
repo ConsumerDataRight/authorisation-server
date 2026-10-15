@@ -69,7 +69,7 @@ jobs:
 
     - name: Build solution
       run: |
-        dotnet build ./Source/CdrAuthServer.sln --configuration 'Release'
+        dotnet build ./Source/CdrAuthServer.slnx --configuration 'Release'
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

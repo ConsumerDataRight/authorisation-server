@@ -56,16 +56,16 @@ namespace CdrAuthServer.IntegrationTests
             _apiServiceDirector = apiServiceDirector ?? throw new ArgumentNullException(nameof(apiServiceDirector));
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             // Purge Authorisation Server Registrations and create a clean registration for each test to ensure test independance.
             Helpers.AuthServer.PurgeAuthServerForDataholder(_options);
             await _dataHolderRegisterService.RegisterSoftwareProduct(responseType: ResponseType.Code);
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
         // Call authorise/token endpoints to create access and refresh tokens

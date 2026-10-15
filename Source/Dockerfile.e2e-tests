@@ -1,8 +1,9 @@
 # Dockerfile for E2E tests
 
 # NB: Ensure playwright version used in the ConsumerDataRight.ParticipantTooling.Shared.TestAutomation NuGet package and base image below are same (ie currently 1.43.0)
-# Playwright jammy for .Net 8
-FROM mcr.microsoft.com/playwright/dotnet:v1.43.0-jammy as build
+
+# Playwright noble for .Net 10
+FROM mcr.microsoft.com/playwright/dotnet:v1.62.0-noble as build
 
 ###############################################################################
 # Build E2E tests

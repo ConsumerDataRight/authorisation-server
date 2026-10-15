@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
 
 namespace CdrAuthServer.Infrastructure.Models
 {
@@ -20,7 +21,7 @@ namespace CdrAuthServer.Infrastructure.Models
         {
             foreach (var supportedApi in EndpointVersionOptions.OrderByDescending(v => v.Path.Length))
             {
-                var regEx = new System.Text.RegularExpressions.Regex(supportedApi.Path);
+                var regEx = new Regex(supportedApi.Path, RegexOptions.None, TimeSpan.FromSeconds(2));
                 if (regEx.IsMatch(path))
                 {
                     return supportedApi;

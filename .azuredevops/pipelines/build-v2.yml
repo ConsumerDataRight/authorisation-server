@@ -307,6 +307,12 @@ jobs:
           docker compose --file $(baseSourceDirectory)/docker-compose.E2ETests.Standalone.yml down 
         displayName: 'E2E Tests (Standalone) - Down' 
         condition: always()
+      
+      - task: UseDotNet@2
+        displayName: 'Install .NET 8 Runtime for TrxToExtentReport'
+        inputs:
+          packageType: 'runtime'
+          version: '8.0.x'
 
       # Run trx formatter to output .MD and .CSV
       - script: |
@@ -389,18 +395,18 @@ jobs:
       ###################################################################################################
 
       - task: UseDotNet@2
-        displayName: "Use .NET 8 sdk"
+        displayName: "Use .NET 10 sdk"
         condition: always()
         inputs:
           packageType: sdk
-          version: "8.0.x"
+          version: "10.0.x"
           performMultiLevelLookup: true
 
       - task: CmdLine@2
         displayName: "Install dotnet-ef"
         condition: always()
         inputs:
-          script: "dotnet tool install --version 8.0.4 --global dotnet-ef"
+          script: "dotnet tool install --version 10.0.10 --global dotnet-ef"
 
       - task: CmdLine@2
         displayName: "Check dotnet-ef version"

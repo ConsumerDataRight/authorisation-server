@@ -115,7 +115,7 @@ namespace CdrAuthServer.UnitTests.Validators
 
                 aud = $"{DH_MTLS_GATEWAY_URL}/connect/token";
 
-                var certificate = new X509Certificate2(JWT_CERTIFICATE_FILENAME, JWT_CERTIFICATE_PASSWORD, X509KeyStorageFlags.Exportable);
+                var certificate = X509CertificateLoader.LoadPkcs12FromFile(JWT_CERTIFICATE_FILENAME, JWT_CERTIFICATE_PASSWORD);
                 var x509SigningCredentials = new X509SigningCredentials(certificate, SecurityAlgorithms.RsaSsaPssSha256);
                 var jwt = new JwtSecurityToken(
                     ISSUER,

@@ -113,7 +113,7 @@ namespace CdrAuthServer.UnitTests.Controllers
 
             // Assert
             ResultHelper.AssertInstanceOf<ObjectResult>(result, out var objResult);
-            ResultHelper.AssertJsonInstanceOf<AdrArrangementRevocationResponse>(objResult!, out var response);
+            ResultHelper.AssertJsonInstanceOf<AdrArrangementRevocationResponse>(objResult, out var response);
 
             AssertRequestIsPopulated(response.ArrangeRevocationRequest);
 
@@ -142,7 +142,7 @@ namespace CdrAuthServer.UnitTests.Controllers
 
             // Assert
             ResultHelper.AssertInstanceOf<ObjectResult>(result, out var objResult);
-            ResultHelper.AssertJsonInstanceOf<AdrArrangementRevocationResponse>(objResult!, out var response);
+            ResultHelper.AssertJsonInstanceOf<AdrArrangementRevocationResponse>(objResult, out var response);
 
             AssertRequestIsPopulated(response.ArrangeRevocationRequest);
             AssertResponseIsPopulated(response.ArrangeRevocationResponse, error);
@@ -191,7 +191,7 @@ namespace CdrAuthServer.UnitTests.Controllers
         {
             Assert.NotNull(arrangeRevocationRequest);
             Assert.NotNull(arrangeRevocationRequest!.Body);
-            Assert.That(Regex.IsMatch(arrangeRevocationRequest!.Body!, "cdr_arrangement_jwt=[\\w\\.]+"));
+            Assert.That(Regex.IsMatch(arrangeRevocationRequest.Body!, "cdr_arrangement_jwt=[\\w\\.]+"));
             Assert.AreEqual("POST", arrangeRevocationRequest.Method);
             Assert.AreEqual("https://localhost/arrangements/revoke", arrangeRevocationRequest.Url);
             Assert.IsNotEmpty(arrangeRevocationRequest.Headers);

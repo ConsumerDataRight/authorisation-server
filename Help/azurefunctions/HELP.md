@@ -62,5 +62,5 @@ SELECT * FROM [cdr-auth-server].[dbo].[LogEvents-DrService]
 
 <h2>To Build Azure Functions</h2>
 <div style="margin-left:18px;">
-	dotnet SDK 8.0.10x or higher is required. Latest SDK can be found from the link https://microsoft.com/net
+	dotnet SDK 10.0.x or higher is required. Latest SDK can be found from the link https://microsoft.com/net
 <br />

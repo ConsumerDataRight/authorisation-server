@@ -48,7 +48,7 @@ namespace CdrAuthServer.IntegrationTests
                 Assertions.AssertHasContentTypeApplicationJson(response.Content);
 
                 // Assert - Check json
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<OpenIdConfiguration>(actualJson);
 
                 actual.issuer.Should().Be(_authServerOptions.CDRAUTHSERVER_BASEURI);

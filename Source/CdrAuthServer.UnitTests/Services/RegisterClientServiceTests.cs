@@ -119,7 +119,7 @@ namespace CdrAuthServer.UnitTests.Services
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result!.Data.Count());
-            Assert.AreEqual("https://localhost/cdr-register/v1/all/data-recipients", result!.Links.Self?.AbsoluteUri);
+            Assert.AreEqual("https://localhost/cdr-register/v1/all/data-recipients", result.Links.Self?.AbsoluteUri);
             _mockHttpClient.VerifyAll();
         }
     }

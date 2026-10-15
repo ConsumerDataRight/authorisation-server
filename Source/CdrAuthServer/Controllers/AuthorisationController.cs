@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Text;
 using System.Web;
+using Asp.Versioning;
 using CdrAuthServer.Configuration;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;

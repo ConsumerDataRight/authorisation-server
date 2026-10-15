@@ -488,7 +488,7 @@ namespace CdrAuthServer.Services
                     authCodeGrant.SubjectId,
                     configOptions,
                     authCode: authCodeGrant.Key,
-                    nonce: authRequestObject!.Nonce,
+                    nonce: authRequestObject.Nonce,
                     accessToken: accessToken,
                     authTime: authTime.ToEpoch().ToString());
             }

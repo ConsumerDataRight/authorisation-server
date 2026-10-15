@@ -19,8 +19,8 @@
             {
                 Key = "12345678-1234-1234-1234-111122223333",
                 ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(365),
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                ExpiresAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(365),
                 GrantType = GrantTypes.CdrArrangement,
                 SubjectId = "customer1",
                 UsedAt = null,
@@ -39,8 +39,8 @@
                         // RefreshTokenGrant
                         Key = refreshToken,
                         ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                        CreatedAt = DateTime.UtcNow,
-                        ExpiresAt = DateTime.UtcNow.AddDays(365),
+                        CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        ExpiresAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(365),
                         GrantType = GrantTypes.RefreshToken,
                         SubjectId = "customer1",
                         UsedAt = null,
@@ -56,8 +56,8 @@
                         // RefreshTokenGrant2
                         Key = "expired-refresh-token",
                         ClientId = "c6327f87-687a-4369-99a4-eaacd3bb8210",
-                        CreatedAt = DateTime.UtcNow.AddDays(-366),
-                        ExpiresAt = DateTime.UtcNow.AddDays(-1),
+                        CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(-366),
+                        ExpiresAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(-1),
                         GrantType = GrantTypes.RefreshToken,
                         SubjectId = "customer1",
                         UsedAt = null,
@@ -65,7 +65,7 @@
                         Data = JsonSerializer.Serialize(new Dictionary<string, object>
                         {
                             { "response_type", ResponseTypes.AuthCode },
-                            { "CdrArrangementId", Guid.NewGuid().ToString() },
+                            { "CdrArrangementId", "87654321-4321-4321-4321-333344445555" },
                         }),
                     });
         }

@@ -93,7 +93,7 @@ namespace CdrAuthServer.GetDataRecipients
         {
             log.LogInformation("Loading the certificate...");
             byte[] certBytes = Convert.FromBase64String(cert);
-            X509Certificate2 certificate = new(certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12(certBytes, certPwd, X509KeyStorageFlags.MachineKeySet);
             return certificate;
         }
 

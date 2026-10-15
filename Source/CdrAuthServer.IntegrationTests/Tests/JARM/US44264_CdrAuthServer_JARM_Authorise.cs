@@ -64,7 +64,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                 responseType: responseType,
                 state: STATE);
 
-            var parResponseMessageContent = await parResponseMessage.Content.ReadAsStringAsync();
+            var parResponseMessageContent = await parResponseMessage.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             parResponseMessage.StatusCode.Should().Be(HttpStatusCode.Created, because: parResponseMessageContent);
 
             var parResponse = JsonConvert.DeserializeObject<ParResponse>(parResponseMessageContent);
@@ -101,7 +101,7 @@ namespace CdrAuthServer.IntegrationTests.JARM
                     encryptedJwt.Header["enc"].Should().Be("A128CBC-HS256", because: "JARM Encryption is turned on.");
 
                     // Decrypt the JARM JWT.
-                    var privateKeyCertificate = new X509Certificate2(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
+                    var privateKeyCertificate = X509CertificateLoader.LoadPkcs12FromFile(Constants.Certificates.JwtCertificateFilename, Constants.Certificates.JwtCertificatePassword, X509KeyStorageFlags.Exportable);
                     var privateKey = privateKeyCertificate.GetRSAPrivateKey();
                     JweToken token = JWE.Decrypt(queryValueResponse, privateKey);
                     encodedJwt = token.Plaintext;

@@ -4,7 +4,7 @@
 ###############################################################################
 # Build base layer
 ###############################################################################
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 
 # Install nodejs, npm and live-server, which are needed by the auth UI
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     npm \
     nginx \
     && rm -rf /var/lib/apt/lists/*
+
+# install now so it will be immediately available for supervisord
+RUN npm install -g react-inject-env
 
 WORKDIR /app
 EXPOSE 8080
@@ -40,10 +43,15 @@ RUN npm run build
 COPY CdrAuthServer.UI/nginx/nginx_auth_ui.conf /etc/nginx/conf.d/default.conf
 COPY CdrAuthServer.UI/nginx/nginx.gzip.conf /etc/nginx/conf.d/gzip.conf
 
+# Copy nginx SSL certificates to container.
+RUN mkdir -p /etc/nginx/ssl
+COPY CdrAuthServer.UI/nginx/ssl/authserver-ui.crt /etc/nginx/ssl/authserver-ui.crt
+COPY CdrAuthServer.UI/nginx/ssl/authserver-ui.key /etc/nginx/ssl/authserver-ui.key
+
 ###############################################################################
 # Build CdrAuthServer API layer
 ###############################################################################
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ./ .
 
@@ -75,6 +83,8 @@ COPY --from=ui-build /app/build /usr/share/nginx/html/ui
 COPY --from=ui-build /app/build /usr/share/nginx/html/ui
 COPY --from=ui-build /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=ui-build /etc/nginx/conf.d/gzip.conf /etc/nginx/conf.d/gzip.conf
+COPY --from=ui-build /etc/nginx/ssl/authserver-ui.crt /etc/nginx/ssl/authserver-ui.crt
+COPY --from=ui-build /etc/nginx/ssl/authserver-ui.key /etc/nginx/ssl/authserver-ui.key
 
 
 
@@ -92,25 +102,18 @@ USER 0
 RUN setcap cap_net_bind_service=+ep /usr/sbin/nginx
 
 # Run as non-root user
-RUN addgroup --group appgroup --gid 2000
-RUN adduser --uid 1000 --gid 2000 "appuser"
-RUN chown -R appuser:appgroup /app
-RUN chown -R appuser:appgroup /usr/bin
-RUN chown -R appuser:appgroup /usr/local
-RUN chown -R appuser:appgroup /tmp
-RUN chown -R appuser:appgroup /var/log/nginx 
-RUN chown -R appuser:appgroup /var/lib/nginx
-
-RUN touch /run/nginx.pid \
- && chown -R appuser:appgroup /run/nginx.pid
-RUN touch /usr/share/nginx/html/ui/env.js \
- && chown -R appuser:appgroup /usr/share/nginx/html/ui/env.js
-
-
-USER appuser:appgroup
+RUN chown -R app:app /app \
+&& chown -R app:app /var/log/nginx \
+&& chown -R app:app /var/lib/nginx \
+&& touch /run/nginx.pid \
+&& chown -R app:app /run/nginx.pid \
+&& touch /usr/share/nginx/html/ui/env.js \
+&& chown -R app:app /usr/share/nginx/html/ui/env.js
+ 
+USER app
 
 ENV ASPNETCORE_URLS=https://+:8001;http://+:8080
 
 # Entry point #################################################################
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.standalone.conf", "-u", "1000"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.standalone.conf"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

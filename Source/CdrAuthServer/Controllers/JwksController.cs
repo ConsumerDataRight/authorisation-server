@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Asp.Versioning;
 using CdrAuthServer.Extensions;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;

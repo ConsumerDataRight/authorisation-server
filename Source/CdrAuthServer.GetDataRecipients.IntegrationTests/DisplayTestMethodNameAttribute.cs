@@ -8,8 +8,7 @@ using System.IO;
 using System.Reflection;
 using CdrAuthServer.GetDataRecipients.IntegrationTests.Fixtures;
 using Microsoft.Extensions.Configuration;
-using Xunit;
-using Xunit.Sdk;
+using Xunit.v3;
 
 namespace CdrAuthServer.GetDataRecipients.IntegrationTests
 {
@@ -17,12 +16,12 @@ namespace CdrAuthServer.GetDataRecipients.IntegrationTests
     {
         private static int count = 0;
 
-        public override void Before(MethodInfo methodUnderTest)
+        public override void Before(MethodInfo methodUnderTest, IXunitTest test)
         {
             Console.WriteLine($"Test #{++count} - {methodUnderTest.DeclaringType?.Name}.{methodUnderTest.Name}");
         }
 
-        public override void After(MethodInfo methodUnderTest)
+        public override void After(MethodInfo methodUnderTest, IXunitTest test)
         {
         }
     }

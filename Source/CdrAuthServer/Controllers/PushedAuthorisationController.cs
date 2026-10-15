@@ -1,4 +1,5 @@
-﻿using CdrAuthServer.Domain;
+﻿using Asp.Versioning;
+using CdrAuthServer.Domain;
 using CdrAuthServer.Domain.Models;
 using CdrAuthServer.Extensions;
 using CdrAuthServer.Models;

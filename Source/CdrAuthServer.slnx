@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/Artefacts/">
+    <File Path="../.gitignore" />
+    <File Path="../README.md" />
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path="docker-compose.E2ETests.Standalone.yml" />
+    <File Path="docker-compose.E2ETests.yml" />
+    <File Path="docker-compose.IntegrationTests.Standalone.yml" />
+    <File Path="docker-compose.IntegrationTests.yml" />
+    <File Path="Dockerfile" />
+    <File Path="Dockerfile.e2e-tests" />
+    <File Path="Dockerfile.integration-tests" />
+    <File Path="Dockerfile.standalone" />
+    <File Path="Dockerfile.unit-tests" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="CdrAuthServer.Domain/CdrAuthServer.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="CdrAuthServer.API.Logger/CdrAuthServer.API.Logger.csproj" />
+  <Project Path="CdrAuthServer.E2ETests/CdrAuthServer.E2ETests.csproj" />
+  <Project Path="CdrAuthServer.GetDataRecipients.IntegrationTests/CdrAuthServer.GetDataRecipients.IntegrationTests.csproj" />
+  <Project Path="CdrAuthServer.GetDataRecipients/CdrAuthServer.GetDataRecipients.csproj" />
+  <Project Path="CdrAuthServer.Infrastructure/CdrAuthServer.Infrastructure.csproj" />
+  <Project Path="CdrAuthServer.IntegrationTests/CdrAuthServer.IntegrationTests.csproj" />
+  <Project Path="CdrAuthServer.mTLS.Gateway/CdrAuthServer.mTLS.Gateway.csproj" />
+  <Project Path="CdrAuthServer.Repository/CdrAuthServer.Repository.csproj" />
+  <Project Path="CdrAuthServer.TLS.Gateway/CdrAuthServer.TLS.Gateway.csproj" />
+  <Project Path="CdrAuthServer.UnitTests/CdrAuthServer.UnitTests.csproj" />
+  <Project Path="CdrAuthServer/CdrAuthServer.csproj" />
+</Solution>

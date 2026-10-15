@@ -1,18 +1,18 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xunit;
 
 namespace CdrAuthServer.GetDataRecipients.IntegrationTests.Fixtures
 {
     public class TestFixture : IAsyncLifetime
     {
-        public Task InitializeAsync()
+        public ValueTask InitializeAsync()
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 }
